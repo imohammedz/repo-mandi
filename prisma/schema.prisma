@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  PRODUCER
+  CONSUMER
+  ADMIN
+}
+
+enum VehicleStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SOLD
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  REJECTED
+}
+
+enum LeadSource {
+  CALL
+  WHATSAPP
+  FORM
+}
+
+model User {
+  id         String    @id @default(cuid())
+  name       String
+  phone      String    @unique
+  role       UserRole
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  vehicles   Vehicle[]
+  buyerLeads Lead[]    @relation("LeadBuyer")
+}
+
+model Vehicle {
+  id                 String             @id @default(cuid())
+  title              String
+  vehicleType        String
+  brand              String
+  model              String
+  year               Int
+  registrationState  String
+  price              Decimal            @db.Decimal(12, 2)
+  financeCompany     String
+  city               String
+  state              String
+  yardLocation       String
+  condition          String
+  status             VehicleStatus      @default(PENDING)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  sellerName         String
+  sellerPhone        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  producerId         String?
+  producer           User?              @relation(fields: [producerId], references: [id], onDelete: SetNull)
+  images             VehicleImage[]
+  leads              Lead[]
+
+  @@index([brand])
+  @@index([city, state])
+  @@index([status, verificationStatus])
+}
+
+model VehicleImage {
+  id        String   @id @default(cuid())
+  vehicleId String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  vehicleId  String
+  buyerId    String?
+  buyerName  String
+  buyerPhone String
+  message    String
+  source     LeadSource
+  createdAt  DateTime   @default(now())
+  vehicle    Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  buyer      User?      @relation("LeadBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId, createdAt])
+}
