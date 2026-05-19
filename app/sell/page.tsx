@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
@@ -14,18 +14,17 @@ const benefits = [
 
 export default function SellPage() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("rm_logged_in") === "true";
-    if (isLoggedIn) {
-      router.replace("/seller/add-vehicle");
-    } else {
-      setChecking(false);
+    try {
+      const isLoggedIn = localStorage.getItem("rm_logged_in") === "true";
+      if (isLoggedIn) {
+        router.replace("/seller/add-vehicle");
+      }
+    } catch {
+      // If storage is unavailable, keep users on this screen.
     }
   }, [router]);
-
-  if (checking) return null;
 
   return (
     <main className="flex min-h-[calc(100dvh-80px)] flex-col px-4 pb-8 pt-12">
