@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 export default function OtpPage() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [resent, setResent] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (index: number, value: string) => {
@@ -64,8 +65,24 @@ export default function OtpPage() {
       </button>
 
       <p className="text-center text-xs text-slate-500">
-        Didn&apos;t receive OTP?{" "}
-        <button className="font-medium text-slate-900">Resend</button>
+        {resent ? (
+          <span className="font-medium text-emerald-600">OTP resent!</span>
+        ) : (
+          <>
+            Didn&apos;t receive OTP?{" "}
+            <button
+              onClick={() => {
+                setOtp(["", "", "", "", "", ""]);
+                inputs.current[0]?.focus();
+                setResent(true);
+                setTimeout(() => setResent(false), 3000);
+              }}
+              className="font-medium text-slate-900"
+            >
+              Resend
+            </button>
+          </>
+        )}
       </p>
     </main>
   );
