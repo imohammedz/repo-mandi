@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
+import { parseListingStatus } from "@/lib/validation";
 import { updateListingStatus } from "@/lib/vehicle-store";
-import type { ListingStatus } from "@/lib/types";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const body = await request.json();
+  let status;
+  try {
+    const body = await request.json();
+    status = parseListingStatus(body.status);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Invalid listing status" },
+      { status: 400 },
+    );
+  }
 
-  const status = String(body.status ?? "PENDING") as ListingStatus;
   const updated = updateListingStatus(id, status);
 
   if (!updated) {

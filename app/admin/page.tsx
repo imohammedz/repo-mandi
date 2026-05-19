@@ -1,12 +1,12 @@
 import { revalidatePath } from "next/cache";
+import { parseListingStatus } from "@/lib/validation";
 import { listVehicles, updateListingStatus } from "@/lib/vehicle-store";
-import type { ListingStatus } from "@/lib/types";
 
 async function statusAction(formData: FormData) {
   "use server";
 
   const id = String(formData.get("id") ?? "");
-  const status = String(formData.get("status") ?? "PENDING") as ListingStatus;
+  const status = parseListingStatus(formData.get("status"));
   updateListingStatus(id, status);
   revalidatePath("/admin");
   revalidatePath("/vehicles");

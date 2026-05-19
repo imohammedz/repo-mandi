@@ -5,27 +5,25 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 const readParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
 
-export default function VehiclesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const params = searchParams;
+export default async function VehiclesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const resolvedParams = await searchParams;
+  const filters = {
+    search: readParam(resolvedParams.search),
+    vehicleType: readParam(resolvedParams.vehicleType),
+    brand: readParam(resolvedParams.brand),
+    city: readParam(resolvedParams.city),
+    state: readParam(resolvedParams.state),
+    financeCompany: readParam(resolvedParams.financeCompany),
+    verificationStatus: readParam(resolvedParams.verificationStatus),
+    minPrice: Number(readParam(resolvedParams.minPrice)) || undefined,
+    maxPrice: Number(readParam(resolvedParams.maxPrice)) || undefined,
+  };
 
-  return params.then((resolvedParams) => {
-    const filters = {
-      search: readParam(resolvedParams.search),
-      vehicleType: readParam(resolvedParams.vehicleType),
-      brand: readParam(resolvedParams.brand),
-      city: readParam(resolvedParams.city),
-      state: readParam(resolvedParams.state),
-      financeCompany: readParam(resolvedParams.financeCompany),
-      verificationStatus: readParam(resolvedParams.verificationStatus),
-      minPrice: Number(readParam(resolvedParams.minPrice)) || undefined,
-      maxPrice: Number(readParam(resolvedParams.maxPrice)) || undefined,
-    };
+  const vehicles = listVehicles(filters);
+  const options = getFilterOptions();
 
-    const vehicles = listVehicles(filters);
-    const options = getFilterOptions();
-
-    return (
-      <div className="space-y-5 pb-8">
+  return (
+    <div className="space-y-5 pb-8">
         <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
           <h1 className="text-xl font-semibold text-slate-900">Browse listings</h1>
           <form className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -106,7 +104,6 @@ export default function VehiclesPage({ searchParams }: { searchParams: Promise<S
             </p>
           )}
         </section>
-      </div>
-    );
-  });
+    </div>
+  );
 }

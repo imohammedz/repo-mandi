@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseListingPayload } from "@/lib/validation";
 import { listVehicles, submitVehicleListing } from "@/lib/vehicle-store";
 
 export async function GET(request: Request) {
@@ -19,23 +20,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  try {
+    const body = await request.json();
+    const payload = parseListingPayload(body);
+    const listing = submitVehicleListing(payload);
 
-  const listing = submitVehicleListing({
-    vehicleType: body.vehicleType,
-    brand: body.brand,
-    model: body.model,
-    year: Number(body.year),
-    registrationState: body.registrationState,
-    price: Number(body.price),
-    financeCompany: body.financeCompany,
-    city: body.city,
-    state: body.state,
-    yardLocation: body.yardLocation,
-    condition: body.condition,
-    sellerName: body.sellerName,
-    sellerPhone: body.sellerPhone,
-  });
-
-  return NextResponse.json({ data: listing }, { status: 201 });
+    return NextResponse.json({ data: listing }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Invalid request payload" },
+      { status: 400 },
+    );
+  }
 }

@@ -1,24 +1,27 @@
 import { redirect } from "next/navigation";
+import { parseListingPayload } from "@/lib/validation";
 import { submitVehicleListing } from "@/lib/vehicle-store";
 
 async function submitAction(formData: FormData) {
   "use server";
 
-  submitVehicleListing({
-    vehicleType: String(formData.get("vehicleType") ?? "Truck"),
-    brand: String(formData.get("brand") ?? ""),
-    model: String(formData.get("model") ?? ""),
-    year: Number(formData.get("year") ?? 0),
-    registrationState: String(formData.get("registrationState") ?? ""),
-    price: Number(formData.get("price") ?? 0),
-    financeCompany: String(formData.get("financeCompany") ?? ""),
-    city: String(formData.get("city") ?? ""),
-    state: String(formData.get("state") ?? ""),
-    yardLocation: String(formData.get("yardLocation") ?? ""),
-    condition: String(formData.get("condition") ?? ""),
-    sellerName: String(formData.get("sellerName") ?? ""),
-    sellerPhone: String(formData.get("sellerPhone") ?? ""),
+  const payload = parseListingPayload({
+    vehicleType: formData.get("vehicleType"),
+    brand: formData.get("brand"),
+    model: formData.get("model"),
+    year: formData.get("year"),
+    registrationState: formData.get("registrationState"),
+    price: formData.get("price"),
+    financeCompany: formData.get("financeCompany"),
+    city: formData.get("city"),
+    state: formData.get("state"),
+    yardLocation: formData.get("yardLocation"),
+    condition: formData.get("condition"),
+    sellerName: formData.get("sellerName"),
+    sellerPhone: formData.get("sellerPhone"),
   });
+
+  submitVehicleListing(payload);
 
   redirect("/producer");
 }
