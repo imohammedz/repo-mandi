@@ -36,7 +36,8 @@ export async function POST(request: Request) {
       .verifications.create({ to: `+91${phone}`, channel: "sms" });
 
     return Response.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error("OTP send failed", error);
     return Response.json({ message: "Failed to send OTP. Please try again." }, { status: 500 });
   }
 }

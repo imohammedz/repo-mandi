@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { ApiMessageResponse } from "@/app/auth/types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function LoginPage() {
         body: JSON.stringify({ phone: mobile }),
       });
 
-      const data = (await response.json()) as { message?: string };
+      const data = (await response.json()) as ApiMessageResponse;
       if (!response.ok) {
         setError(data.message ?? "Failed to send OTP. Please try again.");
         return;

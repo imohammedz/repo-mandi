@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { ApiMessageResponse } from "@/app/auth/types";
 
 type OtpClientPageProps = {
   phone: string;
@@ -53,7 +54,7 @@ export default function OtpClientPage({ phone }: OtpClientPageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, code: otp.join("") }),
       });
-      const data = (await response.json()) as { message?: string };
+      const data = (await response.json()) as ApiMessageResponse;
 
       if (!response.ok) {
         setError(data.message ?? "OTP verification failed. Please try again.");
@@ -79,7 +80,7 @@ export default function OtpClientPage({ phone }: OtpClientPageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
       });
-      const data = (await response.json()) as { message?: string };
+      const data = (await response.json()) as ApiMessageResponse;
 
       if (!response.ok) {
         setError(data.message ?? "Failed to resend OTP.");

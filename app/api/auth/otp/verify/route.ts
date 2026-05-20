@@ -46,7 +46,8 @@ export async function POST(request: Request) {
     }
 
     return Response.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error("OTP verify failed", error);
     return Response.json({ message: "Failed to verify OTP. Please try again." }, { status: 500 });
   }
 }
