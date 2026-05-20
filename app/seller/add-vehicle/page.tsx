@@ -121,6 +121,8 @@ export default function AddVehiclePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState<FormData>(emptyForm);
 
   const set = (key: keyof FormData) => (val: string) =>
@@ -130,6 +132,45 @@ export default function AddVehiclePage() {
   const back = () => {
     if (step === 1) router.back();
     else setStep((s) => s - 1);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const body = {
+        title: [form.vehicleType, form.brand, form.model, form.year].filter(Boolean).join(" "),
+        type: form.vehicleType,
+        brand: form.brand,
+        model: form.model,
+        year: Number(form.year),
+        city: form.city,
+        state: form.state,
+        yardLocation: form.yardLocation,
+        price: form.price,
+        financeCompany: form.financeCompany,
+        repoStatus: "Ready For Sale",
+        sellerType: "Bank Agent",
+        condition: form.running || "Running",
+        conditionNotes: form.conditionNotes,
+        accidentNotes: form.hasAccident === "Yes" ? "Accident history reported." : "No accident history reported.",
+      };
+      const response = await fetch("/api/vehicles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
+        setSubmitError(data.message ?? "Failed to submit vehicle.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setSubmitError("Unable to submit right now. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // ── Success screen ─────────────────────────────────────────────────────────
@@ -417,12 +458,17 @@ export default function AddVehiclePage() {
           </button>
         )}
         <button
-          onClick={step === TOTAL_STEPS ? () => setSubmitted(true) : next}
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white"
+          onClick={step === TOTAL_STEPS ? handleSubmit : next}
+          disabled={submitting}
+          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {step === TOTAL_STEPS ? "Submit Listing" : "Next"}
+          {step === TOTAL_STEPS ? (submitting ? "Submitting…" : "Submit Listing") : "Next"}
         </button>
       </div>
+
+      {submitError ? (
+        <p className="text-center text-sm text-red-600">{submitError}</p>
+      ) : null}
     </main>
   );
 }

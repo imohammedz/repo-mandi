@@ -21,12 +21,18 @@ export default function RoleClientPage({ phone }: RoleClientPageProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selected) return;
     localStorage.setItem("rm_logged_in", "true");
     localStorage.setItem("rm_role", selected);
     if (phone) {
       localStorage.setItem("rm_phone", `+91${phone}`);
+      // Persist user in DB
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: `+91${phone}`, role: selected }),
+      });
     }
     router.push("/seller/add-vehicle");
   };
