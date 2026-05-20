@@ -32,9 +32,9 @@ export async function PUT(
     const body = (await request.json()) as Record<string, unknown>;
 
     // Prevent id and created_at from being overwritten
-    const { id: _ignored, createdAt: _ca, ...updates } = body;
-    void _ignored;
-    void _ca;
+    const updates = Object.fromEntries(
+      Object.entries(body).filter(([key]) => key !== "id" && key !== "createdAt")
+    );
 
     const [updated] = await db
       .update(vehicles)

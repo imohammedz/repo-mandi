@@ -5,16 +5,27 @@ import { nanoid } from "./nanoid";
 
 export const runtime = "nodejs";
 
+const VALID_TYPES = ["Truck", "Tipper", "Pickup", "Bus", "Trailer", "Tractor"] as const;
+type VehicleType = (typeof VALID_TYPES)[number];
+
 // ── GET /api/vehicles?type=&state=&q= ─────────────────────────────────────────
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const type = url.searchParams.get("type");
+    const typeParam = url.searchParams.get("type");
     const state = url.searchParams.get("state");
     const query = url.searchParams.get("q");
 
+    if (typeParam && !VALID_TYPES.includes(typeParam as VehicleType)) {
+      return Response.json(
+        { message: `type must be one of: ${VALID_TYPES.join(", ")}.` },
+        { status: 400 }
+      );
+    }
+    const type = typeParam as VehicleType | null;
+
     const conditions = [];
-    if (type) conditions.push(eq(vehicles.type, type as typeof vehicles.type._.data));
+    if (type) conditions.push(eq(vehicles.type, type));
     if (state) conditions.push(eq(vehicles.state, state));
     if (query) {
       conditions.push(

@@ -151,7 +151,7 @@ export default function AddVehiclePage() {
         financeCompany: form.financeCompany,
         repoStatus: "Ready For Sale",
         sellerType: "Bank Agent",
-        condition: form.running || "Running",
+        condition: (form.running as "Running" | "Non-running") || "Running",
         conditionNotes: form.conditionNotes,
         accidentNotes: form.hasAccident === "Yes" ? "Accident history reported." : "No accident history reported.",
       };
