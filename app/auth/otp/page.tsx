@@ -1,14 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export default function OtpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const phone = (searchParams.get("phone") ?? "").replace(/\D/g, "").slice(0, 10);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resent, setResent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState("");
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (index: number, value: string) => {
@@ -26,16 +31,79 @@ export default function OtpPage() {
   };
 
   const filled = otp.every(Boolean);
+  const maskedPhone =
+    phone.length === 10 ? `+91 ${phone.slice(0, 2)}XXXXXX${phone.slice(-2)}` : "your mobile number";
+
+  useEffect(() => {
+    if (!phone) {
+      router.replace("/auth/login");
+    }
+  }, [phone, router]);
+
+  const handleVerify = async () => {
+    if (!filled || submitting || !phone) return;
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code: otp.join("") }),
+      });
+      const data = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        setError(data.message ?? "OTP verification failed. Please try again.");
+        return;
+      }
+
+      router.push(`/auth/role?phone=${encodeURIComponent(phone)}`);
+    } catch {
+      setError("Unable to verify OTP right now. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!phone || resending) return;
+    setResending(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        setError(data.message ?? "Failed to resend OTP.");
+        return;
+      }
+
+      setOtp(["", "", "", "", "", ""]);
+      inputs.current[0]?.focus();
+      setResent(true);
+      setTimeout(() => setResent(false), 3000);
+    } catch {
+      setError("Unable to resend OTP right now. Please try again.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <main className="space-y-6 px-4 pb-8 pt-10">
-      <Link href="/auth/login" className="inline-flex items-center gap-1 text-sm text-slate-500">
+      <Link href={`/auth/login${phone ? `?phone=${encodeURIComponent(phone)}` : ""}`} className="inline-flex items-center gap-1 text-sm text-slate-500">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
 
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-slate-900">Enter OTP</h1>
-        <p className="text-sm text-slate-500">6-digit code sent to your mobile number.</p>
+        <p className="text-sm text-slate-500">6-digit code sent to {maskedPhone}.</p>
       </div>
 
       <div className="grid grid-cols-6 gap-2">
@@ -57,11 +125,11 @@ export default function OtpPage() {
       </div>
 
       <button
-        onClick={() => filled && router.push("/auth/role")}
-        disabled={!filled}
+        onClick={handleVerify}
+        disabled={!filled || submitting}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
       >
-        Verify OTP
+        {submitting ? "Verifying..." : "Verify OTP"}
       </button>
 
       <p className="text-center text-xs text-slate-500">
@@ -71,19 +139,17 @@ export default function OtpPage() {
           <>
             Didn&apos;t receive OTP?{" "}
             <button
-              onClick={() => {
-                setOtp(["", "", "", "", "", ""]);
-                inputs.current[0]?.focus();
-                setResent(true);
-                setTimeout(() => setResent(false), 3000);
-              }}
+              onClick={handleResend}
+              disabled={resending}
               className="font-medium text-slate-900"
             >
-              Resend
+              {resending ? "Resending..." : "Resend"}
             </button>
           </>
         )}
       </p>
+
+      {error ? <p className="text-center text-sm text-red-600">{error}</p> : null}
     </main>
   );
 }

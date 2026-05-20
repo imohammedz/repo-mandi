@@ -8,6 +8,34 @@ import { ArrowLeft } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const [mobile, setMobile] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleContinue = async () => {
+    if (mobile.length !== 10 || submitting) return;
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: mobile }),
+      });
+
+      const data = (await response.json()) as { message?: string };
+      if (!response.ok) {
+        setError(data.message ?? "Failed to send OTP. Please try again.");
+        return;
+      }
+
+      router.push(`/auth/otp?phone=${encodeURIComponent(mobile)}`);
+    } catch {
+      setError("Unable to send OTP right now. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <main className="space-y-6 px-4 pb-8 pt-10">
@@ -39,12 +67,14 @@ export default function LoginPage() {
       </label>
 
       <button
-        onClick={() => mobile.length === 10 && router.push("/auth/otp")}
-        disabled={mobile.length !== 10}
+        onClick={handleContinue}
+        disabled={mobile.length !== 10 || submitting}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
       >
-        Continue
+        {submitting ? "Sending OTP..." : "Continue"}
       </button>
+
+      {error ? <p className="text-center text-sm text-red-600">{error}</p> : null}
     </main>
   );
 }

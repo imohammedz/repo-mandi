@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -15,18 +15,26 @@ const roles = [
 
 export default function RolePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const phone = (searchParams.get("phone") ?? "").replace(/\D/g, "").slice(0, 10);
   const [selected, setSelected] = useState<string | null>(null);
 
   const handleContinue = () => {
     if (!selected) return;
     localStorage.setItem("rm_logged_in", "true");
     localStorage.setItem("rm_role", selected);
+    if (phone) {
+      localStorage.setItem("rm_phone", `+91${phone}`);
+    }
     router.push("/seller/add-vehicle");
   };
 
   return (
     <main className="space-y-5 px-4 pb-8 pt-10">
-      <Link href="/auth/otp" className="inline-flex items-center gap-1 text-sm text-slate-500">
+      <Link
+        href={`/auth/otp${phone ? `?phone=${encodeURIComponent(phone)}` : ""}`}
+        className="inline-flex items-center gap-1 text-sm text-slate-500"
+      >
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
 

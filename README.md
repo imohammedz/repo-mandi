@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## OTP setup (Twilio Verify)
+
+Create a `.env.local` file (or copy from `.env.example`) with:
+
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_VERIFY_SERVICE_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+The app sends and verifies OTP via:
+
+- `POST /api/auth/otp/send`
+- `POST /api/auth/otp/verify`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
