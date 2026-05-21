@@ -55,6 +55,8 @@ npm run db:migrate
 | `POST` | `/api/users` | Upsert user by phone + role |
 | `POST` | `/api/uploads` | Upload vehicle photos (`multipart/form-data`, field name: `files`) |
 
+Uploaded files are saved in `public/uploads` (ignored by git), and vehicle deletion cleans up linked uploaded images.
+
 
 
 Create a `.env.local` file (or copy from `.env.example`) with:

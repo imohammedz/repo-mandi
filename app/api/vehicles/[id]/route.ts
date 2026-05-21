@@ -1,8 +1,32 @@
 import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
 
 export const runtime = "nodejs";
+
+async function cleanupUploadedImages(paths: string[]) {
+  const uploadRoot = path.resolve(process.cwd(), "public", "uploads");
+
+  await Promise.all(
+    paths.map(async (urlPath) => {
+      if (!urlPath.startsWith("/uploads/")) return;
+
+      const relativeFilePath = urlPath.replace(/^\/uploads\//, "");
+      const absoluteFilePath = path.resolve(uploadRoot, relativeFilePath);
+
+      // Ensure deletion stays within /public/uploads
+      if (!absoluteFilePath.startsWith(uploadRoot)) return;
+
+      try {
+        await unlink(absoluteFilePath);
+      } catch {
+        // ignore missing files
+      }
+    })
+  );
+}
 
 // ── GET /api/vehicles/[id] ────────────────────────────────────────────────────
 export async function GET(
@@ -59,14 +83,28 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const [existing] = await db
+      .select({
+        image: vehicles.image,
+        gallery: vehicles.gallery,
+      })
+      .from(vehicles)
+      .where(eq(vehicles.id, id));
+
+    if (!existing) {
+      return Response.json({ message: "Vehicle not found." }, { status: 404 });
+    }
+
     const [deleted] = await db
       .delete(vehicles)
       .where(eq(vehicles.id, id))
       .returning({ id: vehicles.id });
 
-    if (!deleted) {
-      return Response.json({ message: "Vehicle not found." }, { status: 404 });
-    }
+    const candidatePaths = Array.from(
+      new Set([existing.image, ...(existing.gallery ?? [])].filter(Boolean))
+    );
+    await cleanupUploadedImages(candidatePaths);
+
     return Response.json({ success: true, id: deleted.id });
   } catch (error) {
     console.error("DELETE /api/vehicles/[id] failed", error);

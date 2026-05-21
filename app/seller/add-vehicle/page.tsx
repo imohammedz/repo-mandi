@@ -19,6 +19,7 @@ const indiaStates = [
 const financeCompanies = ["SBI", "HDFC", "ICICI", "Axis", "Other"];
 
 const TOTAL_STEPS = 5;
+const MIN_PHOTO_COUNT = 3;
 
 // ─── Shared sub-components ───────────────────────────────────────────────────
 
@@ -175,9 +176,9 @@ export default function AddVehiclePage() {
   };
 
   const handleSubmit = async () => {
-    if (photoUrls.length < 3) {
+    if (photoUrls.length < MIN_PHOTO_COUNT) {
       setStep(4);
-      setSubmitError("Please add at least 3 photos before submitting.");
+      setSubmitError(`Please add at least ${MIN_PHOTO_COUNT} photos before submitting.`);
       return;
     }
 
@@ -198,7 +199,9 @@ export default function AddVehiclePage() {
         repoStatus: "Ready For Sale",
         sellerType: "Bank Agent",
         condition: (form.running as "Running" | "Non-running") || "Running",
-        conditionNotes: form.conditionNotes,
+        conditionNotes: [form.condition ? `Overall: ${form.condition}.` : "", form.conditionNotes]
+          .filter(Boolean)
+          .join(" "),
         accidentNotes: form.hasAccident === "Yes" ? "Accident history reported." : "No accident history reported.",
         image: photoUrls[0],
         gallery: photoUrls,
@@ -500,7 +503,7 @@ export default function AddVehiclePage() {
           <p className="text-xs text-slate-500">{photoUrls.length} photo(s) added</p>
           {photoError ? <p className="text-sm text-red-600">{photoError}</p> : null}
           <p className="text-xs text-slate-400">
-            Add at least 3 photos — front, rear, and interior views.
+            Add at least {MIN_PHOTO_COUNT} photos — front, rear, and interior views.
           </p>
         </section>
       )}
@@ -563,7 +566,7 @@ export default function AddVehiclePage() {
         )}
         <button
           onClick={step === TOTAL_STEPS ? handleSubmit : next}
-          disabled={submitting}
+          disabled={submitting || (step === 4 && photoUrls.length < MIN_PHOTO_COUNT)}
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
           {step === TOTAL_STEPS ? (submitting ? "Submitting…" : "Submit Listing") : "Next"}
