@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Camera, CheckCircle2, ImagePlus } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -119,10 +120,15 @@ const emptyForm: FormData = {
 
 export default function AddVehiclePage() {
   const router = useRouter();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [form, setForm] = useState<FormData>(emptyForm);
 
   const set = (key: keyof FormData) => (val: string) =>
@@ -134,7 +140,47 @@ export default function AddVehiclePage() {
     else setStep((s) => s - 1);
   };
 
+  const uploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setPhotoError("");
+    setUploading(true);
+    try {
+      const payload = new FormData();
+      Array.from(files).forEach((file) => payload.append("files", file));
+
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: payload,
+      });
+
+      const data = (await response.json()) as { message?: string; urls?: string[] };
+      if (!response.ok) {
+        setPhotoError(data.message ?? "Failed to upload photo(s).");
+        return;
+      }
+
+      setPhotoUrls((prev) => [...prev, ...(data.urls ?? [])].slice(0, 12));
+    } catch {
+      setPhotoError("Unable to upload right now. Please try again.");
+    } finally {
+      setUploading(false);
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+      if (uploadInputRef.current) uploadInputRef.current.value = "";
+    }
+  };
+
+  const removePhoto = (url: string) => {
+    setPhotoUrls((prev) => prev.filter((item) => item !== url));
+  };
+
   const handleSubmit = async () => {
+    if (photoUrls.length < 3) {
+      setStep(4);
+      setSubmitError("Please add at least 3 photos before submitting.");
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -154,6 +200,8 @@ export default function AddVehiclePage() {
         condition: (form.running as "Running" | "Non-running") || "Running",
         conditionNotes: form.conditionNotes,
         accidentNotes: form.hasAccident === "Yes" ? "Accident history reported." : "No accident history reported.",
+        image: photoUrls[0],
+        gallery: photoUrls,
       };
       const response = await fetch("/api/vehicles", {
         method: "POST",
@@ -197,6 +245,9 @@ export default function AddVehiclePage() {
               setSubmitted(false);
               setStep(1);
               setForm(emptyForm);
+              setPhotoUrls([]);
+              setPhotoError("");
+              setSubmitError("");
             }}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
           >
@@ -386,16 +437,68 @@ export default function AddVehiclePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white text-slate-500">
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploading}
+              className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white text-slate-500 disabled:opacity-50"
+            >
               <Camera className="h-6 w-6" />
-              <span className="text-xs font-medium">Take Photo</span>
+              <span className="text-xs font-medium">{uploading ? "Uploading…" : "Take Photo"}</span>
             </button>
-            <button className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white text-slate-500">
+            <button
+              type="button"
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={uploading}
+              className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white text-slate-500 disabled:opacity-50"
+            >
               <ImagePlus className="h-6 w-6" />
-              <span className="text-xs font-medium">Upload Photo</span>
+              <span className="text-xs font-medium">{uploading ? "Uploading…" : "Upload Photo"}</span>
             </button>
           </div>
 
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => uploadFiles(e.target.files)}
+          />
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => uploadFiles(e.target.files)}
+          />
+
+          {photoUrls.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {photoUrls.map((url, index) => (
+                <div key={url} className="relative overflow-hidden rounded-xl border border-slate-200">
+                  <Image
+                    src={url}
+                    alt={`Vehicle photo ${index + 1}`}
+                    width={300}
+                    height={200}
+                    className="h-24 w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(url)}
+                    className="absolute right-1 top-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <p className="text-xs text-slate-500">{photoUrls.length} photo(s) added</p>
+          {photoError ? <p className="text-sm text-red-600">{photoError}</p> : null}
           <p className="text-xs text-slate-400">
             Add at least 3 photos — front, rear, and interior views.
           </p>
@@ -427,6 +530,7 @@ export default function AddVehiclePage() {
                 { label: "Finance Co.", value: form.financeCompany },
                 { label: "Running", value: form.running },
                 { label: "Condition", value: form.condition },
+                { label: "Photos", value: photoUrls.length ? `${photoUrls.length} uploaded` : "" },
               ] as { label: string; value: string }[]
             )
               .filter(({ value }) => value)

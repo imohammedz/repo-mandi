@@ -53,6 +53,7 @@ npm run db:migrate
 | `PATCH` | `/api/vehicles/:id/status` | Admin approve/reject (`{ status: "Verified" \| "Rejected" \| "Pending" \| "Sold" }`) |
 | `GET` | `/api/users` | List users (supports `?phone=`) |
 | `POST` | `/api/users` | Upsert user by phone + role |
+| `POST` | `/api/uploads` | Upload vehicle photos (`multipart/form-data`, field name: `files`) |
 
 
 
