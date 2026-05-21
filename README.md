@@ -20,6 +20,58 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database setup (PostgreSQL via Drizzle ORM)
+
+Copy `.env.example` to `.env.local` and fill in your connection string:
+
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+```
+
+Works with any PostgreSQL provider: [Neon](https://neon.tech), [Supabase](https://supabase.com), local Postgres, etc.
+
+### Apply schema
+
+```bash
+# Push schema directly to your database (recommended for development)
+npm run db:push
+
+# Or generate + apply a migration file
+npm run db:generate
+npm run db:migrate
+```
+
+### Available REST endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/vehicles` | List all vehicles (supports `?type=&state=&q=`) |
+| `POST` | `/api/vehicles` | Create a vehicle listing |
+| `GET` | `/api/vehicles/:id` | Get a single vehicle |
+| `PUT` | `/api/vehicles/:id` | Update a vehicle |
+| `DELETE` | `/api/vehicles/:id` | Delete a vehicle |
+| `PATCH` | `/api/vehicles/:id/status` | Admin approve/reject (`{ status: "Verified" \| "Rejected" \| "Pending" \| "Sold" }`) |
+| `GET` | `/api/users` | List users (supports `?phone=`) |
+| `POST` | `/api/users` | Upsert user by phone + role |
+| `POST` | `/api/uploads` | Upload vehicle photos (`multipart/form-data`, field name: `files`) |
+
+Uploaded files are saved in `public/uploads` (ignored by git), and vehicle deletion cleans up linked uploaded images.
+
+
+
+Create a `.env.local` file (or copy from `.env.example`) with:
+
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_VERIFY_SERVICE_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+The app sends and verifies OTP via:
+
+- `POST /api/auth/otp/send`
+- `POST /api/auth/otp/verify`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

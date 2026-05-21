@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { byId, formatCurrency, vehicles } from "@/data/vehicles";
+import { formatCurrency } from "@/data/vehicles";
+import { db } from "@/lib/db";
+import { vehicles as vehiclesTable } from "@/lib/schema";
+import { dbToVehicle } from "@/lib/mappers";
+import { eq, ne, desc } from "drizzle-orm";
 import { CallButton } from "@/components/ui/call-button";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
+
+export const dynamic = "force-dynamic";
 
 export default async function VehicleDetailPage({
   params,
@@ -14,13 +20,18 @@ export default async function VehicleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const vehicle = byId(id);
 
-  if (!vehicle) {
-    notFound();
-  }
+  const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
+  if (!row) notFound();
+  const vehicle = dbToVehicle(row);
 
-  const similar = vehicles.filter((item) => item.id !== vehicle.id).slice(0, 3);
+  const similarRows = await db
+    .select()
+    .from(vehiclesTable)
+    .where(ne(vehiclesTable.id, id))
+    .orderBy(desc(vehiclesTable.createdAt))
+    .limit(3);
+  const similar = similarRows.map(dbToVehicle);
 
   return (
     <main className="space-y-5 px-4 pb-28 pt-4">

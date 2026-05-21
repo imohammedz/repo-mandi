@@ -7,7 +7,7 @@ import { CircleUserRound, House, PlusCircle, Search, Heart } from "lucide-react"
 const items = [
   { label: "Home", href: "/", icon: House },
   { label: "Search", href: "/vehicles", icon: Search },
-  { label: "Sell", href: "/seller/add-vehicle", icon: PlusCircle },
+  { label: "Sell", href: "/sell", icon: PlusCircle },
   { label: "Saved", href: "/saved", icon: Heart },
   { label: "Profile", href: "/profile", icon: CircleUserRound },
 ];
@@ -24,7 +24,12 @@ export function BottomNav() {
       <ul className="mx-auto grid max-w-xl grid-cols-5 gap-1">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
+          const active =
+            item.href === "/"
+              ? pathname === "/"
+              : item.href === "/sell"
+                ? pathname === "/sell" || pathname.startsWith("/seller/")
+                : pathname.startsWith(item.href);
 
           return (
             <li key={item.href}>

@@ -2,11 +2,21 @@ import { ChevronDown } from "lucide-react";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import { vehicles } from "@/data/vehicles";
+import { db } from "@/lib/db";
+import { vehicles as vehiclesTable } from "@/lib/schema";
+import { dbToVehicle } from "@/lib/mappers";
+import { desc } from "drizzle-orm";
 
-const activeFilters = ["Truck", "Maharashtra", "Verified Only", "Under ₹20L"];
+export const dynamic = "force-dynamic";
 
-export default function VehicleListingPage() {
+export default async function VehicleListingPage() {
+  const vehicleList = await db
+    .select()
+    .from(vehiclesTable)
+    .orderBy(desc(vehiclesTable.createdAt));
+
+  const appVehicles = vehicleList.map(dbToVehicle);
+
   return (
     <main className="space-y-4 px-4 pb-8 pt-4">
       <header className="sticky top-0 z-20 -mx-4 border-b border-slate-100 bg-slate-50 px-4 pb-3 pt-2">
@@ -22,20 +32,13 @@ export default function VehicleListingPage() {
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{vehicles.length}</span> listings found
+            <span className="font-semibold text-slate-900">{appVehicles.length}</span> listings found
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {activeFilters.map((filter) => (
-            <span key={filter} className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-              {filter}
-            </span>
-          ))}
         </div>
       </section>
 
       <section className="space-y-4">
-        {vehicles.map((vehicle) => (
+        {appVehicles.map((vehicle) => (
           <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
         ))}
       </section>
