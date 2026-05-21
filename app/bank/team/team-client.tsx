@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type TeamUser = {
   id: number;
@@ -27,8 +27,7 @@ export default function BankTeamClient() {
     employeeId: "",
   });
 
-  const load = async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
     try {
       const response = await fetch("/api/bank/team");
       if (!response.ok) return;
@@ -37,11 +36,11 @@ export default function BankTeamClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const submit = async () => {
     if (saving) return;
@@ -106,4 +105,3 @@ export default function BankTeamClient() {
     </main>
   );
 }
-

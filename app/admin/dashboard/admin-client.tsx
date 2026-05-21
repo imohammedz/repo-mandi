@@ -136,11 +136,11 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
             </p>
             {(vehicle.missingPhotos || vehicle.priceTooLow || vehicle.duplicateRegistration || vehicle.newSeller || vehicle.missingYardLocation) && (
               <div className="flex flex-wrap gap-2">
-                {vehicle.missingPhotos && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">missingPhotos</span>}
-                {vehicle.priceTooLow && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">priceTooLow</span>}
-                {vehicle.duplicateRegistration && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">duplicateRegistration</span>}
-                {vehicle.newSeller && <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] text-amber-700">newSeller</span>}
-                {vehicle.missingYardLocation && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">missingYardLocation</span>}
+                {vehicle.missingPhotos && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">Missing Photos</span>}
+                {vehicle.priceTooLow && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">Price Too Low</span>}
+                {vehicle.duplicateRegistration && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">Duplicate Registration</span>}
+                {vehicle.newSeller && <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] text-amber-700">New Seller</span>}
+                {vehicle.missingYardLocation && <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] text-rose-700">Missing Yard Location</span>}
               </div>
             )}
             <input

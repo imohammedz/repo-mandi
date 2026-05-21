@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
-import { MouseEvent } from "react";
 
 type Props = {
   phone: string;
@@ -13,7 +12,7 @@ type Props = {
 
 export function WhatsAppButton({ phone, text = "WhatsApp", className = "", vehicleId }: Props) {
   const normalizedPhone = phone.replace(/[^\d+]/g, "");
-  const handleClick = async (_event: MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = async () => {
     if (!vehicleId) return;
     try {
       await fetch("/api/leads", {

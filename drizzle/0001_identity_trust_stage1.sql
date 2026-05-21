@@ -83,6 +83,13 @@ SET
   END
 WHERE true;
 
+UPDATE "vehicles"
+SET
+  "rc_verified" = POSITION('RC Verified' IN COALESCE(array_to_string("verified_badges", ','), '')) > 0,
+  "photos_verified" = POSITION('Photos Verified' IN COALESCE(array_to_string("verified_badges", ','), '')) > 0,
+  "yard_verified" = POSITION('Yard Verified' IN COALESCE(array_to_string("verified_badges", ','), '')) > 0
+WHERE true;
+
 CREATE TABLE IF NOT EXISTS "leads" (
   "id" serial PRIMARY KEY NOT NULL,
   "vehicle_id" varchar(100) NOT NULL,

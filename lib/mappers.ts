@@ -10,9 +10,6 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
   if (row.rcVerified) trustBadges.push("RC Verified");
   if (row.photosVerified) trustBadges.push("Photos Verified");
   if (row.yardVerified) trustBadges.push("Yard Verified");
-  const verifiedBadges = trustBadges.length
-    ? trustBadges
-    : ((row.verifiedBadges as string[]) as Vehicle["verifiedBadges"]);
 
   return {
     id: row.id,
@@ -46,7 +43,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     accidentNotes: row.accidentNotes,
     auctionDate: row.auctionDate,
     yardLocation: row.yardLocation,
-    verifiedBadges,
+    verifiedBadges: trustBadges,
     rcVerified: row.rcVerified,
     photosVerified: row.photosVerified,
     yardVerified: row.yardVerified,

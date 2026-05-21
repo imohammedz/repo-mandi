@@ -5,7 +5,12 @@ import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
 const SESSION_COOKIE_NAME = "rm_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
+const parsedSessionTtlDays = Number(process.env.SESSION_TTL_DAYS ?? "14");
+if (!Number.isFinite(parsedSessionTtlDays) || parsedSessionTtlDays <= 0) {
+  throw new Error("SESSION_TTL_DAYS must be a positive number.");
+}
+const SESSION_TTL_DAYS = parsedSessionTtlDays;
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * SESSION_TTL_DAYS;
 
 type SessionPayload = {
   userId: number;
@@ -15,7 +20,11 @@ type SessionPayload = {
 };
 
 function getSessionSecret() {
-  return process.env.SESSION_SECRET || process.env.TWILIO_AUTH_TOKEN || "repo-mandi-dev-secret";
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error("SESSION_SECRET environment variable is required.");
+  }
+  return secret;
 }
 
 function encodeBase64Url(input: string) {
@@ -95,4 +104,3 @@ export async function requireUser() {
   }
   return { ok: true as const, user };
 }
-

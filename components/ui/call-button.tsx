@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Phone } from "lucide-react";
-import { MouseEvent } from "react";
 
 type Props = {
   phone: string;
@@ -13,7 +12,7 @@ type Props = {
 };
 
 export function CallButton({ phone, text = "Call", className = "", vehicleId }: Props) {
-  const handleClick = async (_event: MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = async () => {
     if (!vehicleId) return;
     try {
       await fetch("/api/leads", {

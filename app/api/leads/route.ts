@@ -70,9 +70,16 @@ export async function POST(request: Request) {
         id: vehicles.id,
         sellerId: vehicles.sellerId,
         isPublished: vehicles.isPublished,
+        listingStatus: vehicles.listingStatus,
       })
       .from(vehicles)
-      .where(and(eq(vehicles.id, body.vehicleId), eq(vehicles.isPublished, true)));
+      .where(
+      and(
+        eq(vehicles.id, body.vehicleId),
+        eq(vehicles.isPublished, true),
+        eq(vehicles.listingStatus, "VERIFIED")
+      )
+      );
 
     if (!vehicle?.sellerId) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });

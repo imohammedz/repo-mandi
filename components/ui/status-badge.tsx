@@ -15,10 +15,19 @@ const styles: Record<Status, string> = {
   SUBMITTED_TO_REPOMANDI: "bg-violet-50 text-violet-700",
 };
 
+const labels: Record<Status, string> = {
+  PENDING: "Pending",
+  VERIFIED: "Verified",
+  REJECTED: "Rejected",
+  SOLD: "Sold",
+  BANK_PENDING_REVIEW: "Bank Pending Review",
+  SUBMITTED_TO_REPOMANDI: "Submitted to RepoMandi",
+};
+
 export function StatusBadge({ status }: { status: Status }) {
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}>
-      {status.replaceAll("_", " ")}
+      {labels[status]}
     </span>
   );
 }

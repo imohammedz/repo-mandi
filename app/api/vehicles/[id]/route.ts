@@ -43,8 +43,7 @@ export async function GET(
     }
     const canViewPrivate =
       currentUser?.accountType === "ADMIN" || (currentUser?.id && row.sellerId === currentUser.id);
-    const isPublicLive =
-      row.isPublished && row.listingStatus === "VERIFIED" && row.listingStatus !== "SOLD";
+    const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
     if (!isPublicLive && !canViewPrivate) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
     }
@@ -90,6 +89,7 @@ export async function PUT(
       "verificationStatus",
       "verifiedBy",
       "verifiedAt",
+      "listingStatus",
       "rejectionReason",
       "sellerVerified",
       "photosVerified",

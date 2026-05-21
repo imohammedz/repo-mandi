@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
-import { eq, ilike, and, or, desc, gte, lte, ne } from "drizzle-orm";
+import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -8,6 +8,8 @@ export const runtime = "nodejs";
 
 const VALID_TYPES = ["Truck", "Tipper", "Pickup", "Bus", "Trailer", "Tractor"] as const;
 type VehicleType = (typeof VALID_TYPES)[number];
+// Heuristic risk flag threshold for suspiciously low listing prices (INR).
+const MIN_REASONABLE_PRICE = 100000;
 
 // ── GET /api/vehicles?type=&state=&q= ─────────────────────────────────────────
 export async function GET(request: Request) {
@@ -41,7 +43,6 @@ export async function GET(request: Request) {
     if (shouldApplyPublicGate) {
       conditions.push(eq(vehicles.isPublished, true));
       conditions.push(eq(vehicles.listingStatus, "VERIFIED"));
-      conditions.push(ne(vehicles.listingStatus, "SOLD"));
     }
 
     if (mine) {
@@ -70,14 +71,10 @@ export async function GET(request: Request) {
       );
     }
 
-    const rows =
-      conditions.length > 0
-        ? await db
-            .select()
-            .from(vehicles)
-            .where(and(...conditions))
-            .orderBy(desc(vehicles.createdAt))
-        : await db.select().from(vehicles).orderBy(desc(vehicles.createdAt));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const rows = whereClause
+      ? await db.select().from(vehicles).where(whereClause).orderBy(desc(vehicles.createdAt))
+      : await db.select().from(vehicles).orderBy(desc(vehicles.createdAt));
 
     return Response.json(rows);
   } catch (error) {
@@ -193,7 +190,7 @@ export async function POST(request: Request) {
         yardVerified: false,
         sellerVerified: currentUser.isVerified,
         missingPhotos: !Array.isArray(gallery) || gallery.length < 3,
-        priceTooLow: Number(price) < 100000,
+        priceTooLow: Number(price) < MIN_REASONABLE_PRICE,
         duplicateRegistration: false,
         newSeller: !currentUser.isVerified,
         missingYardLocation: !yardLocation,

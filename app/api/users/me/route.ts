@@ -22,7 +22,7 @@ function isBuyerProfileComplete(data: {
 
 function isBankProfileComplete(data: {
   fullName?: string;
-  email?: string;
+  email?: string | null;
   institutionName?: string;
   branchName?: string;
   city?: string;
@@ -73,6 +73,9 @@ export async function PATCH(request: Request) {
   if (nextAccountType === "BANK_PARTNER" && current.user.accountType !== "BANK_PARTNER") {
     return Response.json({ message: "Bank onboarding is admin-controlled." }, { status: 403 });
   }
+  if (nextAccountType === "ADMIN" && current.user.accountType !== "ADMIN") {
+    return Response.json({ message: "Admin role escalation is restricted." }, { status: 403 });
+  }
 
   const merged = {
     fullName: (body.fullName ?? current.user.fullName).trim(),
@@ -121,4 +124,3 @@ export async function PATCH(request: Request) {
 
   return Response.json(updated);
 }
-

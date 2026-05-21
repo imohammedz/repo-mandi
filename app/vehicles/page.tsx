@@ -5,7 +5,7 @@ import { VehicleCard } from "@/components/ui/vehicle-card";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { and, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,6 @@ export default async function VehicleListingPage({
   const conditions = [
     eq(vehiclesTable.isPublished, true),
     eq(vehiclesTable.listingStatus, "VERIFIED"),
-    ne(vehiclesTable.listingStatus, "SOLD"),
   ];
 
   if (params.type) conditions.push(eq(vehiclesTable.type, params.type as typeof vehiclesTable.type._.data));

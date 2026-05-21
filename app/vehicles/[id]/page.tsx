@@ -26,8 +26,7 @@ export default async function VehicleDetailPage({
 
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
   if (!row) notFound();
-  const isPublicLive =
-    row.isPublished && row.listingStatus === "VERIFIED" && row.listingStatus !== "SOLD";
+  const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
   const canViewPrivate =
     currentUser?.accountType === "ADMIN" || (currentUser?.id && row.sellerId === currentUser.id);
   if (!isPublicLive && !canViewPrivate) notFound();
