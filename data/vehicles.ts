@@ -48,7 +48,7 @@ export const vehicles: Vehicle[] = [
       "Brake response normal",
     ],
     inquiries: 42,
-    listingStatus: "Verified",
+    listingStatus: "VERIFIED",
   },
   {
     id: "leyland-2518-2018",
@@ -88,7 +88,7 @@ export const vehicles: Vehicle[] = [
       "Battery recently changed",
     ],
     inquiries: 67,
-    listingStatus: "Pending",
+    listingStatus: "PENDING",
   },
   {
     id: "bharatbenz-4228-2020",
@@ -128,7 +128,7 @@ export const vehicles: Vehicle[] = [
       "Electricals functional",
     ],
     inquiries: 31,
-    listingStatus: "Verified",
+    listingStatus: "VERIFIED",
   },
   {
     id: "bolero-pickup-2021",
@@ -168,7 +168,7 @@ export const vehicles: Vehicle[] = [
       "AC not fitted",
     ],
     inquiries: 24,
-    listingStatus: "Sold",
+    listingStatus: "SOLD",
   },
   {
     id: "eicher-pro-3015-2017",
@@ -208,7 +208,7 @@ export const vehicles: Vehicle[] = [
       "Cabin electrical switch replacement needed",
     ],
     inquiries: 53,
-    listingStatus: "Rejected",
+    listingStatus: "REJECTED",
   },
 ];
 

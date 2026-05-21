@@ -6,7 +6,13 @@ import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 export function StickyWhatsAppCTA() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/auth") || pathname.startsWith("/admin") || pathname.startsWith("/seller") || pathname === "/sell") {
+  if (
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/seller") ||
+    pathname.startsWith("/bank") ||
+    pathname === "/sell"
+  ) {
     return null;
   }
 

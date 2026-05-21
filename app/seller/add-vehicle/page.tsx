@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -131,9 +131,37 @@ export default function AddVehiclePage() {
   const [photoError, setPhotoError] = useState("");
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const set = (key: keyof FormData) => (val: string) =>
     setForm((prev) => ({ ...prev, [key]: val }));
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await fetch("/api/auth/session");
+        if (!response.ok) {
+          router.replace("/auth/login");
+          return;
+        }
+        const data = (await response.json()) as {
+          user?: { accountType?: string; isProfileComplete?: boolean };
+        };
+        if (!data.user || !["SELLER", "BANK_PARTNER", "ADMIN"].includes(data.user.accountType ?? "")) {
+          router.replace("/sell");
+          return;
+        }
+        if (!data.user.isProfileComplete) {
+          router.replace("/onboarding");
+          return;
+        }
+        setAuthChecked(true);
+      } catch {
+        router.replace("/auth/login");
+      }
+    };
+    load();
+  }, [router]);
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
   const back = () => {
@@ -238,7 +266,7 @@ export default function AddVehiclePage() {
         </span>
         <div className="mt-8 w-full space-y-3">
           <Link
-            href="/seller/dashboard"
+            href="/seller/listings"
             className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white"
           >
             View My Listings
@@ -257,6 +285,14 @@ export default function AddVehiclePage() {
             Add Another Vehicle
           </button>
         </div>
+      </main>
+    );
+  }
+
+  if (!authChecked) {
+    return (
+      <main className="flex min-h-[calc(100dvh-80px)] items-center justify-center px-4 py-10 text-sm text-slate-500">
+        Checking access...
       </main>
     );
   }

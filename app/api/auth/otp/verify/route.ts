@@ -1,4 +1,9 @@
 import twilio from "twilio";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { users } from "@/lib/schema";
+import { eq } from "drizzle-orm";
+import { createSessionToken, sessionCookieOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -45,7 +50,33 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid or expired OTP." }, { status: 400 });
     }
 
-    return Response.json({ success: true });
+    const [existing] = await db.select().from(users).where(eq(users.phone, phone));
+    const [currentUser] = existing
+      ? [existing]
+      : await db
+          .insert(users)
+          .values({
+            phone,
+            accountType: "BUYER",
+            isProfileComplete: false,
+          })
+          .returning();
+
+    const token = createSessionToken(currentUser.id, currentUser.phone);
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: currentUser.id,
+        accountType: currentUser.accountType,
+        isProfileComplete: currentUser.isProfileComplete,
+      },
+      needsOnboarding: !currentUser.isProfileComplete,
+    });
+    response.cookies.set({
+      ...sessionCookieOptions(),
+      value: token,
+    });
+    return response;
   } catch (error) {
     console.error("OTP verify failed", error);
     return Response.json({ message: "Failed to verify OTP. Please try again." }, { status: 500 });

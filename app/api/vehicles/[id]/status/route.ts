@@ -1,19 +1,32 @@
 import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 // ── PATCH /api/vehicles/[id]/status ──────────────────────────────────────────
-// Body: { status: "Verified" | "Rejected" | "Pending" | "Sold" }
+// Body: { status: "VERIFIED" | "REJECTED" | "PENDING" | "SOLD" }
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return Response.json({ message: "Unauthorized." }, { status: 401 });
+    }
+
     const { id } = await params;
-    const body = (await request.json()) as { status?: string };
-    const allowed = ["Pending", "Verified", "Rejected", "Sold"];
+    const body = (await request.json()) as {
+      status?: string;
+      rejectionReason?: string;
+      rcVerified?: boolean;
+      photosVerified?: boolean;
+      yardVerified?: boolean;
+      sellerVerified?: boolean;
+    };
+    const allowed = ["PENDING", "VERIFIED", "REJECTED", "SOLD"];
 
     if (!body.status || !allowed.includes(body.status)) {
       return Response.json(
@@ -22,18 +35,54 @@ export async function PATCH(
       );
     }
 
+    const [existing] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+    if (!existing) {
+      return Response.json({ message: "Vehicle not found." }, { status: 404 });
+    }
+
+    const isAdmin = currentUser.accountType === "ADMIN";
+    const isOwner = existing.sellerId === currentUser.id;
+    if (!isAdmin && !(isOwner && body.status === "SOLD")) {
+      return Response.json({ message: "Forbidden." }, { status: 403 });
+    }
+
+    const updates: Partial<typeof vehicles.$inferInsert> = {
+      listingStatus: body.status as typeof vehicles.listingStatus._.data,
+      updatedAt: new Date(),
+    };
+
+    if (body.status === "VERIFIED") {
+      updates.verificationStatus = "VERIFIED";
+      updates.isPublished = true;
+      updates.verifiedAt = new Date();
+      updates.verifiedBy = currentUser.id;
+      updates.rejectionReason = "";
+      updates.sellerVerified = body.sellerVerified ?? existing.sellerVerified;
+      updates.rcVerified = body.rcVerified ?? existing.rcVerified;
+      updates.photosVerified = body.photosVerified ?? existing.photosVerified;
+      updates.yardVerified = body.yardVerified ?? existing.yardVerified;
+    } else if (body.status === "REJECTED") {
+      updates.verificationStatus = "REJECTED";
+      updates.isPublished = false;
+      updates.rejectionReason = body.rejectionReason ?? "Rejected by admin";
+      updates.verifiedBy = currentUser.id;
+      updates.verifiedAt = new Date();
+    } else if (body.status === "SOLD") {
+      updates.isPublished = false;
+    } else if (body.status === "PENDING") {
+      updates.verificationStatus = "PENDING_VERIFICATION";
+      updates.isPublished = false;
+      updates.rejectionReason = "";
+      updates.verifiedBy = null;
+      updates.verifiedAt = null;
+    }
+
     const [updated] = await db
       .update(vehicles)
-      .set({
-        listingStatus: body.status as typeof vehicles.listingStatus._.data,
-        updatedAt: new Date(),
-      })
+      .set(updates)
       .where(eq(vehicles.id, id))
       .returning();
 
-    if (!updated) {
-      return Response.json({ message: "Vehicle not found." }, { status: 404 });
-    }
     return Response.json(updated);
   } catch (error) {
     console.error("PATCH /api/vehicles/[id]/status failed", error);

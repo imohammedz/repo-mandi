@@ -61,7 +61,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <WhatsAppButton phone={vehicle.sellerPhone} text="WhatsApp" className="w-full" />
+          <WhatsAppButton phone={vehicle.sellerPhone} text="WhatsApp" className="w-full" vehicleId={vehicle.id} />
           <Link
             href={`/vehicles/${vehicle.id}`}
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"

@@ -100,7 +100,7 @@ export default function HomePage() {
           <h3 className="text-xl font-semibold">List your vehicle in minutes</h3>
           <p className="mt-2 text-sm text-slate-200">Get buyer leads quickly with verification support and transparent updates.</p>
           <Link
-            href="/seller/add-vehicle"
+            href="/sell"
             className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-slate-900"
           >
             Sell Vehicle
