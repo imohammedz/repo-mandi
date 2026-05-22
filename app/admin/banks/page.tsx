@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 export default async function AdminBanksPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/admin/login");
-  if (user.accountType !== "ADMIN") redirect("/");
+  if (user.accountType !== "ADMIN") redirect("/admin/login");
   return <AdminBanksClient />;
 }
-

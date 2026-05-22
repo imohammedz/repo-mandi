@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect("/admin/login");
-  if (currentUser.accountType !== "ADMIN") redirect("/");
+  if (currentUser.accountType !== "ADMIN") redirect("/admin/login");
 
   const rows = await db.select().from(vehiclesTable).orderBy(desc(vehiclesTable.createdAt));
   const vehicleList = rows.map(dbToVehicle);

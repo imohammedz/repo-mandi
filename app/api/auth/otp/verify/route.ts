@@ -10,6 +10,29 @@ export const runtime = "nodejs";
 const indianMobilePattern = /^\d{10}$/;
 const otpPattern = /^\d{6}$/;
 
+const normalizePhoneToE164 = (rawPhone: string) => {
+  const trimmed = rawPhone.trim();
+  if (!trimmed) return null;
+  const withPrefix = trimmed.startsWith("+") ? trimmed : `+${trimmed}`;
+  const digits = withPrefix.slice(1).replace(/\D/g, "");
+  if (!digits) return null;
+  return `+${digits}`;
+};
+
+const normalizeIndianPhone = (phone: string) => `+91${phone}`;
+
+const getAdminPhoneNumbers = () => {
+  const raw = process.env.ADMIN_PHONE_NUMBERS;
+  if (!raw) return null;
+
+  const normalized = raw
+    .split(",")
+    .map((value) => normalizePhoneToE164(value))
+    .filter((value): value is string => Boolean(value));
+
+  return new Set(normalized);
+};
+
 const getTwilioConfig = () => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -24,9 +47,10 @@ const getTwilioConfig = () => {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { phone?: string; code?: string };
+    const body = (await request.json()) as { phone?: string; code?: string; intent?: "admin" };
     const phone = (body.phone ?? "").replace(/\D/g, "").slice(0, 10);
     const code = (body.code ?? "").replace(/\D/g, "").slice(0, 6);
+    const intent = body.intent === "admin" ? "admin" : "default";
 
     if (!indianMobilePattern.test(phone)) {
       return Response.json({ message: "Enter a valid 10-digit mobile number." }, { status: 400 });
@@ -50,17 +74,57 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid or expired OTP." }, { status: 400 });
     }
 
+    const normalizedPhone = normalizeIndianPhone(phone);
+    const adminPhoneNumbers = getAdminPhoneNumbers();
+
+    if (intent === "admin" && (!adminPhoneNumbers || adminPhoneNumbers.size === 0)) {
+      return Response.json(
+        { message: "Admin login is not configured. Please set ADMIN_PHONE_NUMBERS." },
+        { status: 500 }
+      );
+    }
+
+    const isAuthorizedAdmin = adminPhoneNumbers?.has(normalizedPhone) ?? false;
+
+    if (intent === "admin" && !isAuthorizedAdmin) {
+      return Response.json({ message: "This phone number is not authorized for admin access." }, { status: 403 });
+    }
+
     const [existing] = await db.select().from(users).where(eq(users.phone, phone));
-    const [currentUser] = existing
-      ? [existing]
-      : await db
-          .insert(users)
-          .values({
-            phone,
-            accountType: "BUYER",
-            isProfileComplete: false,
-          })
-          .returning();
+    let currentUser = existing;
+
+    if (isAuthorizedAdmin) {
+      const adminPayload = {
+        accountType: "ADMIN" as const,
+        isProfileComplete: true,
+        isVerified: true,
+        verificationStatus: "VERIFIED" as const,
+        updatedAt: new Date(),
+      };
+
+      [currentUser] = existing
+        ? await db.update(users).set(adminPayload).where(eq(users.id, existing.id)).returning()
+        : await db
+            .insert(users)
+            .values({
+              phone,
+              ...adminPayload,
+            })
+            .returning();
+    } else if (!existing) {
+      [currentUser] = await db
+        .insert(users)
+        .values({
+          phone,
+          accountType: "BUYER",
+          isProfileComplete: false,
+        })
+        .returning();
+    }
+
+    if (!currentUser) {
+      return Response.json({ message: "Failed to complete login. Please try again." }, { status: 500 });
+    }
 
     const token = createSessionToken(currentUser.id, currentUser.phone);
     const response = NextResponse.json({
