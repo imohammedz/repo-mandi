@@ -9,14 +9,16 @@ export const runtime = "nodejs";
 
 const indianMobilePattern = /^\d{10}$/;
 const otpPattern = /^\d{6}$/;
+const e164Pattern = /^\+[1-9]\d{7,14}$/;
 
 const normalizePhoneToE164 = (rawPhone: string) => {
   const trimmed = rawPhone.trim();
-  if (!trimmed) return null;
-  const withPrefix = trimmed.startsWith("+") ? trimmed : `+${trimmed}`;
-  const digits = withPrefix.slice(1).replace(/\D/g, "");
+  if (!trimmed.startsWith("+")) return null;
+  const digits = trimmed.slice(1).replace(/\D/g, "");
   if (!digits) return null;
-  return `+${digits}`;
+  const normalized = `+${digits}`;
+  if (!e164Pattern.test(normalized)) return null;
+  return normalized;
 };
 
 const normalizeIndianPhone = (phone: string) => `+91${phone}`;
@@ -32,6 +34,7 @@ const getAdminPhoneNumbers = () => {
 
   return new Set(normalized);
 };
+const ADMIN_PHONE_NUMBERS = getAdminPhoneNumbers();
 
 const getTwilioConfig = () => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -75,16 +78,14 @@ export async function POST(request: Request) {
     }
 
     const normalizedPhone = normalizeIndianPhone(phone);
-    const adminPhoneNumbers = getAdminPhoneNumbers();
-
-    if (intent === "admin" && (!adminPhoneNumbers || adminPhoneNumbers.size === 0)) {
+    if (intent === "admin" && (!ADMIN_PHONE_NUMBERS || ADMIN_PHONE_NUMBERS.size === 0)) {
       return Response.json(
         { message: "Admin login is not configured. Please set ADMIN_PHONE_NUMBERS." },
         { status: 500 }
       );
     }
 
-    const isAuthorizedAdmin = adminPhoneNumbers?.has(normalizedPhone) ?? false;
+    const isAuthorizedAdmin = ADMIN_PHONE_NUMBERS?.has(normalizedPhone) ?? false;
 
     if (intent === "admin" && !isAuthorizedAdmin) {
       return Response.json({ message: "This phone number is not authorized for admin access." }, { status: 403 });
