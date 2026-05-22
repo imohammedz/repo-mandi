@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Building2, CircleDollarSign, Shield, Truck } from "lucide-react";
+import { BadgeCheck, Building2, CircleDollarSign, Truck } from "lucide-react";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { featuredVehicles, recentVehicles, vehicleCategories } from "@/data/vehicles";
@@ -14,17 +14,6 @@ const trustItems = [
 export default function HomePage() {
   return (
     <div>
-      <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
-            RepoMandi
-          </Link>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-            <Shield className="h-3 w-3" /> Trusted
-          </span>
-        </div>
-      </header>
-
       <main className="space-y-10 px-4 pb-8 pt-6">
         <section className="space-y-4">
           <h1 className="text-3xl font-semibold leading-tight text-slate-900">
