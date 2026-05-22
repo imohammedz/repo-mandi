@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 
 const indianMobilePattern = /^\d{10}$/;
 const otpPattern = /^\d{6}$/;
+// E.164: +[country code][subscriber number], 8-15 digits after "+"
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
 
 const normalizePhoneToE164 = (rawPhone: string) => {
@@ -65,7 +66,10 @@ export async function POST(request: Request) {
 
     if (intent === "admin" && (!ADMIN_PHONE_NUMBERS || ADMIN_PHONE_NUMBERS.size === 0)) {
       return Response.json(
-        { message: "Admin login is not configured. Please set ADMIN_PHONE_NUMBERS." },
+        {
+          message:
+            "Admin authentication requires ADMIN_PHONE_NUMBERS with at least one E.164 phone number.",
+        },
         { status: 500 }
       );
     }
