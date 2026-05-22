@@ -63,6 +63,13 @@ export async function POST(request: Request) {
       return Response.json({ message: "Enter a valid 6-digit OTP." }, { status: 400 });
     }
 
+    if (intent === "admin" && (!ADMIN_PHONE_NUMBERS || ADMIN_PHONE_NUMBERS.size === 0)) {
+      return Response.json(
+        { message: "Admin login is not configured. Please set ADMIN_PHONE_NUMBERS." },
+        { status: 500 }
+      );
+    }
+
     const twilioConfig = getTwilioConfig();
     if (!twilioConfig) {
       return Response.json({ message: "OTP service is not configured." }, { status: 500 });
@@ -78,14 +85,7 @@ export async function POST(request: Request) {
     }
 
     const normalizedPhone = normalizeIndianPhone(phone);
-    if (intent === "admin" && (!ADMIN_PHONE_NUMBERS || ADMIN_PHONE_NUMBERS.size === 0)) {
-      return Response.json(
-        { message: "Admin login is not configured. Please set ADMIN_PHONE_NUMBERS." },
-        { status: 500 }
-      );
-    }
-
-    const isAuthorizedAdmin = ADMIN_PHONE_NUMBERS?.has(normalizedPhone) ?? false;
+    const isAuthorizedAdmin = ADMIN_PHONE_NUMBERS ? ADMIN_PHONE_NUMBERS.has(normalizedPhone) : false;
 
     if (intent === "admin" && !isAuthorizedAdmin) {
       return Response.json({ message: "This phone number is not authorized for admin access." }, { status: 403 });
