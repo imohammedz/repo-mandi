@@ -2,7 +2,11 @@ import Link from "next/link";
 import { BadgeCheck, Building2, CircleDollarSign, Truck } from "lucide-react";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import { featuredVehicles, recentVehicles, vehicleCategories } from "@/data/vehicles";
+import { featuredVehicles, vehicleCategories } from "@/data/vehicles";
+import { db } from "@/lib/db";
+import { vehicles as vehiclesTable } from "@/lib/schema";
+import { dbToVehicle } from "@/lib/mappers";
+import { and, desc, eq } from "drizzle-orm";
 
 const trustItems = [
   { title: "Verified Listings", icon: BadgeCheck },
@@ -11,7 +15,18 @@ const trustItems = [
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const recentListingsRows = await db
+    .select()
+    .from(vehiclesTable)
+    .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
+    .orderBy(desc(vehiclesTable.createdAt))
+    .limit(3);
+
+  const recentVehicles = recentListingsRows.map(dbToVehicle);
+
   return (
     <div>
       <main className="space-y-10 px-4 pb-8 pt-6">
@@ -79,9 +94,13 @@ export default function HomePage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
           <div className="space-y-4">
-            {recentVehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
-            ))}
+            {recentVehicles.length > 0 ? (
+              recentVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No recent listings yet.</p>
+            )}
           </div>
         </section>
 
