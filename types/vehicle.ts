@@ -7,12 +7,19 @@ export type EngineCondition = "GOOD" | "AVERAGE" | "NEEDS_WORK" | "NOT_CHECKED" 
 export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 export type TyreCondition = "NEW" | "GOOD" | "FAIR" | "AROUND_50" | "POOR" | "MIXED" | "UNKNOWN";
 export type AvailabilityStatus = "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN";
+export type AssetConfiguration =
+  | "Complete Vehicle"
+  | "Power / Horse / Tractor / Prime Mover Only"
+  | "Trailer Only"
+  | "Prime Mover + Trailer"
+  | "Other";
 
 export type Vehicle = {
   id: string;
   sellerId?: number | null;
   createdByUserId?: number | null;
   listingType: ListingType;
+  assetConfiguration: AssetConfiguration;
   status?: string;
   title: string;
   type:
@@ -43,6 +50,8 @@ export type Vehicle = {
   bodyDimensions?: string | null;
   trailerType?: string | null;
   trailerLength?: string | null;
+  trailerManufacturer?: string | null;
+  trailerManufacturingMonthYear?: string | null;
   suspensionType?: string | null;
   tyreInspectionReport?: AvailabilityStatus | null;
   tyreCount?: number | null;

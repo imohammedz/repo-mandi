@@ -8,6 +8,12 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 
 type ListingType = "REGULAR" | "REPO";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
+type AssetConfiguration =
+  | "Complete Vehicle"
+  | "Power / Horse / Tractor / Prime Mover Only"
+  | "Trailer Only"
+  | "Prime Mover + Trailer"
+  | "Other";
 
 type SessionUser = {
   id: number;
@@ -26,6 +32,7 @@ type UploadCategory = "frontPhoto" | "backPhoto" | "sidePhoto" | "interiorPhoto"
 
 type FormData = {
   listingType: ListingType | "";
+  assetConfiguration: AssetConfiguration | "";
   vehicleType: string;
   vehicleSubType: string;
   brand: string;
@@ -58,6 +65,10 @@ type FormData = {
   auctionDate: string;
   numberOfAxles: string;
   bodyDimensions: string;
+  trailerType: string;
+  trailerLength: string;
+  trailerManufacturer: string;
+  trailerManufacturingMonthYear: string;
   suspensionType: string;
   tyreInspectionReport: string;
   tyreCount: string;
@@ -112,6 +123,34 @@ const brands = [
   "MAN",
   "VE Commercial Vehicles",
   "Others",
+];
+
+const assetConfigurations: AssetConfiguration[] = [
+  "Complete Vehicle",
+  "Power / Horse / Tractor / Prime Mover Only",
+  "Trailer Only",
+  "Prime Mover + Trailer",
+  "Other",
+];
+
+const trailerTypeOptions = [
+  "Flatbed Trailer",
+  "Semi Trailer",
+  "Low Bed Trailer",
+  "Body Trailer",
+  "Tipper Trailer",
+  "Bulker Trailer",
+  "Tanker Trailer",
+  "Skeletal Trailer",
+  "Container Trailer",
+  "Other Trailer",
+];
+
+const trailerSuspensionOptions = [
+  "Leaf Spring",
+  "Air Suspension / Balloon",
+  "Mixed",
+  "Unknown",
 ];
 
 const financeCompanies = [
@@ -178,6 +217,7 @@ const TOTAL_STEPS = 10;
 
 const emptyForm: FormData = {
   listingType: "",
+  assetConfiguration: "",
   vehicleType: "",
   vehicleSubType: "",
   brand: "",
@@ -210,6 +250,10 @@ const emptyForm: FormData = {
   auctionDate: "",
   numberOfAxles: "",
   bodyDimensions: "",
+  trailerType: "",
+  trailerLength: "",
+  trailerManufacturer: "",
+  trailerManufacturingMonthYear: "",
   suspensionType: "",
   tyreInspectionReport: "",
   tyreCount: "",
@@ -376,19 +420,31 @@ export default function AddVehiclePage() {
     return { canRegular: true, canRepo: false };
   }, [user]);
 
+  const isTrailerOnly = form.assetConfiguration === "Trailer Only";
+  const hasTrailerConfiguration =
+    form.assetConfiguration === "Trailer Only" || form.assetConfiguration === "Prime Mover + Trailer";
+  const appliesTrailerLogic = form.vehicleType === "Trailer" || hasTrailerConfiguration;
+  const requiresPoweredFields = !isTrailerOnly;
+  const requiresTrailerFields = appliesTrailerLogic;
+  const requiresInteriorPhoto = !isTrailerOnly;
+
   const validateStep = (targetStep: number) => {
     if (targetStep === 1 && !form.listingType) return "Select listing type.";
 
     if (targetStep === 2) {
-      if (!form.vehicleType || !form.brand || !form.model || !form.year) {
-        return "Vehicle type, brand, model, and year are required.";
+      if (!form.assetConfiguration || !form.vehicleType) {
+        return "Asset configuration and vehicle type are required.";
       }
-      if (!form.registrationState || !form.vehicleRegistrationNumber.trim()) {
+      if (requiresPoweredFields && (!form.brand || !form.model || !form.year)) {
+        return "Brand, model, and year are required for powered vehicle listings.";
+      }
+      if (requiresPoweredFields && (!form.registrationState || !form.vehicleRegistrationNumber.trim())) {
         return "Registration state and number are required.";
       }
     }
 
     if (targetStep === 3) {
+      if (isTrailerOnly) return "";
       if (!form.kmMeterStatus || !form.runningCondition) return "Usage fields are required.";
       if (form.kmMeterStatus === "WORKING" && !form.kmDriven.trim()) {
         return "KM driven is required when meter is working.";
@@ -406,14 +462,25 @@ export default function AddVehiclePage() {
     }
 
     if (targetStep === 6) {
-      if (!form.frontPhoto || !form.backPhoto || !form.sidePhoto || !form.interiorPhoto) {
-        return "Front, back, side, and interior photos are required.";
+      if (!form.frontPhoto || !form.backPhoto || !form.sidePhoto || (requiresInteriorPhoto && !form.interiorPhoto)) {
+        return requiresInteriorPhoto
+          ? "Front, back, side, and interior photos are required."
+          : "Front, back, and side photos are required.";
       }
     }
 
     if (targetStep === 7 && form.listingType === "REPO") {
       if (!form.financeCompany || !form.repoStatus || !form.yardName.trim()) {
         return "Finance company, repo status, and yard name are required for REPO listings.";
+      }
+    }
+
+    if (targetStep === 8 && requiresTrailerFields) {
+      if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim() || !form.bodyDimensions.trim()) {
+        return "Trailer type, trailer length, number of axles, and body dimensions are required.";
+      }
+      if (form.assetConfiguration === "Prime Mover + Trailer" && (!form.suspensionType || !form.abs)) {
+        return "Suspension type and ABS are required for Prime Mover + Trailer.";
       }
     }
 
@@ -465,7 +532,7 @@ export default function AddVehiclePage() {
   };
 
   const handleSubmit = async () => {
-    const stepError = validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5) || validateStep(6) || validateStep(7);
+    const stepError = validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5) || validateStep(6) || validateStep(7) || validateStep(8);
     if (stepError) {
       setError(stepError);
       return;
@@ -598,43 +665,66 @@ export default function AddVehiclePage() {
       {step === 2 ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 2: Vehicle Basics</h1>
+          <SelectField
+            label="Asset Configuration"
+            value={form.assetConfiguration}
+            options={assetConfigurations}
+            onChange={(value) => update("assetConfiguration", value as AssetConfiguration)}
+            required
+          />
           <SelectField label="Vehicle Type" value={form.vehicleType} options={vehicleTypes} onChange={(value) => update("vehicleType", value)} required />
           <TextField label="Vehicle Sub-Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="Trailer subtype, tanker subtype, etc." />
-          <SelectField label="Brand" value={form.brand} options={brands} onChange={(value) => update("brand", value)} required />
-          <TextField label="Model" value={form.model} onChange={(value) => update("model", value)} required placeholder="e.g. 407, 1109" />
-          <SelectField label="Year" value={form.year} options={years} onChange={(value) => update("year", value)} required />
-          <SelectField label="Registration State" value={form.registrationState} options={indiaStates} onChange={(value) => update("registrationState", value)} required />
-          <TextField label="Vehicle Registration Number" value={form.vehicleRegistrationNumber} onChange={(value) => update("vehicleRegistrationNumber", value.toUpperCase())} required placeholder="MH-12-AB-1234" />
+          {requiresPoweredFields ? (
+            <>
+              <SelectField label="Brand" value={form.brand} options={brands} onChange={(value) => update("brand", value)} required />
+              <TextField label="Model" value={form.model} onChange={(value) => update("model", value)} required placeholder="e.g. 407, 1109" />
+              <SelectField label="Year" value={form.year} options={years} onChange={(value) => update("year", value)} required />
+              <SelectField label="Registration State" value={form.registrationState} options={indiaStates} onChange={(value) => update("registrationState", value)} required />
+              <TextField label="Vehicle Registration Number" value={form.vehicleRegistrationNumber} onChange={(value) => update("vehicleRegistrationNumber", value.toUpperCase())} required placeholder="MH-12-AB-1234" />
+            </>
+          ) : (
+            <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              Powered vehicle registration fields are optional for Trailer Only listings.
+            </p>
+          )}
         </section>
       ) : null}
 
       {step === 3 ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 3: Registration &amp; Usage</h1>
-          <SelectField
-            label="KM Meter Status"
-            value={form.kmMeterStatus}
-            options={["WORKING", "NOT_WORKING", "UNKNOWN"]}
-            onChange={(value) => update("kmMeterStatus", value as KmMeterStatus)}
-            required
-          />
-          {form.kmMeterStatus === "WORKING" ? (
-            <TextField
-              label="KM Driven"
-              value={form.kmDriven}
-              onChange={(value) => update("kmDriven", value.replace(/\D/g, ""))}
-              required
-              placeholder="1,23,456 km"
-              type="tel"
-            />
-          ) : null}
-          <SelectField
-            label="Running Condition"
-            value={form.runningCondition}
-            options={["RUNNING", "NOT_RUNNING", "UNKNOWN"]}
-            onChange={(value) => update("runningCondition", value as "RUNNING" | "NOT_RUNNING" | "UNKNOWN")}
-            required
-          />
+          {isTrailerOnly ? (
+            <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              KM meter and running-condition fields are skipped for Trailer Only listings.
+            </p>
+          ) : (
+            <>
+              <SelectField
+                label="KM Meter Status"
+                value={form.kmMeterStatus}
+                options={["WORKING", "NOT_WORKING", "UNKNOWN"]}
+                onChange={(value) => update("kmMeterStatus", value as KmMeterStatus)}
+                required
+              />
+              {form.kmMeterStatus === "WORKING" ? (
+                <TextField
+                  label="KM Driven"
+                  value={form.kmDriven}
+                  onChange={(value) => update("kmDriven", value.replace(/\D/g, ""))}
+                  required
+                  placeholder="1,23,456 km"
+                  type="tel"
+                />
+              ) : null}
+              <SelectField
+                label="Running Condition"
+                value={form.runningCondition}
+                options={["RUNNING", "NOT_RUNNING", "UNKNOWN"]}
+                onChange={(value) => update("runningCondition", value as "RUNNING" | "NOT_RUNNING" | "UNKNOWN")}
+                required
+              />
+            </>
+          )}
         </section>
       ) : null}
 
@@ -672,12 +762,14 @@ export default function AddVehiclePage() {
               placeholder="Example: Engine running. Cabin work needed."
             />
           </label>
-          <SelectField
-            label="Engine Condition"
-            value={form.engineCondition}
-            options={["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"]}
-            onChange={(value) => update("engineCondition", value)}
-          />
+          {!isTrailerOnly ? (
+            <SelectField
+              label="Engine Condition"
+              value={form.engineCondition}
+              options={["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"]}
+              onChange={(value) => update("engineCondition", value)}
+            />
+          ) : null}
           <SelectField
             label="Needs Towing"
             value={form.needsTowing}
@@ -696,19 +788,25 @@ export default function AddVehiclePage() {
       {step === 6 ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 6: Photos</h1>
-          <p className="text-sm text-slate-500">Front, back, side, and interior photos are required.</p>
+          <p className="text-sm text-slate-500">
+            {requiresInteriorPhoto
+              ? "Front, back, side, and interior photos are required."
+              : "Front, back, and side photos are required. Interior photo is optional for Trailer Only."}
+          </p>
 
           {(
             [
-              { key: "frontPhoto", label: "Front Photo" },
-              { key: "backPhoto", label: "Back Photo" },
-              { key: "sidePhoto", label: "Side Photo" },
-              { key: "interiorPhoto", label: "Interior Photo" },
-            ] as { key: UploadCategory; label: string }[]
+              { key: "frontPhoto", label: "Front Photo", required: true },
+              { key: "backPhoto", label: "Back Photo", required: true },
+              { key: "sidePhoto", label: "Side Photo", required: true },
+              { key: "interiorPhoto", label: "Interior Photo", required: requiresInteriorPhoto },
+            ] as { key: UploadCategory; label: string; required: boolean }[]
           ).map((item) => (
             <div key={item.key} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-700">{item.label} <span className="text-rose-500">*</span></p>
+                <p className="text-sm font-medium text-slate-700">
+                  {item.label} {item.required ? <span className="text-rose-500">*</span> : <span className="text-slate-400">(Optional)</span>}
+                </p>
                 <button
                   type="button"
                   onClick={() => fileRefs[item.key].current?.click()}
@@ -762,13 +860,55 @@ export default function AddVehiclePage() {
 
       {step === 8 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 8: Recommended Optional Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step 8: Trailer &amp; Optional Details</h1>
+          {requiresTrailerFields ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Trailer specs are required for this asset configuration.
+            </div>
+          ) : null}
+          {requiresTrailerFields ? (
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Trailer Specifications</summary>
+              <div className="mt-4 space-y-3">
+                <SelectField label="Trailer Type" value={form.trailerType} options={trailerTypeOptions} onChange={(value) => update("trailerType", value)} required />
+                <TextField label="Trailer Length" value={form.trailerLength} onChange={(value) => update("trailerLength", value)} required placeholder="e.g. 32 ft" />
+                <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" required />
+                <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} required placeholder="e.g. 32x8x8 ft" />
+                <SelectField
+                  label="Suspension Type"
+                  value={form.suspensionType}
+                  options={trailerSuspensionOptions}
+                  onChange={(value) => update("suspensionType", value)}
+                  required={form.assetConfiguration === "Prime Mover + Trailer"}
+                />
+                <SelectField
+                  label="ABS"
+                  value={form.abs}
+                  options={["YES", "NO", "UNKNOWN"]}
+                  onChange={(value) => update("abs", value)}
+                  required={form.assetConfiguration === "Prime Mover + Trailer"}
+                />
+                <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} placeholder="Optional" />
+                <TextField label="Trailer Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} placeholder="Optional" />
+                <TextField
+                  label="Trailer Manufacturing Month-Year"
+                  value={form.trailerManufacturingMonthYear}
+                  onChange={(value) => update("trailerManufacturingMonthYear", value)}
+                  placeholder="e.g. 03/2021"
+                />
+              </div>
+            </details>
+          ) : null}
           <details className="rounded-xl border border-slate-200 bg-white p-4" open>
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Vehicle, Tyre &amp; Roadworthiness</summary>
             <div className="mt-4 space-y-3">
-              <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
-              <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} />
-              <TextField label="Suspension Type" value={form.suspensionType} onChange={(value) => update("suspensionType", value)} placeholder="Leaf / Balloon by axle" />
+              {!requiresTrailerFields ? (
+                <>
+                  <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
+                  <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} />
+                  <TextField label="Suspension Type" value={form.suspensionType} onChange={(value) => update("suspensionType", value)} placeholder="Leaf / Balloon by axle" />
+                </>
+              ) : null}
               <SelectField label="Tyre Inspection Report" value={form.tyreInspectionReport} options={["AVAILABLE", "NOT_AVAILABLE"]} onChange={(value) => update("tyreInspectionReport", value)} />
               <TextField label="Tyre Count" value={form.tyreCount} onChange={(value) => update("tyreCount", value.replace(/\D/g, ""))} type="tel" />
               <TextField label="Current Tyre Count" value={form.currentTyreCount} onChange={(value) => update("currentTyreCount", value.replace(/\D/g, ""))} type="tel" />
@@ -803,10 +943,14 @@ export default function AddVehiclePage() {
               <SelectField label="NOC Status" value={form.nocStatus} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("nocStatus", value)} />
               <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
               <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
+              {!requiresTrailerFields ? (
+                <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
+              ) : null}
               <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
               <SelectField label="GPS Installed" value={form.gpsInstalled} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("gpsInstalled", value)} />
-              <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
+              {!requiresTrailerFields ? (
+                <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
+              ) : null}
               <SelectField label="Fleet Management Software" value={form.fleetManagementSoftwareAvailable} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
             </div>
           </details>

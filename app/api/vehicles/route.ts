@@ -26,6 +26,15 @@ type VehicleType = (typeof VALID_TYPES)[number];
 const VALID_LISTING_TYPES = ["REGULAR", "REPO"] as const;
 type ListingType = (typeof VALID_LISTING_TYPES)[number];
 
+const VALID_ASSET_CONFIGURATIONS = [
+  "Complete Vehicle",
+  "Power / Horse / Tractor / Prime Mover Only",
+  "Trailer Only",
+  "Prime Mover + Trailer",
+  "Other",
+] as const;
+type AssetConfiguration = (typeof VALID_ASSET_CONFIGURATIONS)[number];
+
 const VALID_KM_METER_STATUS = ["WORKING", "NOT_WORKING", "UNKNOWN"] as const;
 type KmMeterStatus = (typeof VALID_KM_METER_STATUS)[number];
 
@@ -95,6 +104,7 @@ export async function GET(request: Request) {
     const brand = url.searchParams.get("brand");
     const financeCompany = url.searchParams.get("financeCompany");
     const listingType = url.searchParams.get("listingType");
+    const assetConfiguration = url.searchParams.get("assetConfiguration");
     const mine = url.searchParams.get("mine") === "1";
     const includeAll = url.searchParams.get("includeAll") === "1";
     const verifiedOnly = url.searchParams.get("verifiedOnly") === "1";
@@ -111,6 +121,13 @@ export async function GET(request: Request) {
     if (listingType && !VALID_LISTING_TYPES.includes(listingType as ListingType)) {
       return Response.json(
         { message: `listingType must be one of: ${VALID_LISTING_TYPES.join(", ")}.` },
+        { status: 400 }
+      );
+    }
+
+    if (assetConfiguration && !VALID_ASSET_CONFIGURATIONS.includes(assetConfiguration as AssetConfiguration)) {
+      return Response.json(
+        { message: `assetConfiguration must be one of: ${VALID_ASSET_CONFIGURATIONS.join(", ")}.` },
         { status: 400 }
       );
     }
@@ -134,6 +151,7 @@ export async function GET(request: Request) {
 
     if (type) conditions.push(eq(vehicles.type, type));
     if (listingType) conditions.push(eq(vehicles.listingType, listingType as ListingType));
+    if (assetConfiguration) conditions.push(eq(vehicles.assetConfiguration, assetConfiguration as AssetConfiguration));
     if (state) conditions.push(eq(vehicles.state, state));
     if (city) conditions.push(ilike(vehicles.city, `%${city}%`));
     if (brand) conditions.push(ilike(vehicles.brand, `%${brand}%`));
@@ -147,7 +165,8 @@ export async function GET(request: Request) {
           ilike(vehicles.title, `%${query}%`),
           ilike(vehicles.brand, `%${query}%`),
           ilike(vehicles.model, `%${query}%`),
-          ilike(vehicles.city, `%${query}%`)
+          ilike(vehicles.city, `%${query}%`),
+          ilike(vehicles.vehicleOrYardLocation, `%${query}%`)
         )
       );
     }
@@ -211,6 +230,12 @@ export async function POST(request: Request) {
       return Response.json({ message: "Your role can only create repo listings." }, { status: 403 });
     }
 
+    const assetConfigurationRaw = toSafeString(body.assetConfiguration);
+    const assetConfiguration = (assetConfigurationRaw || "Complete Vehicle") as AssetConfiguration;
+    if (!VALID_ASSET_CONFIGURATIONS.includes(assetConfiguration)) {
+      return Response.json({ message: "Invalid assetConfiguration." }, { status: 400 });
+    }
+
     const vehicleType = toSafeString(body.vehicleType || body.type) as VehicleType;
     const brand = toSafeString(body.brand);
     const model = toSafeString(body.model);
@@ -229,25 +254,45 @@ export async function POST(request: Request) {
     const interiorPhoto = toSafeString(body.interiorPhoto);
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
-    const year = Number(body.year);
+    const providedYear = Number(body.year);
+    const year = Number.isInteger(providedYear) && providedYear > 0 ? providedYear : new Date().getFullYear();
     const expectedPrice = toNumberOrNull(body.expectedPrice ?? body.price);
     const kmMeterStatus = (toSafeString(body.kmMeterStatus) || "UNKNOWN") as KmMeterStatus;
     const runningCondition = parseRunningCondition(body.runningCondition ?? body.condition);
     const kmDriven = toNumberOrNull(body.kmDriven);
+    const trailerType = toSafeString(body.trailerType);
+    const trailerLength = toSafeString(body.trailerLength);
+    const numberOfAxles = toNumberOrNull(body.numberOfAxles);
+    const bodyDimensions = toSafeString(body.bodyDimensions);
+    const suspensionType = toSafeString(body.suspensionType);
+    const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
+    const isTrailerOnly = assetConfiguration === "Trailer Only";
+    const hasTrailerConfiguration = assetConfiguration === "Trailer Only" || assetConfiguration === "Prime Mover + Trailer";
+    const appliesTrailerLogic = vehicleType === "Trailer" || hasTrailerConfiguration;
+    const requiresPoweredFields = !isTrailerOnly;
+    const requiresTrailerFields = appliesTrailerLogic;
+    const requiresInteriorPhoto = !isTrailerOnly;
 
     const financeCompany = toSafeString(body.financeCompany);
     const repoStatus = toSafeString(body.repoStatus || "Ready For Sale");
     const yardName = toSafeString(body.yardName);
 
     const alwaysRequiredMissing: string[] = [];
+    if (!assetConfiguration) alwaysRequiredMissing.push("assetConfiguration");
     if (!vehicleType) alwaysRequiredMissing.push("vehicleType");
-    if (!brand) alwaysRequiredMissing.push("brand");
-    if (!model) alwaysRequiredMissing.push("model");
-    if (!year) alwaysRequiredMissing.push("year");
-    if (!registrationState) alwaysRequiredMissing.push("registrationState");
-    if (!registrationNumber) alwaysRequiredMissing.push("vehicleRegistrationNumber");
-    if (!kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
-    if (!runningCondition) alwaysRequiredMissing.push("runningCondition");
+    if (requiresPoweredFields && !brand) alwaysRequiredMissing.push("brand");
+    if (requiresPoweredFields && !model) alwaysRequiredMissing.push("model");
+    if (requiresPoweredFields && !year) alwaysRequiredMissing.push("year");
+    if (requiresPoweredFields && !registrationState) alwaysRequiredMissing.push("registrationState");
+    if (requiresPoweredFields && !registrationNumber) alwaysRequiredMissing.push("vehicleRegistrationNumber");
+    if (requiresPoweredFields && !kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
+    if (requiresPoweredFields && !runningCondition) alwaysRequiredMissing.push("runningCondition");
+    if (requiresTrailerFields && !trailerType) alwaysRequiredMissing.push("trailerType");
+    if (requiresTrailerFields && !trailerLength) alwaysRequiredMissing.push("trailerLength");
+    if (requiresTrailerFields && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
+    if (requiresTrailerFields && !bodyDimensions) alwaysRequiredMissing.push("bodyDimensions");
+    if (assetConfiguration === "Prime Mover + Trailer" && !suspensionType) alwaysRequiredMissing.push("suspensionType");
+    if (assetConfiguration === "Prime Mover + Trailer" && !abs) alwaysRequiredMissing.push("abs");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
@@ -255,7 +300,7 @@ export async function POST(request: Request) {
     if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");
     if (!backPhoto) alwaysRequiredMissing.push("backPhoto");
     if (!sidePhoto) alwaysRequiredMissing.push("sidePhoto");
-    if (!interiorPhoto) alwaysRequiredMissing.push("interiorPhoto");
+    if (requiresInteriorPhoto && !interiorPhoto) alwaysRequiredMissing.push("interiorPhoto");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(
@@ -276,7 +321,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid runningCondition." }, { status: 400 });
     }
 
-    if (!regNumberLooksValid(registrationNumber)) {
+    if (requiresPoweredFields && !regNumberLooksValid(registrationNumber)) {
       return Response.json(
         { message: "Invalid vehicleRegistrationNumber format. Example: MH-12-AB-1234." },
         { status: 400 }
@@ -284,7 +329,7 @@ export async function POST(request: Request) {
     }
 
     const currentYear = new Date().getFullYear();
-    if (!Number.isInteger(year) || year < MIN_VEHICLE_YEAR || year > currentYear) {
+    if (requiresPoweredFields && (!Number.isInteger(year) || year < MIN_VEHICLE_YEAR || year > currentYear)) {
       return Response.json({ message: `Year must be between ${MIN_VEHICLE_YEAR} and current year.` }, { status: 400 });
     }
 
@@ -292,7 +337,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "expectedPrice must be a positive number." }, { status: 400 });
     }
 
-    if (kmMeterStatus === "WORKING" && (kmDriven === null || kmDriven < 0)) {
+    if (requiresPoweredFields && kmMeterStatus === "WORKING" && (kmDriven === null || kmDriven < 0)) {
       return Response.json({ message: "kmDriven is required when km meter is working." }, { status: 400 });
     }
 
@@ -319,6 +364,7 @@ export async function POST(request: Request) {
         sellerId: currentUser.id,
         createdByUserId: currentUser.id,
         listingType,
+        assetConfiguration,
         status: "PENDING",
         title,
         type: vehicleType,
@@ -329,15 +375,17 @@ export async function POST(request: Request) {
         vehicleRegistrationNumber: registrationNumber,
         registrationState,
         kmMeterStatus,
-        kmDriven: kmMeterStatus === "WORKING" ? kmDriven : null,
-        runningCondition,
+        kmDriven: requiresPoweredFields && kmMeterStatus === "WORKING" ? kmDriven : null,
+        runningCondition: requiresPoweredFields ? runningCondition : "UNKNOWN",
         fuelType: "Diesel",
-        numberOfAxles: toNumberOrNull(body.numberOfAxles),
+        numberOfAxles,
         bodyType: toSafeString(body.bodyType) || null,
-        bodyDimensions: toSafeString(body.bodyDimensions) || null,
-        trailerType: toSafeString(body.trailerType) || null,
-        trailerLength: toSafeString(body.trailerLength) || null,
-        suspensionType: toSafeString(body.suspensionType) || null,
+        bodyDimensions: bodyDimensions || null,
+        trailerType: trailerType || null,
+        trailerLength: trailerLength || null,
+        trailerManufacturer: toSafeString(body.trailerManufacturer) || null,
+        trailerManufacturingMonthYear: toSafeString(body.trailerManufacturingMonthYear) || null,
+        suspensionType: suspensionType || null,
         tyreInspectionReport: (toSafeString(body.tyreInspectionReport).toUpperCase() || null) as
           | "AVAILABLE"
           | "NOT_AVAILABLE"
@@ -424,7 +472,7 @@ export async function POST(request: Request) {
         trailerNumber: toSafeString(body.trailerNumber),
         gvwTonnes: toSafeString(body.gvwTonnes),
         gpsInstalled: (toSafeString(body.gpsInstalled).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
-        abs: (toSafeString(body.abs).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
+        abs: (abs || null) as "YES" | "NO" | "UNKNOWN" | null,
         fleetManagementSoftwareAvailable: (toSafeString(body.fleetManagementSoftwareAvailable).toUpperCase().replace(/\s+/g, "_") || null) as
           | "AVAILABLE"
           | "NOT_AVAILABLE"
@@ -439,7 +487,7 @@ export async function POST(request: Request) {
         photosVerified: false,
         yardVerified: false,
         sellerVerified: currentUser.isVerified,
-        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || !interiorPhoto,
+        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || (requiresInteriorPhoto && !interiorPhoto),
         priceTooLow: expectedPrice < MIN_REASONABLE_PRICE,
         duplicateRegistration: false,
         newSeller: !currentUser.isVerified,
