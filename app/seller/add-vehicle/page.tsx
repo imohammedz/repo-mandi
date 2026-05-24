@@ -403,7 +403,13 @@ export default function AddVehiclePage() {
   };
 
   const update = <T extends keyof FormData>(key: T, value: FormData[T]) => {
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setForm((previous) => {
+      const next = { ...previous, [key]: value };
+      if (key === "assetConfiguration" && value === "Trailer Only") {
+        next.interiorPhoto = "";
+      }
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -468,6 +474,7 @@ export default function AddVehiclePage() {
   // For non-trailer flows, keep trailer-linked metadata fields optional unless the prime-mover-only hide rule applies.
   const showOptionalTrailerLinkedFieldsInStep6 = !requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
   const requiresInteriorPhoto = !isTrailerOnly;
+  const disableInteriorPhotoUpload = isTrailerOnly;
   const assetConfigurationContext =
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
       ? assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
@@ -570,6 +577,7 @@ export default function AddVehiclePage() {
 
   const uploadSinglePhoto = async (category: UploadCategory, file: File | null) => {
     if (!file) return;
+    if (category === "interiorPhoto" && disableInteriorPhotoUpload) return;
     setUploadingField(category);
     setError("");
 
@@ -1025,24 +1033,36 @@ export default function AddVehiclePage() {
 
           {(
             [
-              { key: "frontPhoto", label: "Front Photo", required: true },
-              { key: "backPhoto", label: "Back Photo", required: true },
-              { key: "sidePhoto", label: "Side Photo", required: true },
-              { key: "interiorPhoto", label: "Interior Photo", required: requiresInteriorPhoto },
-            ] as { key: UploadCategory; label: string; required: boolean }[]
+              { key: "frontPhoto", label: "Front Photo", required: true, disabled: false },
+              { key: "backPhoto", label: "Back Photo", required: true, disabled: false },
+              { key: "sidePhoto", label: "Side Photo", required: true, disabled: false },
+              { key: "interiorPhoto", label: "Interior Photo", required: requiresInteriorPhoto, disabled: disableInteriorPhotoUpload },
+            ] as { key: UploadCategory; label: string; required: boolean; disabled: boolean }[]
           ).map((item) => (
-            <div key={item.key} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+            <div
+              key={item.key}
+              className={`space-y-2 rounded-xl border p-3 ${item.disabled ? "border-slate-200 bg-slate-50" : "border-slate-200 bg-white"}`}
+            >
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-700">
-                  {item.label} {item.required ? <span className="text-rose-500">*</span> : <span className="text-slate-400">(Optional)</span>}
+                  {item.label}{" "}
+                  {item.disabled ? (
+                    <span className="text-slate-400">(Not applicable for Trailer Only)</span>
+                  ) : item.required ? (
+                    <span className="text-rose-500">*</span>
+                  ) : (
+                    <span className="text-slate-400">(Optional)</span>
+                  )}
                 </p>
                 <button
                   type="button"
                   onClick={() => fileRefs[item.key].current?.click()}
-                  disabled={uploadingField === item.key}
-                  className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+                  disabled={item.disabled || uploadingField === item.key}
+                  className={`inline-flex min-h-9 items-center rounded-lg border px-3 text-xs font-semibold ${
+                    item.disabled ? "border-slate-200 bg-slate-100 text-slate-400" : "border-slate-200 text-slate-700"
+                  }`}
                 >
-                  {uploadingField === item.key ? "Uploading..." : form[item.key] ? "Replace" : "Upload"}
+                  {item.disabled ? "Upload disabled" : uploadingField === item.key ? "Uploading..." : form[item.key] ? "Replace" : "Upload"}
                 </button>
               </div>
               <input
@@ -1050,13 +1070,18 @@ export default function AddVehiclePage() {
                 type="file"
                 accept="image/*"
                 className="hidden"
+                disabled={item.disabled}
                 onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)}
               />
               {form[item.key] ? (
                 <Image src={form[item.key]} alt={item.label} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
               ) : (
-                <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
-                  No image uploaded
+                <div
+                  className={`flex h-32 items-center justify-center rounded-lg border border-dashed text-center text-xs ${
+                    item.disabled ? "border-slate-200 bg-slate-100 text-slate-400" : "border-slate-200 text-slate-400"
+                  }`}
+                >
+                  {item.disabled ? "Interior photo upload is disabled for Trailer Only." : "No image uploaded"}
                 </div>
               )}
             </div>
