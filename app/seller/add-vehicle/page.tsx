@@ -458,6 +458,9 @@ export default function AddVehiclePage() {
   const appliesTrailerLogic = form.vehicleType === "Trailer" || hasTrailerConfiguration;
   const requiresPoweredFields = !isTrailerOnly;
   const requiresTrailerFields = appliesTrailerLogic;
+  const isNonRepoPrimeMoverOnly =
+    form.listingType !== "REPO" && form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
+  const showTrailerFieldsInStep6 = requiresTrailerFields && !isNonRepoPrimeMoverOnly;
   const requiresInteriorPhoto = !isTrailerOnly;
   const assetConfigurationContext =
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
@@ -519,7 +522,7 @@ export default function AddVehiclePage() {
     }
 
     // Step 6: Optional Vehicle Details — trailer specs required when applicable
-    if (targetStep === STEP_DETAILS && requiresTrailerFields) {
+    if (targetStep === STEP_DETAILS && showTrailerFieldsInStep6) {
       if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim() || !form.bodyDimensions.trim()) {
         return "Trailer type, trailer length, number of axles, and body dimensions are required.";
       }
@@ -922,12 +925,12 @@ export default function AddVehiclePage() {
       {step === 6 ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 6: Optional Vehicle Details</h1>
-          {requiresTrailerFields ? (
+          {showTrailerFieldsInStep6 ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               Trailer specs are required for this asset configuration.
             </div>
           ) : null}
-          {requiresTrailerFields ? (
+          {showTrailerFieldsInStep6 ? (
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Trailer Specifications</summary>
               <div className="mt-4 space-y-3">
@@ -967,7 +970,9 @@ export default function AddVehiclePage() {
                 <>
                   <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
                   <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} />
-                  <TextField label="Suspension Type" value={form.suspensionType} onChange={(value) => update("suspensionType", value)} placeholder="Leaf / Balloon by axle" />
+                  {!isNonRepoPrimeMoverOnly ? (
+                    <TextField label="Suspension Type" value={form.suspensionType} onChange={(value) => update("suspensionType", value)} placeholder="Leaf / Balloon by axle" />
+                  ) : null}
                 </>
               ) : null}
               <SelectField label="Tyre Inspection Report" value={form.tyreInspectionReport} options={["AVAILABLE", "NOT_AVAILABLE"]} onChange={(value) => update("tyreInspectionReport", value)} />
@@ -987,15 +992,17 @@ export default function AddVehiclePage() {
               <SelectField label="NOC Status" value={form.nocStatus} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("nocStatus", value)} />
               <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
               <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              {!requiresTrailerFields ? (
+              {!requiresTrailerFields && !isNonRepoPrimeMoverOnly ? (
                 <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
               ) : null}
               <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
               <SelectField label="GPS Installed" value={form.gpsInstalled} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("gpsInstalled", value)} />
-              {!requiresTrailerFields ? (
+              {!requiresTrailerFields && !isNonRepoPrimeMoverOnly ? (
                 <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
               ) : null}
-              <SelectField label="Fleet Management Software" value={form.fleetManagementSoftwareAvailable} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
+              {!isNonRepoPrimeMoverOnly ? (
+                <SelectField label="Fleet Management Software" value={form.fleetManagementSoftwareAvailable} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
+              ) : null}
             </div>
           </details>
         </section>
