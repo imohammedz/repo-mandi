@@ -40,6 +40,7 @@ type KmMeterStatus = (typeof VALID_KM_METER_STATUS)[number];
 
 const VALID_RUNNING_CONDITIONS = ["RUNNING", "NOT_RUNNING", "UNKNOWN"] as const;
 type RunningCondition = (typeof VALID_RUNNING_CONDITIONS)[number];
+const VALID_AVAILABILITY_STATUS = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"] as const;
 
 const VALID_REPO_STATUS = [
   "Bank Seized",
@@ -266,6 +267,7 @@ export async function POST(request: Request) {
     const bodyDimensions = toSafeString(body.bodyDimensions);
     const suspensionType = toSafeString(body.suspensionType);
     const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
+    const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
     const isTrailerOnly = assetConfiguration === "Trailer Only";
     const hasTrailerConfiguration = assetConfiguration === "Trailer Only" || assetConfiguration === "Prime Mover + Trailer";
     const appliesTrailerLogic = vehicleType === "Trailer" || hasTrailerConfiguration;
@@ -341,6 +343,10 @@ export async function POST(request: Request) {
       return Response.json({ message: "kmDriven is required when km meter is working." }, { status: 400 });
     }
 
+    if (tyreInspectionReport && !VALID_AVAILABILITY_STATUS.includes(tyreInspectionReport as (typeof VALID_AVAILABILITY_STATUS)[number])) {
+      return Response.json({ message: "Invalid tyreInspectionReport." }, { status: 400 });
+    }
+
     if (listingType === "REPO") {
       if (!financeCompany || !repoStatus || !yardName) {
         return Response.json({ message: "financeCompany, repoStatus, and yardName are required for repo listings." }, { status: 400 });
@@ -386,11 +392,7 @@ export async function POST(request: Request) {
         trailerManufacturer: toSafeString(body.trailerManufacturer) || null,
         trailerManufacturingMonthYear: toSafeString(body.trailerManufacturingMonthYear) || null,
         suspensionType: suspensionType || null,
-        tyreInspectionReport: (toSafeString(body.tyreInspectionReport).toUpperCase() || null) as
-          | "AVAILABLE"
-          | "NOT_AVAILABLE"
-          | "UNKNOWN"
-          | null,
+        tyreInspectionReport: (tyreInspectionReport || null) as "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN" | null,
         tyreCount: toNumberOrNull(body.tyreCount),
         currentTyreCount: toNumberOrNull(body.currentTyreCount),
         tyreCondition: (toSafeString(body.tyreCondition)
