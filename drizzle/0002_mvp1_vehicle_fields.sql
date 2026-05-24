@@ -157,6 +157,9 @@ SET
   "expected_price" = COALESCE(NULLIF("expected_price", 0), "price")
 WHERE true;
 
+-- This is a one-time backfill for legacy rows.
+-- Ongoing writes set vehicle_or_yard_location directly from API payload.
+
 CREATE TABLE IF NOT EXISTS "vehicle_media" (
   "id" serial PRIMARY KEY NOT NULL,
   "vehicle_id" varchar(100) NOT NULL,

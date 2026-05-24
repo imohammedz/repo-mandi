@@ -396,7 +396,7 @@ export default function AddVehiclePage() {
     }
 
     if (targetStep === 4) {
-      if (!form.expectedPrice.trim() || !form.vehicleOrYardLocation.trim()) {
+      if (!form.expectedPrice || !form.vehicleOrYardLocation.trim()) {
         return "Expected price and vehicle/yard location are required.";
       }
     }
