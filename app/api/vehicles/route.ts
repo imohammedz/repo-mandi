@@ -273,6 +273,9 @@ export async function POST(request: Request) {
     const appliesTrailerLogic = vehicleType === "Trailer" || hasTrailerConfiguration;
     const requiresPoweredFields = !isTrailerOnly;
     const requiresTrailerFields = appliesTrailerLogic;
+    const shouldHideTrailerFieldsInStep6 =
+      listingType !== "REPO" && assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
+    const requiresTrailerFieldsForValidation = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
     const requiresInteriorPhoto = !isTrailerOnly;
 
     const financeCompany = toSafeString(body.financeCompany);
@@ -289,12 +292,12 @@ export async function POST(request: Request) {
     if (requiresPoweredFields && !registrationNumber) alwaysRequiredMissing.push("vehicleRegistrationNumber");
     if (requiresPoweredFields && !kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
     if (requiresPoweredFields && !runningCondition) alwaysRequiredMissing.push("runningCondition");
-    if (requiresTrailerFields && !trailerType) alwaysRequiredMissing.push("trailerType");
-    if (requiresTrailerFields && !trailerLength) alwaysRequiredMissing.push("trailerLength");
-    if (requiresTrailerFields && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
-    if (requiresTrailerFields && !bodyDimensions) alwaysRequiredMissing.push("bodyDimensions");
-    if (assetConfiguration === "Prime Mover + Trailer" && !suspensionType) alwaysRequiredMissing.push("suspensionType");
-    if (assetConfiguration === "Prime Mover + Trailer" && !abs) alwaysRequiredMissing.push("abs");
+    if (requiresTrailerFieldsForValidation && !trailerType) alwaysRequiredMissing.push("trailerType");
+    if (requiresTrailerFieldsForValidation && !trailerLength) alwaysRequiredMissing.push("trailerLength");
+    if (requiresTrailerFieldsForValidation && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
+    if (requiresTrailerFieldsForValidation && !bodyDimensions) alwaysRequiredMissing.push("bodyDimensions");
+    if (requiresTrailerFieldsForValidation && assetConfiguration === "Prime Mover + Trailer" && !suspensionType) alwaysRequiredMissing.push("suspensionType");
+    if (requiresTrailerFieldsForValidation && assetConfiguration === "Prime Mover + Trailer" && !abs) alwaysRequiredMissing.push("abs");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
