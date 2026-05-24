@@ -132,7 +132,8 @@ const repoStatusOptions = [
   "Under Settlement",
 ];
 
-const years = Array.from({ length: 27 }, (_, i) => String(2000 + i));
+const MIN_YEAR = 2000;
+const years = Array.from({ length: new Date().getFullYear() - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
 
 const indiaStates = [
   "Andhra Pradesh",

@@ -127,7 +127,10 @@ ALTER TABLE "vehicles"
   ADD COLUMN IF NOT EXISTS "fleet_management_software_available" "availability_status";
 
 -- Backfill heuristic for legacy rows:
--- if finance_company is empty, classify as REGULAR; otherwise REPO.
+-- repo listings historically always carried a finance_company in this schema,
+-- while regular listings were often created with empty finance_company.
+-- To preserve legacy behavior we classify empty finance_company as REGULAR,
+-- and non-empty finance_company as REPO.
 -- New writes set listing_type explicitly through API validation.
 UPDATE "vehicles"
 SET

@@ -274,7 +274,10 @@ export async function POST(request: Request) {
     }
 
     if (!regNumberLooksValid(registrationNumber)) {
-      return Response.json({ message: "Invalid vehicleRegistrationNumber format." }, { status: 400 });
+      return Response.json(
+        { message: "Invalid vehicleRegistrationNumber format. Example: MH-12-AB-1234." },
+        { status: 400 }
+      );
     }
 
     const currentYear = new Date().getFullYear();
