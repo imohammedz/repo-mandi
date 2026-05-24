@@ -224,6 +224,14 @@ const TOTAL_STEPS = 8;
 
 const STEP_LABELS = ["Listing", "Vehicle", "Condition", "Pricing", "Repo", "Details", "Photos", "Review"];
 
+const STEP_LISTING = 1;
+const STEP_VEHICLE = 2;
+const STEP_CONDITION = 3;
+const STEP_PRICING = 4;
+const STEP_REPO = 5;
+const STEP_DETAILS = 6;
+const STEP_PHOTOS = 7;
+
 const emptyForm: FormData = {
   listingType: "",
   assetConfiguration: "",
@@ -469,13 +477,13 @@ export default function AddVehiclePage() {
 
   const validateStep = (targetStep: number) => {
     // Step 1: Listing Information + Asset Configuration
-    if (targetStep === 1) {
+    if (targetStep === STEP_LISTING) {
       if (!form.listingType) return "Select listing type.";
       if (!form.assetConfiguration) return "Select asset configuration.";
     }
 
     // Step 2: Vehicle Basics
-    if (targetStep === 2) {
+    if (targetStep === STEP_VEHICLE) {
       if (!form.vehicleType) return "Vehicle type is required.";
       if (requiresPoweredFields && (!form.brand || !form.model || !form.year)) {
         return "Brand, model, and year are required for powered vehicle listings.";
@@ -486,7 +494,7 @@ export default function AddVehiclePage() {
     }
 
     // Step 3: Vehicle Condition & Usage
-    if (targetStep === 3) {
+    if (targetStep === STEP_CONDITION) {
       if (!isTrailerOnly) {
         if (!form.kmMeterStatus || !form.runningCondition) return "KM meter status and running condition are required.";
         if (form.kmMeterStatus === "WORKING" && !form.kmDriven.trim()) {
@@ -497,21 +505,21 @@ export default function AddVehiclePage() {
     }
 
     // Step 4: Pricing & Location
-    if (targetStep === 4) {
+    if (targetStep === STEP_PRICING) {
       if (!form.expectedPrice || Number(form.expectedPrice) <= 0 || !form.vehicleOrYardLocation.trim()) {
         return "Expected price and vehicle/yard location are required.";
       }
     }
 
     // Step 5: Repo Details (only validated if REPO)
-    if (targetStep === 5 && form.listingType === "REPO") {
+    if (targetStep === STEP_REPO && form.listingType === "REPO") {
       if (!form.financeCompany || !form.repoStatus || !form.yardName.trim()) {
         return "Finance company, repo status, and yard name are required for REPO listings.";
       }
     }
 
     // Step 6: Optional Vehicle Details — trailer specs required when applicable
-    if (targetStep === 6 && requiresTrailerFields) {
+    if (targetStep === STEP_DETAILS && requiresTrailerFields) {
       if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim() || !form.bodyDimensions.trim()) {
         return "Trailer type, trailer length, number of axles, and body dimensions are required.";
       }
@@ -521,7 +529,7 @@ export default function AddVehiclePage() {
     }
 
     // Step 7: Photos & Documents
-    if (targetStep === 7) {
+    if (targetStep === STEP_PHOTOS) {
       if (!form.frontPhoto || !form.backPhoto || !form.sidePhoto || (requiresInteriorPhoto && !form.interiorPhoto)) {
         return requiresInteriorPhoto
           ? "Front, back, side, and interior photos are required."
@@ -577,7 +585,7 @@ export default function AddVehiclePage() {
   };
 
   const handleSubmit = async () => {
-    const stepError = validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5) || validateStep(6) || validateStep(7);
+    const stepError = validateStep(STEP_LISTING) || validateStep(STEP_VEHICLE) || validateStep(STEP_CONDITION) || validateStep(STEP_PRICING) || validateStep(STEP_REPO) || validateStep(STEP_DETAILS) || validateStep(STEP_PHOTOS);
     if (stepError) {
       setError(stepError);
       return;
@@ -732,7 +740,7 @@ export default function AddVehiclePage() {
                       <div className="mt-2 space-y-2">
                         <p><span className="font-medium text-slate-700">Complete Vehicle:</span> A complete running combination ready for transport use. Example: Tata Signa horse + attached trailer.</p>
                         <p><span className="font-medium text-slate-700">Power / Horse / Tractor / Prime Mover Only:</span> Only the powered truck unit is included. Trailer is not included. Example: Tata Signa 5530 horse only.</p>
-                        <p><span className="font-medium text-slate-700">Trailer Only:</span> Only the trailer/body is included. No powered truck/horse included. Examples: 40ft flatbed trailer, low bed trailer, tanker trailer, tipper trailer.</p>
+                        <p><span className="font-medium text-slate-700">Trailer Only:</span> Only the trailer/body is included. No powered truck/horse included. Examples: 40ft flatbed trailer, low-bed trailer, tanker trailer, tipper trailer.</p>
                         <p><span className="font-medium text-slate-700">Other:</span> Use this if your listing does not fit the above categories.</p>
                       </div>
                     </div>
@@ -774,7 +782,7 @@ export default function AddVehiclePage() {
                 <div className="space-y-3 text-sm text-slate-600">
                   <p><span className="font-medium text-slate-800">Complete Vehicle</span><br />A complete running combination ready for transport use.<br />Example: Tata Signa horse + attached trailer.</p>
                   <p><span className="font-medium text-slate-800">Power / Horse / Tractor / Prime Mover Only</span><br />Only the powered truck unit is included.<br />Trailer is not included.<br />Example: Tata Signa 5530 horse only.</p>
-                  <p><span className="font-medium text-slate-800">Trailer Only</span><br />Only the trailer/body is included.<br />No powered truck/horse included.<br />Examples: 40ft flatbed trailer, low bed trailer, tanker trailer, tipper trailer.</p>
+                  <p><span className="font-medium text-slate-800">Trailer Only</span><br />Only the trailer/body is included.<br />No powered truck/horse included.<br />Examples: 40ft flatbed trailer, low-bed trailer, tanker trailer, tipper trailer.</p>
                   <p><span className="font-medium text-slate-800">Other</span><br />Use this if your listing does not fit the above categories.</p>
                 </div>
               </div>
