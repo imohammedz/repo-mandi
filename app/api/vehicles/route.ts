@@ -256,7 +256,7 @@ export async function POST(request: Request) {
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
-    const year = Number.isInteger(providedYear) && providedYear > 0 ? providedYear : new Date().getFullYear();
+    const year = Number.isInteger(providedYear) ? providedYear : null;
     const expectedPrice = toNumberOrNull(body.expectedPrice ?? body.price);
     const kmMeterStatus = (toSafeString(body.kmMeterStatus) || "UNKNOWN") as KmMeterStatus;
     const runningCondition = parseRunningCondition(body.runningCondition ?? body.condition);
@@ -331,9 +331,10 @@ export async function POST(request: Request) {
     }
 
     const currentYear = new Date().getFullYear();
-    if (requiresPoweredFields && (!Number.isInteger(year) || year < MIN_VEHICLE_YEAR || year > currentYear)) {
+    if (requiresPoweredFields && (year === null || year < MIN_VEHICLE_YEAR || year > currentYear)) {
       return Response.json({ message: `Year must be between ${MIN_VEHICLE_YEAR} and current year.` }, { status: 400 });
     }
+    const normalizedYear = year ?? currentYear;
 
     if (expectedPrice === null || expectedPrice <= 0) {
       return Response.json({ message: "expectedPrice must be a positive number." }, { status: 400 });
@@ -356,10 +357,10 @@ export async function POST(request: Request) {
       }
     }
 
-    const title = [vehicleType, toSafeString(body.vehicleSubType), brand, model, year]
+    const title = [vehicleType, toSafeString(body.vehicleSubType), brand, model, normalizedYear]
       .filter(Boolean)
       .join(" ");
-    const id = nanoid(title, brand, model, year);
+    const id = nanoid(title, brand, model, normalizedYear);
 
     const gallery = [frontPhoto, backPhoto, sidePhoto, interiorPhoto].filter(Boolean);
 
@@ -377,7 +378,7 @@ export async function POST(request: Request) {
         vehicleSubType: toSafeString(body.vehicleSubType) || null,
         brand,
         model,
-        year,
+        year: normalizedYear,
         vehicleRegistrationNumber: registrationNumber,
         registrationState,
         kmMeterStatus,
