@@ -215,6 +215,8 @@ export async function POST(request: Request) {
     const brand = toSafeString(body.brand);
     const model = toSafeString(body.model);
     const registrationState = toSafeString(body.registrationState);
+    // Step 4 only captures a single free-form location in MVP1.
+    // Keep legacy state/city columns populated when possible using profile fallbacks.
     const state = toSafeString(body.state) || toSafeString(currentUser.state);
     const city = toSafeString(body.city) || toSafeString(currentUser.city);
     const location = toSafeString(body.vehicleOrYardLocation || body.yardLocation);
@@ -245,6 +247,7 @@ export async function POST(request: Request) {
     if (!kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
     if (!runningCondition) alwaysRequiredMissing.push("runningCondition");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
+    // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
     if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
     if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");
