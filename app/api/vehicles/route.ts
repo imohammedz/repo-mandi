@@ -273,6 +273,8 @@ export async function POST(request: Request) {
     const appliesTrailerLogic = vehicleType === "Trailer" || hasTrailerConfiguration;
     const requiresPoweredFields = !isTrailerOnly;
     const requiresTrailerFields = appliesTrailerLogic;
+    // Non-REPO prime-mover-only listings do not include trailer assets,
+    // so trailer-focused fields are not applicable.
     // Mirrors the Step 6 client-side visibility rule in app/seller/add-vehicle/page.tsx.
     // Keep both sides aligned to avoid client/server validation mismatches.
     const shouldHideTrailerFieldsInStep6 =
