@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, X } from "lucide-react";
 
 type ListingType = "REGULAR" | "REPO";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
@@ -129,9 +129,16 @@ const assetConfigurations: AssetConfiguration[] = [
   "Complete Vehicle",
   "Power / Horse / Tractor / Prime Mover Only",
   "Trailer Only",
-  "Prime Mover + Trailer",
   "Other",
 ];
+
+const assetConfigurationHelperText: Record<AssetConfiguration, string> = {
+  "Complete Vehicle": "Includes both the powered truck unit and attached trailer/body.",
+  "Power / Horse / Tractor / Prime Mover Only": "Only the powered truck/horse is included.",
+  "Trailer Only": "Only the trailer/body is included. No powered unit included.",
+  "Prime Mover + Trailer": "Includes both the powered truck unit and trailer.",
+  Other: "Use this when your listing does not fit the listed options.",
+};
 
 const trailerTypeOptions = [
   "Flatbed Trailer",
@@ -287,21 +294,30 @@ function SelectField({
   options,
   onChange,
   required = false,
+  labelSuffix,
+  helperText,
+  helperTextId,
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
   required?: boolean;
+  labelSuffix?: ReactNode;
+  helperText?: string;
+  helperTextId?: string;
 }) {
   return (
     <label className="space-y-1.5">
-      <span className="text-sm font-medium text-slate-700">
-        {label} {required ? <span className="text-rose-500">*</span> : null}
+      <span className="flex items-center gap-1 text-sm font-medium text-slate-700">
+        {label}
+        {required ? <span className="text-rose-500">*</span> : null}
+        {labelSuffix}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        aria-describedby={helperText ? helperTextId : undefined}
         className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800"
       >
         <option value="">Select</option>
@@ -311,6 +327,11 @@ function SelectField({
           </option>
         ))}
       </select>
+      {helperText ? (
+        <p id={helperTextId} className="text-xs text-slate-500">
+          {helperText}
+        </p>
+      ) : null}
     </label>
   );
 }
@@ -363,6 +384,7 @@ export default function AddVehiclePage() {
   const [uploadingField, setUploadingField] = useState<UploadCategory | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [assetHelpOpen, setAssetHelpOpen] = useState(false);
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
@@ -427,6 +449,21 @@ export default function AddVehiclePage() {
   const requiresPoweredFields = !isTrailerOnly;
   const requiresTrailerFields = appliesTrailerLogic;
   const requiresInteriorPhoto = !isTrailerOnly;
+  const assetConfigurationContext =
+    form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
+      ? assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
+      : "";
+
+  useEffect(() => {
+    if (!assetHelpOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAssetHelpOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [assetHelpOpen]);
 
   const validateStep = (targetStep: number) => {
     if (targetStep === 1 && !form.listingType) return "Select listing type.";
@@ -671,7 +708,74 @@ export default function AddVehiclePage() {
             options={assetConfigurations}
             onChange={(value) => update("assetConfiguration", value as AssetConfiguration)}
             required
+            helperText={assetConfigurationContext}
+            helperTextId="asset-configuration-helper-text"
+            labelSuffix={
+              <>
+                <span className="relative hidden md:inline-flex" onMouseEnter={() => setAssetHelpOpen(true)} onMouseLeave={() => setAssetHelpOpen(false)}>
+                  <button
+                    type="button"
+                    aria-label="Asset configuration help"
+                    aria-expanded={assetHelpOpen}
+                    onClick={() => setAssetHelpOpen((previous) => !previous)}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                  {assetHelpOpen ? (
+                    <div role="tooltip" className="absolute left-6 top-6 z-20 w-80 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-xl">
+                      <p className="font-semibold text-slate-800">Asset Configuration Help</p>
+                      <div className="mt-2 space-y-2">
+                        <p><span className="font-medium text-slate-700">Complete Vehicle:</span> A complete running combination ready for transport use. Example: Tata Signa horse + attached trailer.</p>
+                        <p><span className="font-medium text-slate-700">Power / Horse / Tractor / Prime Mover Only:</span> Only the powered truck unit is included. Trailer is not included. Example: Tata Signa 5530 horse only.</p>
+                        <p><span className="font-medium text-slate-700">Trailer Only:</span> Only the trailer/body is included. No powered truck/horse included. Examples: 40ft flatbed trailer, low bed trailer, tanker trailer, tipper trailer.</p>
+                        <p><span className="font-medium text-slate-700">Other:</span> Use this if your listing does not fit the above categories.</p>
+                      </div>
+                    </div>
+                  ) : null}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Asset configuration help"
+                  aria-haspopup="dialog"
+                  aria-expanded={assetHelpOpen}
+                  onClick={() => setAssetHelpOpen(true)}
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 md:hidden"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </>
+            }
           />
+          {assetHelpOpen ? (
+            <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setAssetHelpOpen(false)}>
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Asset configuration help"
+                className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <h2 className="text-base font-semibold text-slate-900">Asset Configuration Help</h2>
+                  <button
+                    type="button"
+                    onClick={() => setAssetHelpOpen(false)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                    aria-label="Close help"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-3 text-sm text-slate-600">
+                  <p><span className="font-medium text-slate-800">Complete Vehicle</span><br />A complete running combination ready for transport use.<br />Example: Tata Signa horse + attached trailer.</p>
+                  <p><span className="font-medium text-slate-800">Power / Horse / Tractor / Prime Mover Only</span><br />Only the powered truck unit is included.<br />Trailer is not included.<br />Example: Tata Signa 5530 horse only.</p>
+                  <p><span className="font-medium text-slate-800">Trailer Only</span><br />Only the trailer/body is included.<br />No powered truck/horse included.<br />Examples: 40ft flatbed trailer, low bed trailer, tanker trailer, tipper trailer.</p>
+                  <p><span className="font-medium text-slate-800">Other</span><br />Use this if your listing does not fit the above categories.</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
           <SelectField label="Vehicle Type" value={form.vehicleType} options={vehicleTypes} onChange={(value) => update("vehicleType", value)} required />
           <TextField label="Vehicle Sub-Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="Trailer subtype, tanker subtype, etc." />
           {requiresPoweredFields ? (
