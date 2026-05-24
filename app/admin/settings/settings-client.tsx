@@ -64,7 +64,8 @@ export default function AdminSettingsClient({ autoApproveListings }: AdminSettin
             type="button"
             onClick={toggle}
             disabled={saving}
-            aria-label={`Auto-approve listings is currently ${enabled ? "on" : "off"}. Click to toggle.`}
+            aria-pressed={enabled}
+            aria-label={`Auto-approve listings is currently ${enabled ? "on" : "off"}. Click to ${enabled ? "disable" : "enable"}.`}
             className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
               enabled ? "bg-emerald-600" : "bg-slate-200"
             }`}
@@ -78,12 +79,12 @@ export default function AdminSettingsClient({ autoApproveListings }: AdminSettin
         </div>
 
         {saved && (
-          <p className="mt-3 text-xs font-medium text-emerald-600">
+          <p className="mt-3 text-xs font-medium text-emerald-600" role="status" aria-live="polite">
             Setting saved successfully.
           </p>
         )}
         {error && (
-          <p className="mt-3 text-xs font-medium text-rose-600">{error}</p>
+          <p className="mt-3 text-xs font-medium text-rose-600" role="alert" aria-live="assertive">{error}</p>
         )}
       </section>
     </main>
