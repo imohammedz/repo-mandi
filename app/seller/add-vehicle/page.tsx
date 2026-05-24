@@ -475,6 +475,7 @@ export default function AddVehiclePage() {
   const showOptionalTrailerLinkedFieldsInStep6 = !requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
   const requiresInteriorPhoto = !isTrailerOnly;
   const disableInteriorPhotoUpload = isTrailerOnly;
+  const interiorPhotoDisabledMessage = "Interior photo is not applicable for Trailer Only.";
   const assetConfigurationContext =
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
       ? assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
@@ -617,6 +618,7 @@ export default function AddVehiclePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          interiorPhoto: disableInteriorPhotoUpload ? "" : form.interiorPhoto,
           expectedPrice: form.expectedPrice.replace(/\D/g, ""),
           reservePrice: form.reservePrice.replace(/\D/g, ""),
           kmDriven: form.kmDriven.replace(/\D/g, ""),
@@ -1038,54 +1040,61 @@ export default function AddVehiclePage() {
               { key: "sidePhoto", label: "Side Photo", required: true, disabled: false },
               { key: "interiorPhoto", label: "Interior Photo", required: requiresInteriorPhoto, disabled: disableInteriorPhotoUpload },
             ] as { key: UploadCategory; label: string; required: boolean; disabled: boolean }[]
-          ).map((item) => (
-            <div
-              key={item.key}
-              className={`space-y-2 rounded-xl border p-3 ${item.disabled ? "border-slate-200 bg-slate-50" : "border-slate-200 bg-white"}`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-700">
-                  {item.label}{" "}
-                  {item.disabled ? (
-                    <span className="text-slate-400">(Not applicable for Trailer Only)</span>
-                  ) : item.required ? (
-                    <span className="text-rose-500">*</span>
-                  ) : (
-                    <span className="text-slate-400">(Optional)</span>
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => fileRefs[item.key].current?.click()}
-                  disabled={item.disabled || uploadingField === item.key}
-                  className={`inline-flex min-h-9 items-center rounded-lg border px-3 text-xs font-semibold ${
-                    item.disabled ? "border-slate-200 bg-slate-100 text-slate-400" : "border-slate-200 text-slate-700"
-                  }`}
-                >
-                  {item.disabled ? "Upload disabled" : uploadingField === item.key ? "Uploading..." : form[item.key] ? "Replace" : "Upload"}
-                </button>
-              </div>
-              <input
-                ref={fileRefs[item.key]}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={item.disabled}
-                onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)}
-              />
-              {form[item.key] ? (
-                <Image src={form[item.key]} alt={item.label} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
-              ) : (
-                <div
-                  className={`flex h-32 items-center justify-center rounded-lg border border-dashed text-center text-xs ${
-                    item.disabled ? "border-slate-200 bg-slate-100 text-slate-400" : "border-slate-200 text-slate-400"
-                  }`}
-                >
-                  {item.disabled ? "Interior photo upload is disabled for Trailer Only." : "No image uploaded"}
+          ).map((item) => {
+            const photoValue = item.disabled ? "" : form[item.key];
+            const disabledMessage = item.disabled ? interiorPhotoDisabledMessage : "";
+
+            return (
+              <div
+                key={item.key}
+                className={`space-y-2 rounded-xl border p-3 ${item.disabled ? "border-slate-200 bg-slate-50" : "border-slate-200 bg-white"}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    {item.label}{" "}
+                    {item.disabled ? (
+                      <span className="text-slate-400">(Not applicable for Trailer Only)</span>
+                    ) : item.required ? (
+                      <span className="text-rose-500">*</span>
+                    ) : (
+                      <span className="text-slate-400">(Optional)</span>
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => fileRefs[item.key].current?.click()}
+                    disabled={item.disabled || uploadingField === item.key}
+                    aria-label={item.disabled ? disabledMessage : `${photoValue ? "Replace" : "Upload"} ${item.label}`}
+                    title={item.disabled ? disabledMessage : undefined}
+                    className={`inline-flex min-h-9 items-center rounded-lg border px-3 text-xs font-semibold ${
+                      item.disabled ? "border-slate-200 bg-slate-100 text-slate-400" : "border-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {item.disabled ? "Upload disabled" : uploadingField === item.key ? "Uploading..." : photoValue ? "Replace" : "Upload"}
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
+                <input
+                  ref={fileRefs[item.key]}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={item.disabled}
+                  onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)}
+                />
+                {photoValue ? (
+                  <Image src={photoValue} alt={item.label} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
+                ) : (
+                  <div
+                    className={`flex h-32 items-center justify-center rounded-lg border border-dashed text-center text-xs ${
+                      item.disabled ? "border-slate-200 bg-slate-100 text-slate-400" : "border-slate-200 text-slate-400"
+                    }`}
+                  >
+                    {item.disabled ? disabledMessage : "No image uploaded"}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           <TextField label="Walkaround Video URL" value={form.walkaroundVideo} onChange={(value) => update("walkaroundVideo", value)} placeholder="Optional" />
           <TextField label="Engine Start-up Video URL" value={form.engineStartUpVideo} onChange={(value) => update("engineStartUpVideo", value)} placeholder="Optional" />

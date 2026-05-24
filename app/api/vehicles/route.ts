@@ -279,8 +279,10 @@ export async function POST(request: Request) {
     // Keep both sides aligned to avoid client/server validation mismatches.
     const shouldHideTrailerFieldsInStep6 =
       listingType !== "REPO" && assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
+    // Trailer fields are required only when trailer logic applies and the Step 6 hide rule does not suppress them.
     const requiresTrailerFieldsForValidation = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
     const requiresInteriorPhoto = !isTrailerOnly;
+    const normalizedInteriorPhoto = isTrailerOnly ? "" : interiorPhoto;
 
     const financeCompany = toSafeString(body.financeCompany);
     const repoStatus = toSafeString(body.repoStatus || "Ready For Sale");
@@ -309,13 +311,17 @@ export async function POST(request: Request) {
     if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");
     if (!backPhoto) alwaysRequiredMissing.push("backPhoto");
     if (!sidePhoto) alwaysRequiredMissing.push("sidePhoto");
-    if (requiresInteriorPhoto && !interiorPhoto) alwaysRequiredMissing.push("interiorPhoto");
+    if (requiresInteriorPhoto && !normalizedInteriorPhoto) alwaysRequiredMissing.push("interiorPhoto");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(
         { message: `Missing required fields: ${alwaysRequiredMissing.join(", ")}.` },
         { status: 400 }
       );
+    }
+
+    if (isTrailerOnly && interiorPhoto) {
+      return Response.json({ message: "interiorPhoto is not allowed for Trailer Only assets." }, { status: 400 });
     }
 
     if (!VALID_TYPES.includes(vehicleType)) {
@@ -423,7 +429,7 @@ export async function POST(request: Request) {
         frontPhoto,
         backPhoto,
         sidePhoto,
-        interiorPhoto,
+        interiorPhoto: normalizedInteriorPhoto,
         walkaroundVideo: toSafeString(body.walkaroundVideo) || null,
         engineStartUpVideo: toSafeString(body.engineStartUpVideo) || null,
         financeCompany: listingType === "REPO" ? financeCompany : "",
