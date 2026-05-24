@@ -30,9 +30,11 @@ export default async function HomePage() {
     recentVehicles = recentListingsRows.map(dbToVehicle);
   } catch (error) {
     if (
-      !(error instanceof Error &&
-        error.message.includes("DATABASE_URL environment variable is not set."))
+      error instanceof Error &&
+      error.message.includes("DATABASE_URL environment variable is not set.")
     ) {
+      console.warn("Skipping homepage recent listings because DATABASE_URL is not configured.");
+    } else {
       console.error("Failed to load recent listings on homepage", error);
     }
   }
