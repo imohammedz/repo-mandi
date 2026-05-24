@@ -37,9 +37,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
 
       <div className="space-y-3 p-4">
         <div>
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${vehicle.listingType === "REPO" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+            {vehicle.listingType === "REPO" ? "REPO" : "REGULAR"}
+          </span>
           <h3 className="text-base font-semibold text-slate-900">{vehicle.title}</h3>
           <p className="mt-1 text-sm text-slate-500">
-            {vehicle.year} • {vehicle.brand}
+            {[vehicle.type, vehicle.vehicleSubType].filter(Boolean).join(" • ")}
+          </p>
+          <p className="text-sm text-slate-500">
+            {vehicle.brand} • {vehicle.model} • {vehicle.year}
           </p>
         </div>
 
@@ -55,9 +61,18 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         </div>
 
         <div className="space-y-1">
-          <p className="text-xs text-slate-500">Finance: {vehicle.financeCompany}</p>
-          <p className="text-lg font-semibold text-slate-900">{formatCurrency(vehicle.price)}</p>
-          <p className="text-xs text-slate-500">Reserve: {formatCurrency(vehicle.reservePrice)}</p>
+          <p className="text-lg font-semibold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
+          {typeof vehicle.kmDriven === "number" ? (
+            <p className="text-xs text-slate-500">KM: {vehicle.kmDriven.toLocaleString("en-IN")}</p>
+          ) : null}
+          <p className="text-xs text-slate-500">Running: {vehicle.runningCondition ?? vehicle.condition}</p>
+          {vehicle.listingType === "REPO" ? (
+            <>
+              <p className="text-xs text-slate-500">Finance: {vehicle.financeCompany}</p>
+              <p className="text-xs text-slate-500">Repo Status: {vehicle.repoStatus}</p>
+            </>
+          ) : null}
+          <p className="text-xs text-slate-500">Seller: {vehicle.businessName || vehicle.sellerName} • {vehicle.sellerRole}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2">

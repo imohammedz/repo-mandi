@@ -1,15 +1,85 @@
 import { db } from "@/lib/db";
-import { vehicles } from "@/lib/schema";
+import { vehicleMedia, vehicles } from "@/lib/schema";
 import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-const VALID_TYPES = ["Truck", "Tipper", "Pickup", "Bus", "Trailer", "Tractor"] as const;
+const VALID_TYPES = [
+  "Mini Truck",
+  "Pickup",
+  "LCV (Light Commercial Vehicle)",
+  "MCV (Medium Commercial Vehicle)",
+  "HCV (Heavy Commercial Vehicle)",
+  "Trailer",
+  "Tanker",
+  "Container Truck",
+  "Tipper",
+  "Bus",
+  // Backward compatibility
+  "Truck",
+  "Tractor",
+] as const;
 type VehicleType = (typeof VALID_TYPES)[number];
-// Heuristic risk flag threshold for suspiciously low listing prices (INR).
+
+const VALID_LISTING_TYPES = ["REGULAR", "REPO"] as const;
+type ListingType = (typeof VALID_LISTING_TYPES)[number];
+
+const VALID_KM_METER_STATUS = ["WORKING", "NOT_WORKING", "UNKNOWN"] as const;
+type KmMeterStatus = (typeof VALID_KM_METER_STATUS)[number];
+
+const VALID_RUNNING_CONDITIONS = ["RUNNING", "NOT_RUNNING", "UNKNOWN"] as const;
+type RunningCondition = (typeof VALID_RUNNING_CONDITIONS)[number];
+
+const VALID_REPO_STATUS = [
+  "Bank Seized",
+  "Yard Stock",
+  "Auction Live",
+  "Auction Upcoming",
+  "Ready For Sale",
+  "Under Settlement",
+] as const;
+
+const LEGACY_RUNNING_MAP: Record<string, RunningCondition> = {
+  Running: "RUNNING",
+  "Non-running": "NOT_RUNNING",
+  "Not Running": "NOT_RUNNING",
+  Unknown: "UNKNOWN",
+};
+
 const MIN_REASONABLE_PRICE = 100000;
+
+function normalizeRegNumber(input: string) {
+  return input
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s-]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/-+/g, "-");
+}
+
+function regNumberLooksValid(value: string) {
+  return /^[A-Z]{2}[ -]?\d{1,2}[ -]?[A-Z]{1,3}[ -]?\d{1,4}$/.test(value);
+}
+
+function toNumberOrNull(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const asNumber = Number(String(value).replace(/,/g, ""));
+  return Number.isFinite(asNumber) ? asNumber : null;
+}
+
+function toSafeString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function parseRunningCondition(value: unknown): RunningCondition {
+  const normalized = toSafeString(value);
+  if (VALID_RUNNING_CONDITIONS.includes(normalized as RunningCondition)) {
+    return normalized as RunningCondition;
+  }
+  return LEGACY_RUNNING_MAP[normalized] ?? "UNKNOWN";
+}
 
 // ── GET /api/vehicles?type=&state=&q= ─────────────────────────────────────────
 export async function GET(request: Request) {
@@ -22,6 +92,7 @@ export async function GET(request: Request) {
     const city = url.searchParams.get("city");
     const brand = url.searchParams.get("brand");
     const financeCompany = url.searchParams.get("financeCompany");
+    const listingType = url.searchParams.get("listingType");
     const mine = url.searchParams.get("mine") === "1";
     const includeAll = url.searchParams.get("includeAll") === "1";
     const verifiedOnly = url.searchParams.get("verifiedOnly") === "1";
@@ -34,8 +105,15 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    const type = typeParam as VehicleType | null;
 
+    if (listingType && !VALID_LISTING_TYPES.includes(listingType as ListingType)) {
+      return Response.json(
+        { message: `listingType must be one of: ${VALID_LISTING_TYPES.join(", ")}.` },
+        { status: 400 }
+      );
+    }
+
+    const type = typeParam as VehicleType | null;
     const conditions = [];
 
     const isAdmin = currentUser?.accountType === "ADMIN";
@@ -53,6 +131,7 @@ export async function GET(request: Request) {
     }
 
     if (type) conditions.push(eq(vehicles.type, type));
+    if (listingType) conditions.push(eq(vehicles.listingType, listingType as ListingType));
     if (state) conditions.push(eq(vehicles.state, state));
     if (city) conditions.push(ilike(vehicles.city, `%${city}%`));
     if (brand) conditions.push(ilike(vehicles.brand, `%${brand}%`));
@@ -90,57 +169,140 @@ export async function POST(request: Request) {
     if (!currentUser) {
       return Response.json({ message: "Unauthorized." }, { status: 401 });
     }
+
+    if (currentUser.accountType === "BUYER") {
+      return Response.json({ message: "Buyers cannot submit listings." }, { status: 403 });
+    }
+
     if (!["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) {
       return Response.json({ message: "Only sellers or bank partners can post listings." }, { status: 403 });
     }
+
     if (!currentUser.isProfileComplete) {
       return Response.json({ message: "Complete your profile before posting." }, { status: 403 });
     }
 
     const body = (await request.json()) as Record<string, unknown>;
 
-    const {
-      title,
-      type,
-      brand,
-      model,
-      year,
-      kmDriven,
-      fuelType,
-      axleType,
-      registrationState,
-      city,
-      state,
-      image,
-      gallery,
-      financeCompany,
-      price,
-      reservePrice,
-      repoStatus,
-      sellerType,
-      sellerName,
-      sellerRole,
-      sellerPhone,
-      condition,
-      conditionNotes,
-      accidentNotes,
-      auctionDate,
-      yardLocation,
-      verifiedBadges,
-      inspectionNotes,
-    } = body;
+    const listingTypeRaw = toSafeString(body.listingType);
+    if (!listingTypeRaw) {
+      return Response.json({ message: "listingType is required." }, { status: 400 });
+    }
+    const listingType = listingTypeRaw as ListingType;
+    if (!VALID_LISTING_TYPES.includes(listingType)) {
+      return Response.json({ message: "Invalid listing type." }, { status: 400 });
+    }
 
-    if (!title || !type || !brand || !model || !year || !city || !state || !financeCompany || !price) {
+    const sellerRole = currentUser.sellerRole ?? "";
+    const canCreateRepo =
+      currentUser.accountType === "BANK_PARTNER" ||
+      currentUser.accountType === "ADMIN" ||
+      sellerRole === "BROKER" ||
+      sellerRole === "RECOVERY_AGENT";
+    const canCreateRegular =
+      currentUser.accountType !== "BANK_PARTNER" && sellerRole !== "RECOVERY_AGENT";
+
+    if (listingType === "REPO" && !canCreateRepo) {
+      return Response.json({ message: "Your role can only create regular listings." }, { status: 403 });
+    }
+    if (listingType === "REGULAR" && !canCreateRegular) {
+      return Response.json({ message: "Your role can only create repo listings." }, { status: 403 });
+    }
+
+    const vehicleType = toSafeString(body.vehicleType || body.type) as VehicleType;
+    const brand = toSafeString(body.brand);
+    const model = toSafeString(body.model);
+    const registrationState = toSafeString(body.registrationState);
+    const state = toSafeString(body.state);
+    const city = toSafeString(body.city);
+    const location = toSafeString(body.vehicleOrYardLocation || body.yardLocation);
+    const conditionNotes = toSafeString(body.conditionNotes);
+    const frontPhoto = toSafeString(body.frontPhoto);
+    const backPhoto = toSafeString(body.backPhoto);
+    const sidePhoto = toSafeString(body.sidePhoto);
+    const interiorPhoto = toSafeString(body.interiorPhoto);
+    const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
+
+    const year = Number(body.year);
+    const expectedPrice = toNumberOrNull(body.expectedPrice ?? body.price);
+    const kmMeterStatus = (toSafeString(body.kmMeterStatus) || "UNKNOWN") as KmMeterStatus;
+    const runningCondition = parseRunningCondition(body.runningCondition ?? body.condition);
+    const kmDriven = toNumberOrNull(body.kmDriven);
+
+    const financeCompany = toSafeString(body.financeCompany);
+    const repoStatus = toSafeString(body.repoStatus || "Ready For Sale");
+    const yardName = toSafeString(body.yardName);
+
+    const alwaysRequiredMissing: string[] = [];
+    if (!vehicleType) alwaysRequiredMissing.push("vehicleType");
+    if (!brand) alwaysRequiredMissing.push("brand");
+    if (!model) alwaysRequiredMissing.push("model");
+    if (!year) alwaysRequiredMissing.push("year");
+    if (!registrationState) alwaysRequiredMissing.push("registrationState");
+    if (!registrationNumber) alwaysRequiredMissing.push("vehicleRegistrationNumber");
+    if (!kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
+    if (!runningCondition) alwaysRequiredMissing.push("runningCondition");
+    if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
+    if (!state) alwaysRequiredMissing.push("state");
+    if (!city) alwaysRequiredMissing.push("city");
+    if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
+    if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
+    if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");
+    if (!backPhoto) alwaysRequiredMissing.push("backPhoto");
+    if (!sidePhoto) alwaysRequiredMissing.push("sidePhoto");
+    if (!interiorPhoto) alwaysRequiredMissing.push("interiorPhoto");
+
+    if (alwaysRequiredMissing.length > 0) {
       return Response.json(
-        { message: "Missing required fields: title, type, brand, model, year, city, state, financeCompany, price." },
+        { message: `Missing required fields: ${alwaysRequiredMissing.join(", ")}.` },
         { status: 400 }
       );
     }
 
-    const id = nanoid(title as string, brand as string, model as string, year as string | number);
+    if (!VALID_TYPES.includes(vehicleType)) {
+      return Response.json({ message: "Invalid vehicleType." }, { status: 400 });
+    }
 
-    const listingStatus =
-      currentUser.accountType === "BANK_PARTNER" ? "BANK_PENDING_REVIEW" : "PENDING";
+    if (!VALID_KM_METER_STATUS.includes(kmMeterStatus)) {
+      return Response.json({ message: "Invalid kmMeterStatus." }, { status: 400 });
+    }
+
+    if (!VALID_RUNNING_CONDITIONS.includes(runningCondition)) {
+      return Response.json({ message: "Invalid runningCondition." }, { status: 400 });
+    }
+
+    if (!regNumberLooksValid(registrationNumber)) {
+      return Response.json({ message: "Invalid vehicleRegistrationNumber format." }, { status: 400 });
+    }
+
+    const currentYear = new Date().getFullYear();
+    if (!Number.isInteger(year) || year < 2000 || year > currentYear) {
+      return Response.json({ message: "Year must be between 2000 and current year." }, { status: 400 });
+    }
+
+    if (expectedPrice === null || expectedPrice <= 0) {
+      return Response.json({ message: "expectedPrice must be a positive number." }, { status: 400 });
+    }
+
+    if (kmMeterStatus === "WORKING" && (kmDriven === null || kmDriven < 0)) {
+      return Response.json({ message: "kmDriven is required when km meter is working." }, { status: 400 });
+    }
+
+    if (listingType === "REPO") {
+      if (!financeCompany || !repoStatus || !yardName) {
+        return Response.json({ message: "financeCompany, repoStatus, and yardName are required for repo listings." }, { status: 400 });
+      }
+      if (!VALID_REPO_STATUS.includes(repoStatus as (typeof VALID_REPO_STATUS)[number])) {
+        return Response.json({ message: "Invalid repoStatus." }, { status: 400 });
+      }
+    }
+
+    const title = [vehicleType, toSafeString(body.vehicleSubType), brand, model, year]
+      .filter(Boolean)
+      .join(" ");
+    const id = nanoid(title, brand, model, year);
+
+    const gallery = [frontPhoto, backPhoto, sidePhoto, interiorPhoto].filter(Boolean);
 
     const [inserted] = await db
       .insert(vehicles)
@@ -148,57 +310,178 @@ export async function POST(request: Request) {
         id,
         sellerId: currentUser.id,
         createdByUserId: currentUser.id,
-        title: String(title),
-        type: type as typeof vehicles.type._.data,
-        brand: String(brand),
-        model: String(model),
-        year: Number(year),
-        kmDriven: kmDriven ? Number(kmDriven) : 0,
-        fuelType: (fuelType as typeof vehicles.fuelType._.data) ?? "Diesel",
-        axleType: axleType ? String(axleType) : "",
-        registrationState: registrationState ? String(registrationState) : "",
-        city: String(city),
-        state: String(state),
-        image: image ? String(image) : "",
-        gallery: Array.isArray(gallery) ? (gallery as string[]) : [],
-        financeCompany: String(financeCompany),
+        listingType,
+        status: "PENDING",
+        title,
+        type: vehicleType,
+        vehicleSubType: toSafeString(body.vehicleSubType) || null,
+        brand,
+        model,
+        year,
+        vehicleRegistrationNumber: registrationNumber,
+        registrationState,
+        kmMeterStatus,
+        kmDriven: kmMeterStatus === "WORKING" ? kmDriven : null,
+        runningCondition,
+        fuelType: "Diesel",
+        numberOfAxles: toNumberOrNull(body.numberOfAxles),
+        bodyType: toSafeString(body.bodyType) || null,
+        bodyDimensions: toSafeString(body.bodyDimensions) || null,
+        trailerType: toSafeString(body.trailerType) || null,
+        trailerLength: toSafeString(body.trailerLength) || null,
+        suspensionType: toSafeString(body.suspensionType) || null,
+        tyreInspectionReport: (toSafeString(body.tyreInspectionReport).toUpperCase() || null) as
+          | "AVAILABLE"
+          | "NOT_AVAILABLE"
+          | "UNKNOWN"
+          | null,
+        tyreCount: toNumberOrNull(body.tyreCount),
+        currentTyreCount: toNumberOrNull(body.currentTyreCount),
+        tyreCondition: (toSafeString(body.tyreCondition)
+          .toUpperCase()
+          .replace(/%/g, "")
+          .replace(/\s+/g, "_") || null) as
+          | "NEW"
+          | "GOOD"
+          | "FAIR"
+          | "AROUND_50"
+          | "POOR"
+          | "MIXED"
+          | "UNKNOWN"
+          | null,
+        city,
+        state,
+        vehicleOrYardLocation: location,
+        image: frontPhoto,
+        gallery,
+        frontPhoto,
+        backPhoto,
+        sidePhoto,
+        interiorPhoto,
+        walkaroundVideo: toSafeString(body.walkaroundVideo) || null,
+        engineStartUpVideo: toSafeString(body.engineStartUpVideo) || null,
+        financeCompany: listingType === "REPO" ? financeCompany : "",
         bankInstitutionName:
           currentUser.accountType === "BANK_PARTNER" ? currentUser.institutionName : "",
         branchName: currentUser.accountType === "BANK_PARTNER" ? currentUser.branchName : "",
-        price: String(price),
-        reservePrice: reservePrice ? String(reservePrice) : "0",
-        repoStatus: (repoStatus as typeof vehicles.repoStatus._.data) ?? "Ready For Sale",
+        price: String(expectedPrice),
+        expectedPrice: String(expectedPrice),
+        reservePrice: body.reservePrice ? String(toNumberOrNull(body.reservePrice) ?? 0) : "0",
+        repoStatus:
+          listingType === "REPO"
+            ? (repoStatus as typeof vehicles.repoStatus._.data)
+            : "Ready For Sale",
         sellerType:
           currentUser.accountType === "BANK_PARTNER"
             ? "Bank Agent"
-            : ((sellerType as typeof vehicles.sellerType._.data) ?? "Yard Partner"),
-        sellerName: currentUser.fullName || (sellerName ? String(sellerName) : ""),
-        sellerRole: currentUser.sellerRole || currentUser.bankRole || (sellerRole ? String(sellerRole) : ""),
-        sellerPhone: currentUser.phone || (sellerPhone ? String(sellerPhone) : ""),
-        condition: (condition as typeof vehicles.condition._.data) ?? "Running",
-        conditionNotes: conditionNotes ? String(conditionNotes) : "",
-        accidentNotes: accidentNotes ? String(accidentNotes) : "",
-        auctionDate: auctionDate ? String(auctionDate) : "",
-        yardLocation: yardLocation ? String(yardLocation) : "",
-        verifiedBadges: Array.isArray(verifiedBadges) ? (verifiedBadges as string[]) : [],
-        inspectionNotes: Array.isArray(inspectionNotes) ? (inspectionNotes as string[]) : [],
-        listingStatus,
+            : ((toSafeString(body.sellerType) || "Yard Partner") as typeof vehicles.sellerType._.data),
+        sellerName: currentUser.fullName,
+        sellerRole: currentUser.sellerRole || currentUser.bankRole || "",
+        sellerPhone: currentUser.phone,
+        alternateContactNumber: toSafeString(body.alternateContactNumber),
+        businessName: currentUser.businessName,
+        gstin: toSafeString(body.gstin),
+        condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
+        conditionNotes,
+        engineCondition: (toSafeString(body.engineCondition).toUpperCase().replace(/\s+/g, "_") || null) as
+          | "GOOD"
+          | "AVERAGE"
+          | "NEEDS_WORK"
+          | "NOT_CHECKED"
+          | "UNKNOWN"
+          | null,
+        needsTowing: (toSafeString(body.needsTowing).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
+        roadSafeStatus: (toSafeString(body.roadSafeStatus).toUpperCase().replace(/\s+/g, "_") || null) as
+          | "ROAD_SAFE"
+          | "NOT_ROAD_SAFE"
+          | "UNKNOWN"
+          | null,
+        accidentNotes: toSafeString(body.accidentNotes),
+        auctionDate: toSafeString(body.auctionDate),
+        yardName: listingType === "REPO" ? yardName : "",
+        yardContact: toSafeString(body.yardContact),
+        yardLocation: location,
+        taxDue: toSafeString(body.taxDue),
+        challans: toSafeString(body.challans),
+        insuranceExpiry: toSafeString(body.insuranceExpiry),
+        fitnessExpiry: toSafeString(body.fitnessExpiry),
+        permitExpiry: toSafeString(body.permitExpiry),
+        nocStatus: (toSafeString(body.nocStatus).toUpperCase().replace(/\s+/g, "_") || null) as
+          | "AVAILABLE"
+          | "NOT_AVAILABLE"
+          | "UNKNOWN"
+          | null,
+        engineNumber: toSafeString(body.engineNumber),
+        chassisNumber: toSafeString(body.chassisNumber),
+        trailerNumber: toSafeString(body.trailerNumber),
+        gvwTonnes: toSafeString(body.gvwTonnes),
+        gpsInstalled: (toSafeString(body.gpsInstalled).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
+        abs: (toSafeString(body.abs).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
+        fleetManagementSoftwareAvailable: (toSafeString(body.fleetManagementSoftwareAvailable).toUpperCase().replace(/\s+/g, "_") || null) as
+          | "AVAILABLE"
+          | "NOT_AVAILABLE"
+          | "UNKNOWN"
+          | null,
+        verifiedBadges: [],
+        inspectionNotes: [],
+        listingStatus: "PENDING",
         verificationStatus: "PENDING_VERIFICATION",
         isPublished: false,
         rcVerified: false,
         photosVerified: false,
         yardVerified: false,
         sellerVerified: currentUser.isVerified,
-        missingPhotos: !Array.isArray(gallery) || gallery.length < 3,
-        priceTooLow: Number(price) < MIN_REASONABLE_PRICE,
+        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || !interiorPhoto,
+        priceTooLow: expectedPrice < MIN_REASONABLE_PRICE,
         duplicateRegistration: false,
         newSeller: !currentUser.isVerified,
-        missingYardLocation: !yardLocation,
+        missingYardLocation: !location,
         rejectionReason: "",
         verifiedBy: null,
         verifiedAt: null,
       })
       .returning();
+
+    const mediaRows = [
+      { type: "PHOTO", category: "FRONT", url: frontPhoto },
+      { type: "PHOTO", category: "BACK", url: backPhoto },
+      { type: "PHOTO", category: "SIDE", url: sidePhoto },
+      { type: "PHOTO", category: "INTERIOR", url: interiorPhoto },
+      ...(toSafeString(body.walkaroundVideo)
+        ? [{ type: "VIDEO", category: "WALKAROUND", url: toSafeString(body.walkaroundVideo) }]
+        : []),
+      ...(toSafeString(body.engineStartUpVideo)
+        ? [{ type: "VIDEO", category: "ENGINE_STARTUP", url: toSafeString(body.engineStartUpVideo) }]
+        : []),
+      ...(toSafeString(body.inspectionReport)
+        ? [{ type: "DOCUMENT", category: "INSPECTION_REPORT", url: toSafeString(body.inspectionReport) }]
+        : []),
+      ...(toSafeString(body.rcDocument)
+        ? [{ type: "DOCUMENT", category: "RC", url: toSafeString(body.rcDocument) }]
+        : []),
+      ...(toSafeString(body.insuranceDocument)
+        ? [{ type: "DOCUMENT", category: "INSURANCE", url: toSafeString(body.insuranceDocument) }]
+        : []),
+      ...(toSafeString(body.fitnessDocument)
+        ? [{ type: "DOCUMENT", category: "FITNESS", url: toSafeString(body.fitnessDocument) }]
+        : []),
+      ...(toSafeString(body.permitDocument)
+        ? [{ type: "DOCUMENT", category: "PERMIT", url: toSafeString(body.permitDocument) }]
+        : []),
+    ].filter((item) => Boolean(item.url));
+
+    if (mediaRows.length > 0) {
+      await db.insert(vehicleMedia).values(
+        mediaRows.map((item) => ({
+          vehicleId: inserted.id,
+          type: item.type as typeof vehicleMedia.type._.data,
+          category: item.category as typeof vehicleMedia.category._.data,
+          url: item.url,
+          mimeType: "",
+          customName: null,
+        }))
+      );
+    }
 
     return Response.json(inserted, { status: 201 });
   } catch (error) {

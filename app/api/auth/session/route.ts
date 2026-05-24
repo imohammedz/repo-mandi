@@ -15,6 +15,7 @@ export async function GET() {
       accountType: user.accountType,
       sellerRole: user.sellerRole,
       bankRole: user.bankRole,
+      businessName: user.businessName,
       city: user.city,
       state: user.state,
       isProfileComplete: user.isProfileComplete,

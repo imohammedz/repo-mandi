@@ -48,6 +48,7 @@ export async function PATCH(
 
     const updates: Partial<typeof vehicles.$inferInsert> = {
       listingStatus: body.status as typeof vehicles.listingStatus._.data,
+      status: body.status === "VERIFIED" || body.status === "SOLD" ? "APPROVED" : body.status,
       updatedAt: new Date(),
     };
 

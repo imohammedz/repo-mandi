@@ -55,13 +55,18 @@ export default async function VehicleDetailPage({
       <ImageGallery images={vehicle.gallery} title={vehicle.title} />
 
       <section className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${vehicle.listingType === "REPO" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+          {vehicle.listingType === "REPO" ? "REPO" : "REGULAR"}
+        </span>
         <h1 className="text-2xl font-semibold text-slate-900">{vehicle.title}</h1>
-        <p className="text-xl font-semibold text-slate-900">{formatCurrency(vehicle.price)}</p>
+        <p className="text-xl font-semibold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
         <div className="grid grid-cols-2 gap-2 text-sm text-slate-600">
-          <p>Finance: {vehicle.financeCompany}</p>
-          <p>Status: {vehicle.repoStatus}</p>
+          <p>Type: {[vehicle.type, vehicle.vehicleSubType].filter(Boolean).join(" • ")}</p>
+          <p>Running: {vehicle.runningCondition ?? vehicle.condition}</p>
+          {vehicle.listingType === "REPO" ? <p>Finance: {vehicle.financeCompany}</p> : null}
+          {vehicle.listingType === "REPO" ? <p>Repo Status: {vehicle.repoStatus}</p> : null}
           <p>{vehicle.city}, {vehicle.state}</p>
-          <p>Seller: {vehicle.sellerType}</p>
+          <p>Seller: {vehicle.businessName || vehicle.sellerName}</p>
         </div>
       </section>
 
@@ -90,7 +95,7 @@ export default async function VehicleDetailPage({
           <div><dt className="text-slate-500">Brand</dt><dd className="font-medium text-slate-900">{vehicle.brand}</dd></div>
           <div><dt className="text-slate-500">Model</dt><dd className="font-medium text-slate-900">{vehicle.model}</dd></div>
           <div><dt className="text-slate-500">Year</dt><dd className="font-medium text-slate-900">{vehicle.year}</dd></div>
-          <div><dt className="text-slate-500">KM Driven</dt><dd className="font-medium text-slate-900">{vehicle.kmDriven.toLocaleString("en-IN")}</dd></div>
+          <div><dt className="text-slate-500">KM Driven</dt><dd className="font-medium text-slate-900">{typeof vehicle.kmDriven === "number" ? vehicle.kmDriven.toLocaleString("en-IN") : "Unknown"}</dd></div>
           <div><dt className="text-slate-500">Fuel</dt><dd className="font-medium text-slate-900">{vehicle.fuelType}</dd></div>
           <div><dt className="text-slate-500">Axle</dt><dd className="font-medium text-slate-900">{vehicle.axleType}</dd></div>
           <div><dt className="text-slate-500">Registration</dt><dd className="font-medium text-slate-900">{vehicle.registrationState}</dd></div>
@@ -98,15 +103,17 @@ export default async function VehicleDetailPage({
         </dl>
       </section>
 
-      <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">Repo Details</h2>
-        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-          <li>Finance company: {vehicle.financeCompany}</li>
-          <li>Reserve price: {formatCurrency(vehicle.reservePrice)}</li>
-          <li>Auction date: {new Date(vehicle.auctionDate).toLocaleDateString("en-IN")}</li>
-          <li>Yard location: {vehicle.yardLocation}</li>
-        </ul>
-      </section>
+      {vehicle.listingType === "REPO" ? (
+        <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Repo Details</h2>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <li>Finance company: {vehicle.financeCompany}</li>
+            <li>Reserve price: {formatCurrency(vehicle.reservePrice)}</li>
+            <li>Auction date: {vehicle.auctionDate ? new Date(vehicle.auctionDate).toLocaleDateString("en-IN") : "N/A"}</li>
+            <li>Yard location: {vehicle.vehicleOrYardLocation || vehicle.yardLocation}</li>
+          </ul>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">Inspection Notes</h2>
