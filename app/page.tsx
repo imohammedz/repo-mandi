@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { and, desc, eq } from "drizzle-orm";
+import type { Vehicle } from "@/types/vehicle";
 
 const trustItems = [
   { title: "Verified Listings", icon: BadgeCheck },
@@ -15,17 +16,23 @@ const trustItems = [
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const recentListingsRows = await db
-    .select()
-    .from(vehiclesTable)
-    .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
-    .orderBy(desc(vehiclesTable.createdAt))
-    .limit(3);
-
-  const recentVehicles = recentListingsRows.map(dbToVehicle);
+  let recentVehicles: Vehicle[] = [];
+  if (process.env.DATABASE_URL) {
+    try {
+      const recentListingsRows = await db
+        .select()
+        .from(vehiclesTable)
+        .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
+        .orderBy(desc(vehiclesTable.createdAt))
+        .limit(3);
+      recentVehicles = recentListingsRows.map(dbToVehicle);
+    } catch (error) {
+      console.error("Failed to load recent listings on homepage", error);
+    }
+  }
 
   return (
     <div>
