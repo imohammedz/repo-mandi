@@ -458,10 +458,13 @@ export default function AddVehiclePage() {
   const appliesTrailerLogic = form.vehicleType === "Trailer" || hasTrailerConfiguration;
   const requiresPoweredFields = !isTrailerOnly;
   const requiresTrailerFields = appliesTrailerLogic;
+  // Business rule: non-REPO listings that are prime-mover-only should not collect trailer-focused Step 6 fields.
   const shouldHideTrailerFieldsInStep6 =
     form.listingType !== "REPO" && form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
   // Trailer-focused fields are shown only when trailer logic applies and the non-REPO prime-mover-only override does not hide them.
   const showTrailerFieldsInStep6 = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
+  // For non-trailer flows, keep trailer-linked metadata fields optional unless the prime-mover-only hide rule applies.
+  const showOptionalTrailerLinkedFieldsInStep6 = !requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
   const requiresInteriorPhoto = !isTrailerOnly;
   const assetConfigurationContext =
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
@@ -993,12 +996,12 @@ export default function AddVehiclePage() {
               <SelectField label="NOC Status" value={form.nocStatus} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("nocStatus", value)} />
               <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
               <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              {!requiresTrailerFields && !shouldHideTrailerFieldsInStep6 ? (
+              {showOptionalTrailerLinkedFieldsInStep6 ? (
                 <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
               ) : null}
               <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
               <SelectField label="GPS Installed" value={form.gpsInstalled} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("gpsInstalled", value)} />
-              {!requiresTrailerFields && !shouldHideTrailerFieldsInStep6 ? (
+              {showOptionalTrailerLinkedFieldsInStep6 ? (
                 <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
               ) : null}
               {!shouldHideTrailerFieldsInStep6 ? (
