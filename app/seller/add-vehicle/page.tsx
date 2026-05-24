@@ -458,9 +458,10 @@ export default function AddVehiclePage() {
   const appliesTrailerLogic = form.vehicleType === "Trailer" || hasTrailerConfiguration;
   const requiresPoweredFields = !isTrailerOnly;
   const requiresTrailerFields = appliesTrailerLogic;
-  const isNonRepoPrimeMoverOnly =
+  const shouldHideTrailerFieldsInStep6 =
     form.listingType !== "REPO" && form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
-  const showTrailerFieldsInStep6 = requiresTrailerFields && !isNonRepoPrimeMoverOnly;
+  // Trailer-focused fields are shown only when trailer logic applies and the non-REPO prime-mover-only override does not hide them.
+  const showTrailerFieldsInStep6 = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
   const requiresInteriorPhoto = !isTrailerOnly;
   const assetConfigurationContext =
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
@@ -970,7 +971,7 @@ export default function AddVehiclePage() {
                 <>
                   <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
                   <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} />
-                  {!isNonRepoPrimeMoverOnly ? (
+                  {!shouldHideTrailerFieldsInStep6 ? (
                     <TextField label="Suspension Type" value={form.suspensionType} onChange={(value) => update("suspensionType", value)} placeholder="Leaf / Balloon by axle" />
                   ) : null}
                 </>
@@ -992,15 +993,15 @@ export default function AddVehiclePage() {
               <SelectField label="NOC Status" value={form.nocStatus} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("nocStatus", value)} />
               <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
               <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              {!requiresTrailerFields && !isNonRepoPrimeMoverOnly ? (
+              {!requiresTrailerFields && !shouldHideTrailerFieldsInStep6 ? (
                 <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
               ) : null}
               <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
               <SelectField label="GPS Installed" value={form.gpsInstalled} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("gpsInstalled", value)} />
-              {!requiresTrailerFields && !isNonRepoPrimeMoverOnly ? (
+              {!requiresTrailerFields && !shouldHideTrailerFieldsInStep6 ? (
                 <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
               ) : null}
-              {!isNonRepoPrimeMoverOnly ? (
+              {!shouldHideTrailerFieldsInStep6 ? (
                 <SelectField label="Fleet Management Software" value={form.fleetManagementSoftwareAvailable} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
               ) : null}
             </div>
