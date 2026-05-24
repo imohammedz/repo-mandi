@@ -216,7 +216,8 @@ export async function POST(request: Request) {
     const model = toSafeString(body.model);
     const registrationState = toSafeString(body.registrationState);
     // Step 4 only captures a single free-form location in MVP1.
-    // Keep legacy state/city columns populated when possible using profile fallbacks.
+    // Keep legacy state/city columns populated for backward compatibility with
+    // existing schema consumers and filters while UI uses vehicleOrYardLocation.
     // These may still be empty when both request and profile lack values.
     const state = toSafeString(body.state) || toSafeString(currentUser.state);
     const city = toSafeString(body.city) || toSafeString(currentUser.city);

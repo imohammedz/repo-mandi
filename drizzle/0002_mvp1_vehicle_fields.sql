@@ -131,6 +131,7 @@ ALTER TABLE "vehicles"
 -- while regular listings were often created with empty finance_company.
 -- To preserve legacy behavior we classify empty finance_company as REGULAR,
 -- and non-empty finance_company as REPO.
+-- We also backfill vehicle_or_yard_location from yard_location for legacy data.
 -- New writes set listing_type explicitly through API validation.
 UPDATE "vehicles"
 SET
