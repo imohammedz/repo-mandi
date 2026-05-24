@@ -396,8 +396,8 @@ export default function AddVehiclePage() {
     }
 
     if (targetStep === 4) {
-      if (!form.expectedPrice.trim() || !form.state || !form.city || !form.vehicleOrYardLocation.trim()) {
-        return "Price, state, city, and location are required.";
+      if (!form.expectedPrice.trim() || !form.vehicleOrYardLocation.trim()) {
+        return "Price and vehicle/yard location are required.";
       }
     }
 
@@ -649,9 +649,13 @@ export default function AddVehiclePage() {
             placeholder="₹5,00,000"
             type="tel"
           />
-          <SelectField label="State" value={form.state} options={indiaStates} onChange={(value) => update("state", value)} required />
-          <TextField label="City" value={form.city} onChange={(value) => update("city", value)} required placeholder="e.g. Mumbai" />
-          <TextField label="Vehicle / Yard Location" value={form.vehicleOrYardLocation} onChange={(value) => update("vehicleOrYardLocation", value)} required placeholder="e.g. Bhiwandi Yard, NH48" />
+          <TextField
+            label="Vehicle / Yard Location"
+            value={form.vehicleOrYardLocation}
+            onChange={(value) => update("vehicleOrYardLocation", value)}
+            required
+            placeholder="e.g. Kompally Yard, Hyderabad"
+          />
         </section>
       ) : null}
 

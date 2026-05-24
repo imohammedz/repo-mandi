@@ -215,8 +215,8 @@ export async function POST(request: Request) {
     const brand = toSafeString(body.brand);
     const model = toSafeString(body.model);
     const registrationState = toSafeString(body.registrationState);
-    const state = toSafeString(body.state);
-    const city = toSafeString(body.city);
+    const state = toSafeString(body.state) || toSafeString(currentUser.state);
+    const city = toSafeString(body.city) || toSafeString(currentUser.city);
     const location = toSafeString(body.vehicleOrYardLocation || body.yardLocation);
     const conditionNotes = toSafeString(body.conditionNotes);
     const frontPhoto = toSafeString(body.frontPhoto);
@@ -245,8 +245,6 @@ export async function POST(request: Request) {
     if (!kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
     if (!runningCondition) alwaysRequiredMissing.push("runningCondition");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
-    if (!state) alwaysRequiredMissing.push("state");
-    if (!city) alwaysRequiredMissing.push("city");
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
     if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
     if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");

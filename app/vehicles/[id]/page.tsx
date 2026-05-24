@@ -31,6 +31,8 @@ export default async function VehicleDetailPage({
     currentUser?.accountType === "ADMIN" || (currentUser?.id && row.sellerId === currentUser.id);
   if (!isPublicLive && !canViewPrivate) notFound();
   const vehicle = dbToVehicle(row);
+  const displayLocation =
+    vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
 
   const similarRows = await db
     .select()
@@ -65,7 +67,7 @@ export default async function VehicleDetailPage({
           <p>Running: {vehicle.runningCondition ?? vehicle.condition}</p>
           {vehicle.listingType === "REPO" ? <p>Finance: {vehicle.financeCompany}</p> : null}
           {vehicle.listingType === "REPO" ? <p>Repo Status: {vehicle.repoStatus}</p> : null}
-          <p>{vehicle.city}, {vehicle.state}</p>
+          <p>{displayLocation || "Location unavailable"}</p>
           <p>Seller: {vehicle.businessName || vehicle.sellerName}</p>
         </div>
       </section>
@@ -85,7 +87,7 @@ export default async function VehicleDetailPage({
         phone={vehicle.sellerPhone}
         vehicleId={vehicle.id}
         sellerId={vehicle.sellerId ?? undefined}
-        city={vehicle.city}
+        city={displayLocation}
         sellerVerified={vehicle.sellerVerified ?? false}
       />
 

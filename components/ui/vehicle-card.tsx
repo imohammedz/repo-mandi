@@ -15,6 +15,10 @@ type Props = {
 };
 
 export function VehicleCard({ vehicle, compact = false }: Props) {
+  const displayLocation =
+    vehicle.vehicleOrYardLocation ||
+    [vehicle.city, vehicle.state].filter(Boolean).join(", ");
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 10 }}
@@ -51,7 +55,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
 
         <div className="flex items-center gap-1 text-sm text-slate-500">
           <MapPin className="h-4 w-4" />
-          {vehicle.city}, {vehicle.state}
+          {displayLocation || "Location unavailable"}
         </div>
 
         <div className="flex flex-wrap gap-2">
