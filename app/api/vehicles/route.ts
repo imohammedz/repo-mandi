@@ -48,7 +48,8 @@ const LEGACY_RUNNING_MAP: Record<string, RunningCondition> = {
   Unknown: "UNKNOWN",
 };
 
-const MIN_REASONABLE_PRICE = 100000;
+const MIN_REASONABLE_PRICE = 100000; // INR threshold for low-price risk flagging in admin review.
+const MIN_VEHICLE_YEAR = 2000;
 
 function normalizeRegNumber(input: string) {
   return input
@@ -60,6 +61,7 @@ function normalizeRegNumber(input: string) {
 }
 
 function regNumberLooksValid(value: string) {
+  // Format (loose): 2 letters (state) + 1-2 digits + 1-3 letters + 1-4 digits, with optional separators.
   return /^[A-Z]{2}[ -]?\d{1,2}[ -]?[A-Z]{1,3}[ -]?\d{1,4}$/.test(value);
 }
 
@@ -276,8 +278,8 @@ export async function POST(request: Request) {
     }
 
     const currentYear = new Date().getFullYear();
-    if (!Number.isInteger(year) || year < 2000 || year > currentYear) {
-      return Response.json({ message: "Year must be between 2000 and current year." }, { status: 400 });
+    if (!Number.isInteger(year) || year < MIN_VEHICLE_YEAR || year > currentYear) {
+      return Response.json({ message: `Year must be between ${MIN_VEHICLE_YEAR} and current year.` }, { status: 400 });
     }
 
     if (expectedPrice === null || expectedPrice <= 0) {

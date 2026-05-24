@@ -126,6 +126,9 @@ ALTER TABLE "vehicles"
   ADD COLUMN IF NOT EXISTS "abs" "yes_no_unknown",
   ADD COLUMN IF NOT EXISTS "fleet_management_software_available" "availability_status";
 
+-- Backfill heuristic for legacy rows:
+-- if finance_company is empty, classify as REGULAR; otherwise REPO.
+-- New writes set listing_type explicitly through API validation.
 UPDATE "vehicles"
 SET
   "listing_type" = CASE
