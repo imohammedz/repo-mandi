@@ -4,6 +4,15 @@ import { desc, eq, and, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 
 type LeadSource = "CALL" | "WHATSAPP" | "REQUEST_DETAILS";
+const e164Pattern = /^\+[1-9]\d{7,14}$/;
+const indianTenDigitPattern = /^\d{10}$/;
+
+const normalizeIndianPhone = (rawPhone: string) => {
+  const digits = rawPhone.replace(/\D/g, "");
+  if (indianTenDigitPattern.test(digits)) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  return null;
+};
 
 export async function GET(request: Request) {
   const currentUser = await getCurrentUser();
@@ -34,6 +43,7 @@ export async function GET(request: Request) {
       buyerPhone: leads.buyerPhone,
       source: leads.source,
       message: leads.message,
+      phoneVerified: leads.phoneVerified,
       createdAt: leads.createdAt,
       vehicleTitle: vehicles.title,
     })
@@ -56,13 +66,22 @@ export async function POST(request: Request) {
       buyerName?: string;
       buyerPhone?: string;
       message?: string;
+      phoneVerified?: boolean;
     };
 
-    if (!body.vehicleId || !body.source) {
-      return Response.json({ message: "vehicleId and source are required." }, { status: 400 });
+    if (!body.vehicleId || !body.source || !body.buyerName || !body.buyerPhone) {
+      return Response.json({ message: "vehicleId, source, buyerName and buyerPhone are required." }, { status: 400 });
     }
     if (!["CALL", "WHATSAPP", "REQUEST_DETAILS"].includes(body.source)) {
       return Response.json({ message: "Invalid source." }, { status: 400 });
+    }
+    const buyerName = body.buyerName.trim();
+    if (!buyerName) {
+      return Response.json({ message: "Buyer name is required." }, { status: 400 });
+    }
+    const buyerPhone = normalizeIndianPhone(body.buyerPhone);
+    if (!buyerPhone || !e164Pattern.test(buyerPhone)) {
+      return Response.json({ message: "Enter a valid buyer phone number." }, { status: 400 });
     }
 
     const [vehicle] = await db
@@ -90,10 +109,11 @@ export async function POST(request: Request) {
       .values({
         vehicleId: body.vehicleId,
         sellerId: vehicle.sellerId,
-        buyerName: body.buyerName?.trim() || null,
-        buyerPhone: body.buyerPhone?.trim() || null,
+        buyerName,
+        buyerPhone,
         source: body.source,
         message: body.message?.trim() || null,
+        phoneVerified: body.phoneVerified === true,
       })
       .returning();
 

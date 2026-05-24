@@ -6,13 +6,12 @@ import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { eq, ne, desc, and } from "drizzle-orm";
-import { CallButton } from "@/components/ui/call-button";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { getCurrentUser } from "@/lib/auth";
-import { WhatsAppButton } from "@/components/ui/whatsapp-button";
+import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +103,7 @@ export default async function VehicleDetailPage({
         name={vehicle.sellerName}
         role={vehicle.sellerRole}
         phone={vehicle.sellerPhone}
+        vehicleTitle={vehicle.title}
         vehicleId={vehicle.id}
         sellerId={vehicle.sellerId ?? undefined}
         city={displayLocation}
@@ -157,8 +157,13 @@ export default async function VehicleDetailPage({
       </section>
 
       <div className="fixed inset-x-0 bottom-16 z-30 mx-auto flex w-full max-w-xl gap-2 border-t border-slate-100 bg-white p-3">
-        <CallButton phone={vehicle.sellerPhone} text="Call Seller" className="flex-1" vehicleId={vehicle.id} />
-        <WhatsAppButton phone={vehicle.sellerPhone} text="WhatsApp" className="flex-1" vehicleId={vehicle.id} />
+        <VehicleContactActions
+          vehicleId={vehicle.id}
+          sellerPhone={vehicle.sellerPhone}
+          vehicleTitle={vehicle.title}
+          className="w-full"
+          showRequestDetails={false}
+        />
       </div>
     </main>
   );

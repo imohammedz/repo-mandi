@@ -319,6 +319,7 @@ export const leads = pgTable("leads", {
   buyerPhone: varchar("buyer_phone", { length: 20 }),
   source: leadSourceEnum("source").notNull(),
   message: text("message"),
+  phoneVerified: boolean("phone_verified").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
