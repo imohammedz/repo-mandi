@@ -133,7 +133,7 @@ const repoStatusOptions = [
 ];
 
 const MIN_YEAR = 2000;
-const years = Array.from({ length: new Date().getFullYear() - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
+const years = Array.from({ length: new Date().getFullYear() - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i)).reverse();
 
 const indiaStates = [
   "Andhra Pradesh",
@@ -397,7 +397,7 @@ export default function AddVehiclePage() {
 
     if (targetStep === 4) {
       if (!form.expectedPrice.trim() || !form.vehicleOrYardLocation.trim()) {
-        return "Price and vehicle/yard location are required.";
+        return "Expected price and vehicle/yard location are required.";
       }
     }
 
