@@ -273,6 +273,8 @@ export async function POST(request: Request) {
     const appliesTrailerLogic = vehicleType === "Trailer" || hasTrailerConfiguration;
     const requiresPoweredFields = !isTrailerOnly;
     const requiresTrailerFields = appliesTrailerLogic;
+    // Mirrors the Step 6 client-side visibility rule in app/seller/add-vehicle/page.tsx.
+    // Keep both sides aligned to avoid client/server validation mismatches.
     const shouldHideTrailerFieldsInStep6 =
       listingType !== "REPO" && assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
     const requiresTrailerFieldsForValidation = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;

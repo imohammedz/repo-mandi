@@ -459,6 +459,7 @@ export default function AddVehiclePage() {
   const requiresPoweredFields = !isTrailerOnly;
   const requiresTrailerFields = appliesTrailerLogic;
   // Business rule: non-REPO listings that are prime-mover-only should not collect trailer-focused Step 6 fields.
+  // Keep this in sync with the mirrored API validation in app/api/vehicles/route.ts.
   const shouldHideTrailerFieldsInStep6 =
     form.listingType !== "REPO" && form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
   // Trailer-focused fields are shown only when trailer logic applies and the non-REPO prime-mover-only override does not hide them.
