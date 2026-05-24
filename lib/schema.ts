@@ -322,6 +322,13 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const platformSettings = pgTable("platform_settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // ─── Inferred types ───────────────────────────────────────────────────────────
 
 export type DbVehicle = typeof vehicles.$inferSelect;
@@ -332,3 +339,4 @@ export type DbLead = typeof leads.$inferSelect;
 export type DbLeadInsert = typeof leads.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
 export type DbVehicleMediaInsert = typeof vehicleMedia.$inferInsert;
+export type DbPlatformSetting = typeof platformSettings.$inferSelect;

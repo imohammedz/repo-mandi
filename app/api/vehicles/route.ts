@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles } from "@/lib/schema";
+import { vehicleMedia, vehicles, platformSettings } from "@/lib/schema";
 import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
@@ -377,6 +377,14 @@ export async function POST(request: Request) {
 
     const gallery = [frontPhoto, backPhoto, sidePhoto, interiorPhoto].filter(Boolean);
 
+    // Check auto-approval setting
+    const [autoApproveRow] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.key, "AUTO_APPROVE_LISTINGS"));
+    const autoApprove = autoApproveRow?.value === "true";
+    const now = new Date();
+
     const [inserted] = await db
       .insert(vehicles)
       .values({
@@ -385,7 +393,7 @@ export async function POST(request: Request) {
         createdByUserId: currentUser.id,
         listingType,
         assetConfiguration,
-        status: "PENDING",
+        status: autoApprove ? "VERIFIED" : "PENDING",
         title,
         type: vehicleType,
         vehicleSubType: toSafeString(body.vehicleSubType) || null,
@@ -496,9 +504,9 @@ export async function POST(request: Request) {
           | null,
         verifiedBadges: [],
         inspectionNotes: [],
-        listingStatus: "PENDING",
-        verificationStatus: "PENDING_VERIFICATION",
-        isPublished: false,
+        listingStatus: autoApprove ? "VERIFIED" : "PENDING",
+        verificationStatus: autoApprove ? "VERIFIED" : "PENDING_VERIFICATION",
+        isPublished: autoApprove,
         rcVerified: false,
         photosVerified: false,
         yardVerified: false,
@@ -510,7 +518,7 @@ export async function POST(request: Request) {
         missingYardLocation: !location,
         rejectionReason: "",
         verifiedBy: null,
-        verifiedAt: null,
+        verifiedAt: autoApprove ? now : null,
       })
       .returning();
 

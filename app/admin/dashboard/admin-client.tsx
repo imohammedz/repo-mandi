@@ -90,6 +90,12 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
           >
             Bank Users
           </a>
+          <a
+            href="/admin/settings"
+            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
+          >
+            Settings
+          </a>
         </div>
       </div>
 
