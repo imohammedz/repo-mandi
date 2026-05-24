@@ -54,14 +54,27 @@ export default function OtpClientPage({ phone }: OtpClientPageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, code: otp.join("") }),
       });
-      const data = (await response.json()) as ApiMessageResponse;
+      const data = (await response.json()) as ApiMessageResponse & {
+        needsOnboarding?: boolean;
+        user?: { accountType?: "BUYER" | "SELLER" | "BANK_PARTNER" | "ADMIN"; isProfileComplete?: boolean };
+      };
 
       if (!response.ok) {
         setError(data.message ?? "OTP verification failed. Please try again.");
         return;
       }
 
-      router.push(`/auth/role?phone=${encodeURIComponent(phone)}`);
+      if (data.needsOnboarding || !data.user?.isProfileComplete) {
+        router.push("/onboarding");
+      } else if (data.user.accountType === "SELLER") {
+        router.push("/seller/dashboard");
+      } else if (data.user.accountType === "BANK_PARTNER") {
+        router.push("/bank/dashboard");
+      } else if (data.user.accountType === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/vehicles");
+      }
     } catch {
       setError("Unable to verify OTP right now. Please try again.");
     } finally {

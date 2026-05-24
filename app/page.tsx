@@ -1,8 +1,13 @@
 import Link from "next/link";
-import { BadgeCheck, Building2, CircleDollarSign, Shield, Truck } from "lucide-react";
+import { BadgeCheck, Building2, CircleDollarSign, Truck } from "lucide-react";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import { featuredVehicles, recentVehicles, vehicleCategories } from "@/data/vehicles";
+import { featuredVehicles, vehicleCategories } from "@/data/vehicles";
+import { db } from "@/lib/db";
+import { vehicles as vehiclesTable } from "@/lib/schema";
+import { dbToVehicle } from "@/lib/mappers";
+import { and, desc, eq } from "drizzle-orm";
+import type { Vehicle } from "@/types/vehicle";
 
 const trustItems = [
   { title: "Verified Listings", icon: BadgeCheck },
@@ -11,20 +16,28 @@ const trustItems = [
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
 
-export default function HomePage() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  let recentVehicles: Vehicle[] = [];
+  if (!process.env.DATABASE_URL) {
+    console.warn("Skipping homepage recent listings because DATABASE_URL is not configured.");
+  } else {
+    try {
+      const recentListingsRows = await db
+        .select()
+        .from(vehiclesTable)
+        .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
+        .orderBy(desc(vehiclesTable.createdAt))
+        .limit(3);
+      recentVehicles = recentListingsRows.map(dbToVehicle);
+    } catch (error) {
+      console.error("Failed to load recent listings on homepage", error);
+    }
+  }
+
   return (
     <div>
-      <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
-            RepoMandi
-          </Link>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-            <Shield className="h-3 w-3" /> Trusted
-          </span>
-        </div>
-      </header>
-
       <main className="space-y-10 px-4 pb-8 pt-6">
         <section className="space-y-4">
           <h1 className="text-3xl font-semibold leading-tight text-slate-900">
@@ -90,9 +103,13 @@ export default function HomePage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
           <div className="space-y-4">
-            {recentVehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
-            ))}
+            {recentVehicles.length > 0 ? (
+              recentVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No recent listings yet.</p>
+            )}
           </div>
         </section>
 
@@ -100,14 +117,14 @@ export default function HomePage() {
           <h3 className="text-xl font-semibold">List your vehicle in minutes</h3>
           <p className="mt-2 text-sm text-slate-200">Get buyer leads quickly with verification support and transparent updates.</p>
           <Link
-            href="/seller/add-vehicle"
+            href="/sell"
             className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-slate-900"
           >
             Sell Vehicle
           </Link>
         </section>
 
-        <footer className="pb-2 pt-3 text-xs text-slate-500">© 2026 RepoMandi • Built for Indian trucking marketplace</footer>
+        <footer className="pb-2 pt-3 text-xs text-slate-500">© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California</footer>
       </main>
     </div>
   );

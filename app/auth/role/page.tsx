@@ -1,12 +1,5 @@
-import RoleClientPage from "./role-client";
+import { redirect } from "next/navigation";
 
-export default async function RolePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ phone?: string }>;
-}) {
-  const params = await searchParams;
-  const phone = (params.phone ?? "").replace(/\D/g, "").slice(0, 10);
-
-  return <RoleClientPage phone={phone} />;
+export default function RolePage() {
+  redirect("/onboarding");
 }

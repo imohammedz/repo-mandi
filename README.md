@@ -50,7 +50,7 @@ npm run db:migrate
 | `GET` | `/api/vehicles/:id` | Get a single vehicle |
 | `PUT` | `/api/vehicles/:id` | Update a vehicle |
 | `DELETE` | `/api/vehicles/:id` | Delete a vehicle |
-| `PATCH` | `/api/vehicles/:id/status` | Admin approve/reject (`{ status: "Verified" \| "Rejected" \| "Pending" \| "Sold" }`) |
+| `PATCH` | `/api/vehicles/:id/status` | Admin approve/reject (`{ status: "VERIFIED" \| "REJECTED" \| "PENDING" \| "SOLD" }`) |
 | `GET` | `/api/users` | List users (supports `?phone=`) |
 | `POST` | `/api/users` | Upsert user by phone + role |
 | `POST` | `/api/uploads` | Upload vehicle photos (`multipart/form-data`, field name: `files`) |
@@ -65,6 +65,7 @@ Create a `.env.local` file (or copy from `.env.example`) with:
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_VERIFY_SERVICE_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ADMIN_PHONE_NUMBERS=+1XXXXXXXXXX,+91XXXXXXXXXX
 ```
 
 The app sends and verifies OTP via:

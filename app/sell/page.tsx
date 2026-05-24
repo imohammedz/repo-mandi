@@ -16,14 +16,19 @@ export default function SellPage() {
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const isLoggedIn = localStorage.getItem("rm_logged_in") === "true";
-      if (isLoggedIn) {
-        router.replace("/seller/add-vehicle");
+    const check = async () => {
+      try {
+        const response = await fetch("/api/auth/session");
+        if (!response.ok) return;
+        const data = (await response.json()) as { user?: { accountType?: string; isProfileComplete?: boolean } };
+        if (data.user?.accountType === "SELLER") {
+          router.replace(data.user.isProfileComplete ? "/seller/dashboard" : "/onboarding");
+        }
+      } catch {
+        // If session is unavailable, keep users on this screen.
       }
-    } catch {
-      // If storage is unavailable, keep users on this screen.
-    }
+    };
+    check();
   }, [router]);
 
   return (

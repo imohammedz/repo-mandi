@@ -5,14 +5,43 @@ import { VehicleCard } from "@/components/ui/vehicle-card";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { desc } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-export default async function VehicleListingPage() {
+export default async function VehicleListingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    type?: string;
+    brand?: string;
+    city?: string;
+    state?: string;
+    financeCompany?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    verifiedOnly?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const conditions = [
+    eq(vehiclesTable.isPublished, true),
+    eq(vehiclesTable.listingStatus, "VERIFIED"),
+  ];
+
+  if (params.type) conditions.push(eq(vehiclesTable.type, params.type as typeof vehiclesTable.type._.data));
+  if (params.brand) conditions.push(ilike(vehiclesTable.brand, `%${params.brand}%`));
+  if (params.city) conditions.push(ilike(vehiclesTable.city, `%${params.city}%`));
+  if (params.state) conditions.push(ilike(vehiclesTable.state, `%${params.state}%`));
+  if (params.financeCompany) conditions.push(ilike(vehiclesTable.financeCompany, `%${params.financeCompany}%`));
+  if (params.minPrice) conditions.push(gte(vehiclesTable.price, params.minPrice));
+  if (params.maxPrice) conditions.push(lte(vehiclesTable.price, params.maxPrice));
+  if (params.verifiedOnly === "1") conditions.push(eq(vehiclesTable.sellerVerified, true));
+
   const vehicleList = await db
     .select()
     .from(vehiclesTable)
+    .where(and(...conditions))
     .orderBy(desc(vehiclesTable.createdAt));
 
   const appVehicles = vehicleList.map(dbToVehicle);

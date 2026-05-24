@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { TopHeader } from "@/components/layout/top-header";
 import { StickyWhatsAppCTA } from "@/components/layout/sticky-whatsapp-cta";
 import "./globals.css";
 
@@ -22,7 +23,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} antialiased`}>
       <body className="bg-slate-50 font-sans text-slate-900">
-        <div className="mx-auto min-h-screen w-full max-w-xl pb-24">{children}</div>
+        <TopHeader />
+        <div className="mx-auto min-h-screen w-full max-w-xl pb-24 pt-14">{children}</div>
         <StickyWhatsAppCTA />
         <BottomNav />
       </body>

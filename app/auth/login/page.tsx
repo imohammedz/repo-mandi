@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -11,6 +11,28 @@ export default function LoginPage() {
   const [mobile, setMobile] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await fetch("/api/auth/session");
+        if (!response.ok) return;
+        const data = (await response.json()) as { user?: { accountType?: string; isProfileComplete?: boolean } };
+        if (!data.user) return;
+        if (!data.user.isProfileComplete) {
+          router.replace("/onboarding");
+          return;
+        }
+        if (data.user.accountType === "SELLER") router.replace("/seller/dashboard");
+        else if (data.user.accountType === "BANK_PARTNER") router.replace("/bank/dashboard");
+        else if (data.user.accountType === "ADMIN") router.replace("/admin/dashboard");
+        else router.replace("/vehicles");
+      } catch {
+        // ignore
+      }
+    };
+    load();
+  }, [router]);
 
   const handleContinue = async () => {
     if (mobile.length !== 10 || submitting) return;

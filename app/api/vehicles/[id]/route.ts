@@ -3,6 +3,7 @@ import { vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
+import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -34,9 +35,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getCurrentUser();
     const { id } = await params;
     const [row] = await db.select().from(vehicles).where(eq(vehicles.id, id));
     if (!row) {
+      return Response.json({ message: "Vehicle not found." }, { status: 404 });
+    }
+    const canViewPrivate =
+      currentUser?.accountType === "ADMIN" || (currentUser?.id && row.sellerId === currentUser.id);
+    const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
+    if (!isPublicLive && !canViewPrivate) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
     }
     return Response.json(row);
@@ -52,13 +60,43 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return Response.json({ message: "Unauthorized." }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = (await request.json()) as Record<string, unknown>;
 
+    const [existing] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+    if (!existing) {
+      return Response.json({ message: "Vehicle not found." }, { status: 404 });
+    }
+
+    const isAdmin = currentUser.accountType === "ADMIN";
+    const isOwner = existing.sellerId === currentUser.id;
+    if (!isAdmin && !isOwner) {
+      return Response.json({ message: "Forbidden." }, { status: 403 });
+    }
+
     // Prevent id and created_at from being overwritten
-    const updates = Object.fromEntries(
-      Object.entries(body).filter(([key]) => key !== "id" && key !== "createdAt")
-    );
+    const blocked = new Set([
+      "id",
+      "createdAt",
+      "sellerId",
+      "createdByUserId",
+      "isPublished",
+      "verificationStatus",
+      "verifiedBy",
+      "verifiedAt",
+      "listingStatus",
+      "rejectionReason",
+      "sellerVerified",
+      "photosVerified",
+      "yardVerified",
+      "rcVerified",
+    ]);
+    const updates = Object.fromEntries(Object.entries(body).filter(([key]) => !blocked.has(key)));
 
     const [updated] = await db
       .update(vehicles)
@@ -82,6 +120,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return Response.json({ message: "Unauthorized." }, { status: 401 });
+    }
+
     const { id } = await params;
     const [existing] = await db
       .select({
@@ -93,6 +136,13 @@ export async function DELETE(
 
     if (!existing) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
+    }
+
+    const [fullExisting] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+    const isAdmin = currentUser.accountType === "ADMIN";
+    const isOwner = fullExisting?.sellerId === currentUser.id;
+    if (!isAdmin && !isOwner) {
+      return Response.json({ message: "Forbidden." }, { status: 403 });
     }
 
     const [deleted] = await db

@@ -12,6 +12,7 @@ export const vehicleCategories = [
 export const vehicles: Vehicle[] = [
   {
     id: "tata-407-2019",
+    listingType: "REPO",
     title: "Tata 407 Gold SFC",
     type: "Pickup",
     brand: "Tata",
@@ -48,10 +49,11 @@ export const vehicles: Vehicle[] = [
       "Brake response normal",
     ],
     inquiries: 42,
-    listingStatus: "Verified",
+    listingStatus: "VERIFIED",
   },
   {
     id: "leyland-2518-2018",
+    listingType: "REPO",
     title: "Ashok Leyland 2518 Tipper",
     type: "Tipper",
     brand: "Ashok Leyland",
@@ -88,10 +90,11 @@ export const vehicles: Vehicle[] = [
       "Battery recently changed",
     ],
     inquiries: 67,
-    listingStatus: "Pending",
+    listingStatus: "PENDING",
   },
   {
     id: "bharatbenz-4228-2020",
+    listingType: "REPO",
     title: "BharatBenz 4228 Heavy Truck",
     type: "Truck",
     brand: "BharatBenz",
@@ -128,10 +131,11 @@ export const vehicles: Vehicle[] = [
       "Electricals functional",
     ],
     inquiries: 31,
-    listingStatus: "Verified",
+    listingStatus: "VERIFIED",
   },
   {
     id: "bolero-pickup-2021",
+    listingType: "REPO",
     title: "Mahindra Bolero Pickup ExtraLong",
     type: "Pickup",
     brand: "Mahindra",
@@ -168,10 +172,11 @@ export const vehicles: Vehicle[] = [
       "AC not fitted",
     ],
     inquiries: 24,
-    listingStatus: "Sold",
+    listingStatus: "SOLD",
   },
   {
     id: "eicher-pro-3015-2017",
+    listingType: "REPO",
     title: "Eicher Pro 3015",
     type: "Truck",
     brand: "Eicher",
@@ -208,7 +213,7 @@ export const vehicles: Vehicle[] = [
       "Cabin electrical switch replacement needed",
     ],
     inquiries: 53,
-    listingStatus: "Rejected",
+    listingStatus: "REJECTED",
   },
 ];
 

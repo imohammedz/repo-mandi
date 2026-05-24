@@ -23,18 +23,16 @@ export default function RoleClientPage({ phone }: RoleClientPageProps) {
 
   const handleContinue = async () => {
     if (!selected) return;
-    localStorage.setItem("rm_logged_in", "true");
-    localStorage.setItem("rm_role", selected);
-    if (phone) {
-      localStorage.setItem("rm_phone", `+91${phone}`);
-      // Persist user in DB
-      await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: `+91${phone}`, role: selected }),
-      });
-    }
-    router.push("/seller/add-vehicle");
+    if (phone) localStorage.setItem("rm_phone", `+91${phone}`);
+    await fetch("/api/users/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accountType: "SELLER",
+        sellerRole: selected.toUpperCase(),
+      }),
+    });
+    router.push("/onboarding");
   };
 
   return (
@@ -47,8 +45,8 @@ export default function RoleClientPage({ phone }: RoleClientPageProps) {
       </Link>
 
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-slate-900">Select Role</h1>
-        <p className="text-sm text-slate-500">Choose how you&apos;ll be using RepoMandi.</p>
+        <h1 className="text-2xl font-semibold text-slate-900">Select Seller Role</h1>
+        <p className="text-sm text-slate-500">This page is deprecated. Continue to onboarding after selecting.</p>
       </div>
 
       <div className="space-y-3">

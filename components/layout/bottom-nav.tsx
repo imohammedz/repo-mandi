@@ -15,7 +15,7 @@ const items = [
 export function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/auth")) {
+  if (pathname.startsWith("/auth") || pathname.startsWith("/onboarding")) {
     return null;
   }
 
