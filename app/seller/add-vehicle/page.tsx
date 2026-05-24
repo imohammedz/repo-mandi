@@ -220,7 +220,9 @@ const indiaStates = [
   "Lakshadweep",
 ];
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 8;
+
+const STEP_LABELS = ["Listing", "Vehicle", "Condition", "Pricing", "Repo", "Details", "Photos", "Review"];
 
 const emptyForm: FormData = {
   listingType: "",
@@ -466,12 +468,15 @@ export default function AddVehiclePage() {
   }, [assetHelpOpen]);
 
   const validateStep = (targetStep: number) => {
-    if (targetStep === 1 && !form.listingType) return "Select listing type.";
+    // Step 1: Listing Information + Asset Configuration
+    if (targetStep === 1) {
+      if (!form.listingType) return "Select listing type.";
+      if (!form.assetConfiguration) return "Select asset configuration.";
+    }
 
+    // Step 2: Vehicle Basics
     if (targetStep === 2) {
-      if (!form.assetConfiguration || !form.vehicleType) {
-        return "Asset configuration and vehicle type are required.";
-      }
+      if (!form.vehicleType) return "Vehicle type is required.";
       if (requiresPoweredFields && (!form.brand || !form.model || !form.year)) {
         return "Brand, model, and year are required for powered vehicle listings.";
       }
@@ -480,44 +485,47 @@ export default function AddVehiclePage() {
       }
     }
 
+    // Step 3: Vehicle Condition & Usage
     if (targetStep === 3) {
-      if (isTrailerOnly) return "";
-      if (!form.kmMeterStatus || !form.runningCondition) return "Usage fields are required.";
-      if (form.kmMeterStatus === "WORKING" && !form.kmDriven.trim()) {
-        return "KM driven is required when meter is working.";
+      if (!isTrailerOnly) {
+        if (!form.kmMeterStatus || !form.runningCondition) return "KM meter status and running condition are required.";
+        if (form.kmMeterStatus === "WORKING" && !form.kmDriven.trim()) {
+          return "KM driven is required when meter is working.";
+        }
       }
+      if (!form.conditionNotes.trim()) return "Condition notes are required.";
     }
 
+    // Step 4: Pricing & Location
     if (targetStep === 4) {
       if (!form.expectedPrice || Number(form.expectedPrice) <= 0 || !form.vehicleOrYardLocation.trim()) {
         return "Expected price and vehicle/yard location are required.";
       }
     }
 
-    if (targetStep === 5 && !form.conditionNotes.trim()) {
-      return "Condition notes are required.";
-    }
-
-    if (targetStep === 6) {
-      if (!form.frontPhoto || !form.backPhoto || !form.sidePhoto || (requiresInteriorPhoto && !form.interiorPhoto)) {
-        return requiresInteriorPhoto
-          ? "Front, back, side, and interior photos are required."
-          : "Front, back, and side photos are required.";
-      }
-    }
-
-    if (targetStep === 7 && form.listingType === "REPO") {
+    // Step 5: Repo Details (only validated if REPO)
+    if (targetStep === 5 && form.listingType === "REPO") {
       if (!form.financeCompany || !form.repoStatus || !form.yardName.trim()) {
         return "Finance company, repo status, and yard name are required for REPO listings.";
       }
     }
 
-    if (targetStep === 8 && requiresTrailerFields) {
+    // Step 6: Optional Vehicle Details — trailer specs required when applicable
+    if (targetStep === 6 && requiresTrailerFields) {
       if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim() || !form.bodyDimensions.trim()) {
         return "Trailer type, trailer length, number of axles, and body dimensions are required.";
       }
       if (form.assetConfiguration === "Prime Mover + Trailer" && (!form.suspensionType || !form.abs)) {
         return "Suspension type and ABS are required for Prime Mover + Trailer.";
+      }
+    }
+
+    // Step 7: Photos & Documents
+    if (targetStep === 7) {
+      if (!form.frontPhoto || !form.backPhoto || !form.sidePhoto || (requiresInteriorPhoto && !form.interiorPhoto)) {
+        return requiresInteriorPhoto
+          ? "Front, back, side, and interior photos are required."
+          : "Front, back, and side photos are required.";
       }
     }
 
@@ -569,7 +577,7 @@ export default function AddVehiclePage() {
   };
 
   const handleSubmit = async () => {
-    const stepError = validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5) || validateStep(6) || validateStep(7) || validateStep(8);
+    const stepError = validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5) || validateStep(6) || validateStep(7);
     if (stepError) {
       setError(stepError);
       return;
@@ -659,7 +667,9 @@ export default function AddVehiclePage() {
           <ArrowLeft className="h-4 w-4 text-slate-700" />
         </button>
         <div className="flex-1">
-          <p className="text-xs font-medium text-slate-500">Step {step} of {TOTAL_STEPS}</p>
+          <p className="text-xs font-medium text-slate-500">
+            Step {step} of {TOTAL_STEPS} &mdash; <span className="text-slate-700">{STEP_LABELS[step - 1]}</span>
+          </p>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-slate-900" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
           </div>
@@ -696,12 +706,6 @@ export default function AddVehiclePage() {
               Bank-Seized / Repo Vehicle
             </button>
           </div>
-        </section>
-      ) : null}
-
-      {step === 2 ? (
-        <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 2: Vehicle Basics</h1>
           <SelectField
             label="Asset Configuration"
             value={form.assetConfiguration}
@@ -776,6 +780,12 @@ export default function AddVehiclePage() {
               </div>
             </div>
           ) : null}
+        </section>
+      ) : null}
+
+      {step === 2 ? (
+        <section className="space-y-4">
+          <h1 className="text-xl font-semibold text-slate-900">Step 2: Vehicle Basics</h1>
           <SelectField label="Vehicle Type" value={form.vehicleType} options={vehicleTypes} onChange={(value) => update("vehicleType", value)} required />
           <TextField label="Vehicle Sub-Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="Trailer subtype, tanker subtype, etc." />
           {requiresPoweredFields ? (
@@ -796,7 +806,7 @@ export default function AddVehiclePage() {
 
       {step === 3 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 3: Registration &amp; Usage</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step 3: Vehicle Condition &amp; Usage</h1>
           {isTrailerOnly ? (
             <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               KM meter and running-condition fields are skipped for Trailer Only listings.
@@ -827,8 +837,36 @@ export default function AddVehiclePage() {
                 onChange={(value) => update("runningCondition", value as "RUNNING" | "NOT_RUNNING" | "UNKNOWN")}
                 required
               />
+              <SelectField
+                label="Engine Condition"
+                value={form.engineCondition}
+                options={["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"]}
+                onChange={(value) => update("engineCondition", value)}
+              />
             </>
           )}
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">Condition Notes <span className="text-rose-500">*</span></span>
+            <textarea
+              value={form.conditionNotes}
+              onChange={(event) => update("conditionNotes", event.target.value)}
+              rows={3}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+              placeholder="Example: Engine running. Cabin work needed."
+            />
+          </label>
+          <SelectField
+            label="Needs Towing"
+            value={form.needsTowing}
+            options={["YES", "NO", "UNKNOWN"]}
+            onChange={(value) => update("needsTowing", value)}
+          />
+          <SelectField
+            label="Road Safe Status"
+            value={form.roadSafeStatus}
+            options={["ROAD_SAFE", "NOT_ROAD_SAFE", "UNKNOWN"]}
+            onChange={(value) => update("roadSafeStatus", value)}
+          />
         </section>
       ) : null}
 
@@ -855,99 +893,10 @@ export default function AddVehiclePage() {
 
       {step === 5 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 5: Condition</h1>
-          <label className="space-y-1.5">
-            <span className="text-sm font-medium text-slate-700">Condition Notes <span className="text-rose-500">*</span></span>
-            <textarea
-              value={form.conditionNotes}
-              onChange={(event) => update("conditionNotes", event.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-              placeholder="Example: Engine running. Cabin work needed."
-            />
-          </label>
-          {!isTrailerOnly ? (
-            <SelectField
-              label="Engine Condition"
-              value={form.engineCondition}
-              options={["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"]}
-              onChange={(value) => update("engineCondition", value)}
-            />
-          ) : null}
-          <SelectField
-            label="Needs Towing"
-            value={form.needsTowing}
-            options={["YES", "NO", "UNKNOWN"]}
-            onChange={(value) => update("needsTowing", value)}
-          />
-          <SelectField
-            label="Road Safe Status"
-            value={form.roadSafeStatus}
-            options={["ROAD_SAFE", "NOT_ROAD_SAFE", "UNKNOWN"]}
-            onChange={(value) => update("roadSafeStatus", value)}
-          />
-        </section>
-      ) : null}
-
-      {step === 6 ? (
-        <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 6: Photos</h1>
-          <p className="text-sm text-slate-500">
-            {requiresInteriorPhoto
-              ? "Front, back, side, and interior photos are required."
-              : "Front, back, and side photos are required. Interior photo is optional for Trailer Only."}
-          </p>
-
-          {(
-            [
-              { key: "frontPhoto", label: "Front Photo", required: true },
-              { key: "backPhoto", label: "Back Photo", required: true },
-              { key: "sidePhoto", label: "Side Photo", required: true },
-              { key: "interiorPhoto", label: "Interior Photo", required: requiresInteriorPhoto },
-            ] as { key: UploadCategory; label: string; required: boolean }[]
-          ).map((item) => (
-            <div key={item.key} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-700">
-                  {item.label} {item.required ? <span className="text-rose-500">*</span> : <span className="text-slate-400">(Optional)</span>}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => fileRefs[item.key].current?.click()}
-                  disabled={uploadingField === item.key}
-                  className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
-                >
-                  {uploadingField === item.key ? "Uploading..." : form[item.key] ? "Replace" : "Upload"}
-                </button>
-              </div>
-              <input
-                ref={fileRefs[item.key]}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)}
-              />
-              {form[item.key] ? (
-                <Image src={form[item.key]} alt={item.label} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
-              ) : (
-                <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
-                  No image uploaded
-                </div>
-              )}
-            </div>
-          ))}
-
-          <TextField label="Walkaround Video URL" value={form.walkaroundVideo} onChange={(value) => update("walkaroundVideo", value)} placeholder="Optional" />
-          <TextField label="Engine Start-up Video URL" value={form.engineStartUpVideo} onChange={(value) => update("engineStartUpVideo", value)} placeholder="Optional" />
-        </section>
-      ) : null}
-
-      {step === 7 ? (
-        <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 7: Repo Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step 5: Repo Details</h1>
           {form.listingType !== "REPO" ? (
             <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Repo details are only required when listing type is REPO.
+              Repo details are only required when listing type is REPO. You can skip to the next step.
             </p>
           ) : (
             <>
@@ -962,9 +911,9 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 8 ? (
+      {step === 6 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 8: Trailer &amp; Optional Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step 6: Optional Vehicle Details</h1>
           {requiresTrailerFields ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               Trailer specs are required for this asset configuration.
@@ -1019,23 +968,6 @@ export default function AddVehiclePage() {
               <SelectField label="Tyre Condition" value={form.tyreCondition} options={["NEW", "GOOD", "FAIR", "AROUND_50", "POOR", "MIXED", "UNKNOWN"]} onChange={(value) => update("tyreCondition", value)} />
             </div>
           </details>
-        </section>
-      ) : null}
-
-      {step === 9 ? (
-        <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 9: Documents &amp; Advanced/Future Fields</h1>
-          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documents (optional URLs)</summary>
-            <div className="mt-4 space-y-3">
-              <TextField label="Inspection Report" value={form.inspectionReport} onChange={(value) => update("inspectionReport", value)} />
-              <TextField label="RC" value={form.rcDocument} onChange={(value) => update("rcDocument", value)} />
-              <TextField label="Insurance" value={form.insuranceDocument} onChange={(value) => update("insuranceDocument", value)} />
-              <TextField label="Fitness" value={form.fitnessDocument} onChange={(value) => update("fitnessDocument", value)} />
-              <TextField label="Permit" value={form.permitDocument} onChange={(value) => update("permitDocument", value)} />
-            </div>
-          </details>
-
           <details className="rounded-xl border border-slate-200 bg-white p-4">
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Compliance &amp; Technical</summary>
             <div className="mt-4 space-y-3">
@@ -1061,10 +993,74 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 10 ? (
+      {step === 7 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 10: Seller Info</h1>
-          <p className="text-sm text-slate-500">Profile data is auto-filled and read-only.</p>
+          <h1 className="text-xl font-semibold text-slate-900">Step 7: Photos &amp; Documents</h1>
+          <p className="text-sm text-slate-500">
+            {requiresInteriorPhoto
+              ? "Front, back, side, and interior photos are required."
+              : "Front, back, and side photos are required. Interior photo is optional for Trailer Only."}
+          </p>
+
+          {(
+            [
+              { key: "frontPhoto", label: "Front Photo", required: true },
+              { key: "backPhoto", label: "Back Photo", required: true },
+              { key: "sidePhoto", label: "Side Photo", required: true },
+              { key: "interiorPhoto", label: "Interior Photo", required: requiresInteriorPhoto },
+            ] as { key: UploadCategory; label: string; required: boolean }[]
+          ).map((item) => (
+            <div key={item.key} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-700">
+                  {item.label} {item.required ? <span className="text-rose-500">*</span> : <span className="text-slate-400">(Optional)</span>}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileRefs[item.key].current?.click()}
+                  disabled={uploadingField === item.key}
+                  className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+                >
+                  {uploadingField === item.key ? "Uploading..." : form[item.key] ? "Replace" : "Upload"}
+                </button>
+              </div>
+              <input
+                ref={fileRefs[item.key]}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)}
+              />
+              {form[item.key] ? (
+                <Image src={form[item.key]} alt={item.label} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
+              ) : (
+                <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
+                  No image uploaded
+                </div>
+              )}
+            </div>
+          ))}
+
+          <TextField label="Walkaround Video URL" value={form.walkaroundVideo} onChange={(value) => update("walkaroundVideo", value)} placeholder="Optional" />
+          <TextField label="Engine Start-up Video URL" value={form.engineStartUpVideo} onChange={(value) => update("engineStartUpVideo", value)} placeholder="Optional" />
+
+          <details className="rounded-xl border border-slate-200 bg-white p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documents (optional URLs)</summary>
+            <div className="mt-4 space-y-3">
+              <TextField label="Inspection Report" value={form.inspectionReport} onChange={(value) => update("inspectionReport", value)} />
+              <TextField label="RC" value={form.rcDocument} onChange={(value) => update("rcDocument", value)} />
+              <TextField label="Insurance" value={form.insuranceDocument} onChange={(value) => update("insuranceDocument", value)} />
+              <TextField label="Fitness" value={form.fitnessDocument} onChange={(value) => update("fitnessDocument", value)} />
+              <TextField label="Permit" value={form.permitDocument} onChange={(value) => update("permitDocument", value)} />
+            </div>
+          </details>
+        </section>
+      ) : null}
+
+      {step === 8 ? (
+        <section className="space-y-4">
+          <h1 className="text-xl font-semibold text-slate-900">Step 8: Seller Info &amp; Review</h1>
+          <p className="text-sm text-slate-500">Profile data is auto-filled and read-only. Review before submitting.</p>
           <TextField label="Seller Name" value={user?.fullName ?? ""} onChange={() => {}} required readOnly />
           <TextField label="Seller Phone" value={user?.phone ?? ""} onChange={() => {}} required readOnly />
           <TextField label="Seller Role" value={user?.sellerRole ?? user?.bankRole ?? ""} onChange={() => {}} required readOnly />
