@@ -19,7 +19,7 @@ export type Vehicle = {
   sellerId?: number | null;
   createdByUserId?: number | null;
   listingType: ListingType;
-  assetConfiguration: AssetConfiguration;
+  assetConfiguration?: AssetConfiguration;
   status?: string;
   title: string;
   type:

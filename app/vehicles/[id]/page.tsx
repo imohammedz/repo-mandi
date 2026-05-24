@@ -34,6 +34,7 @@ export default async function VehicleDetailPage({
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const isTrailerOnly = vehicle.assetConfiguration === "Trailer Only";
+  const assetConfigurationLabel = vehicle.assetConfiguration ?? "Complete Vehicle";
 
   const similarRows = await db
     .select()
@@ -62,7 +63,7 @@ export default async function VehicleDetailPage({
           {vehicle.listingType === "REPO" ? "REPO" : "REGULAR"}
         </span>
         <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-          {vehicle.assetConfiguration}
+          {assetConfigurationLabel}
         </span>
         <h1 className="text-2xl font-semibold text-slate-900">{vehicle.title}</h1>
         <p className="text-xl font-semibold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>

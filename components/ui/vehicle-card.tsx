@@ -19,6 +19,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     vehicle.vehicleOrYardLocation ||
     [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const isTrailerOnly = vehicle.assetConfiguration === "Trailer Only";
+  const assetConfigurationLabel = vehicle.assetConfiguration ?? "Complete Vehicle";
 
   return (
     <motion.article
@@ -46,7 +47,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {vehicle.listingType === "REPO" ? "REPO" : "REGULAR"}
           </span>
           <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-            {vehicle.assetConfiguration}
+            {assetConfigurationLabel}
           </span>
           <h3 className="text-base font-semibold text-slate-900">{vehicle.title}</h3>
           <p className="mt-1 text-sm text-slate-500">
