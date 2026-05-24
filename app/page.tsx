@@ -20,21 +20,18 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   let recentVehicles: Vehicle[] = [];
-  try {
-    const recentListingsRows = await db
-      .select()
-      .from(vehiclesTable)
-      .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
-      .orderBy(desc(vehiclesTable.createdAt))
-      .limit(3);
-    recentVehicles = recentListingsRows.map(dbToVehicle);
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes("DATABASE_URL environment variable is not set.")
-    ) {
-      console.warn("Skipping homepage recent listings because DATABASE_URL is not configured.");
-    } else {
+  if (!process.env.DATABASE_URL) {
+    console.warn("Skipping homepage recent listings because DATABASE_URL is not configured.");
+  } else {
+    try {
+      const recentListingsRows = await db
+        .select()
+        .from(vehiclesTable)
+        .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
+        .orderBy(desc(vehiclesTable.createdAt))
+        .limit(3);
+      recentVehicles = recentListingsRows.map(dbToVehicle);
+    } catch (error) {
       console.error("Failed to load recent listings on homepage", error);
     }
   }
