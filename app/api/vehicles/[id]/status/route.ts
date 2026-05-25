@@ -5,6 +5,17 @@ import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
+function mapSoldThroughPlatformToBoolean(value: "YES" | "NO" | "NOT_SURE"): boolean | null {
+  switch (value) {
+    case "YES":
+      return true;
+    case "NO":
+      return false;
+    default:
+      return null;
+  }
+}
+
 // ── PATCH /api/vehicles/[id]/status ──────────────────────────────────────────
 // Body: { status: "VERIFIED" | "REJECTED" | "PENDING" | "SOLD" }
 export async function PATCH(
@@ -114,17 +125,7 @@ export async function PATCH(
       .returning();
 
     if (isSellerMarkingSold && saleFeedback?.soldThroughPlatform) {
-      let soldThroughPlatform: boolean | null;
-      switch (saleFeedback.soldThroughPlatform) {
-        case "YES":
-          soldThroughPlatform = true;
-          break;
-        case "NO":
-          soldThroughPlatform = false;
-          break;
-        default:
-          soldThroughPlatform = null;
-      }
+      const soldThroughPlatform = mapSoldThroughPlatformToBoolean(saleFeedback.soldThroughPlatform);
 
       await db.insert(vehicleSaleFeedback).values({
         vehicleId: id,
