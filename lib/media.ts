@@ -1,16 +1,14 @@
-// Repository default Supabase Storage host; override using NEXT_PUBLIC_SUPABASE_URL.
-const DEFAULT_SUPABASE_STORAGE_HOST = "qssywsfjbkqzatwbzvvw.supabase.co";
 const SUPABASE_PUBLIC_STORAGE_PATH = "/storage/v1/object/public/";
 
 export const VEHICLE_IMAGE_PLACEHOLDER_SRC = "/file.svg";
 
 function getConfiguredSupabaseStorageHost() {
   const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  if (!configuredUrl) return DEFAULT_SUPABASE_STORAGE_HOST;
+  if (!configuredUrl) return "";
   try {
     return new URL(configuredUrl).hostname;
   } catch {
-    return DEFAULT_SUPABASE_STORAGE_HOST;
+    return "";
   }
 }
 
@@ -36,7 +34,7 @@ export function isLegacyLocalUploadUrl(value: unknown): boolean {
 
 export function isSupabasePublicStorageUrl(value: unknown): boolean {
   const url = toTrimmedString(value);
-  if (!url) return false;
+  if (!url || !SUPABASE_STORAGE_HOST) return false;
 
   try {
     const parsed = new URL(url);

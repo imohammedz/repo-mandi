@@ -22,16 +22,16 @@ export function SafeImage({
   const normalizedSrc = resolveImageSrcForRender(src, fallbackSrc);
   const [failedSource, setFailedSource] = useState<string | null>(null);
   const displaySrc = failedSource === normalizedSrc ? fallbackSrc : normalizedSrc;
-  const serializedLogContext = JSON.stringify(logContext ?? {});
 
   useEffect(() => {
     if (!shouldLogMediaDebug()) return;
+    const safeContext = logContext ?? {};
     console.info("Rendered frontend image URL", {
       component: "SafeImage",
       src: displaySrc,
-      ...JSON.parse(serializedLogContext),
+      ...safeContext,
     });
-  }, [displaySrc, serializedLogContext]);
+  }, [displaySrc, logContext]);
 
   return (
     <Image
