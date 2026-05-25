@@ -30,6 +30,8 @@ type SessionUser = {
 
 type UploadCategory = "frontPhoto" | "backPhoto" | "sidePhoto" | "interiorPhoto";
 
+type AdditionalPhoto = { url: string; category: string };
+
 type FormData = {
   listingType: ListingType | "";
   assetConfiguration: AssetConfiguration | "";
@@ -176,6 +178,25 @@ const repoStatusOptions = [
   "Auction Upcoming",
   "Ready For Sale",
   "Under Settlement",
+];
+
+const MAX_PHOTOS = 20;
+
+const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
+  { value: "TYRES", label: "Tyres" },
+  { value: "ENGINE", label: "Engine" },
+  { value: "CABIN", label: "Cabin" },
+  { value: "CHASSIS", label: "Chassis" },
+  { value: "SUSPENSION", label: "Suspension" },
+  { value: "AXLES", label: "Axles" },
+  { value: "DASHBOARD", label: "Dashboard" },
+  { value: "RC", label: "RC" },
+  { value: "INSURANCE", label: "Insurance" },
+  { value: "DAMAGE", label: "Damage" },
+  { value: "TRAILER_BODY", label: "Trailer Body" },
+  { value: "LOAD_BODY", label: "Load Body" },
+  { value: "HYDRAULIC_SYSTEM", label: "Hydraulic System" },
+  { value: "OTHER", label: "Other" },
 ];
 
 const MIN_YEAR = 2000;
@@ -395,12 +416,16 @@ export default function AddVehiclePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [assetHelpOpen, setAssetHelpOpen] = useState(false);
+  const [additionalPhotos, setAdditionalPhotos] = useState<AdditionalPhoto[]>([]);
+  const [uploadingAdditional, setUploadingAdditional] = useState(false);
+  const [pendingAdditionalAction, setPendingAdditionalAction] = useState<"new" | number>("new");
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
     sidePhoto: useRef<HTMLInputElement>(null),
     interiorPhoto: useRef<HTMLInputElement>(null),
   };
+  const additionalFileRef = useRef<HTMLInputElement>(null);
 
   const update = <T extends keyof FormData>(key: T, value: FormData[T]) => {
     setForm((previous) => {
@@ -480,6 +505,12 @@ export default function AddVehiclePage() {
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
       ? assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
       : "";
+
+  const uploadedRequiredPhotoCount = [form.frontPhoto, form.backPhoto, form.sidePhoto]
+    .concat(!isTrailerOnly ? [form.interiorPhoto] : [])
+    .filter(Boolean).length;
+  const totalPhotosCount = uploadedRequiredPhotoCount + additionalPhotos.length;
+  const canAddMorePhotos = totalPhotosCount < MAX_PHOTOS;
 
   useEffect(() => {
     if (!assetHelpOpen) return;
@@ -602,6 +633,78 @@ export default function AddVehiclePage() {
     }
   };
 
+  const uploadAdditionalPhotos = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploadingAdditional(true);
+    setError("");
+    const baseAdditionalCount = additionalPhotos.length;
+    const baseRequiredCount = [form.frontPhoto, form.backPhoto, form.sidePhoto]
+      .concat(!isTrailerOnly ? [form.interiorPhoto] : [])
+      .filter(Boolean).length;
+    const results: AdditionalPhoto[] = [];
+
+    for (const file of files) {
+      if (baseRequiredCount + baseAdditionalCount + results.length >= MAX_PHOTOS) {
+        setError("Maximum 20 photos allowed.");
+        break;
+      }
+      try {
+        const payload = new FormData();
+        payload.append("files", file);
+        const response = await fetch("/api/uploads", { method: "POST", body: payload });
+        const data = (await response.json()) as { urls?: string[]; message?: string };
+        if (!response.ok || !data.urls?.[0]) {
+          setError(data.message ?? "Failed to upload image.");
+          break;
+        }
+        results.push({ url: data.urls[0], category: "" });
+      } catch {
+        setError("Failed to upload image.");
+        break;
+      }
+    }
+
+    if (results.length > 0) {
+      setAdditionalPhotos((previous) => [...previous, ...results]);
+    }
+    setUploadingAdditional(false);
+    if (additionalFileRef.current) additionalFileRef.current.value = "";
+  };
+
+  const replaceAdditionalPhoto = async (index: number, file: File) => {
+    setUploadingAdditional(true);
+    setError("");
+    try {
+      const payload = new FormData();
+      payload.append("files", file);
+      const response = await fetch("/api/uploads", { method: "POST", body: payload });
+      const data = (await response.json()) as { urls?: string[]; message?: string };
+      if (!response.ok || !data.urls?.[0]) {
+        setError(data.message ?? "Failed to upload image.");
+        return;
+      }
+      setAdditionalPhotos((previous) =>
+        previous.map((p, i) => (i === index ? { ...p, url: data.urls![0] } : p))
+      );
+    } catch {
+      setError("Failed to upload image.");
+    } finally {
+      setUploadingAdditional(false);
+      if (additionalFileRef.current) additionalFileRef.current.value = "";
+    }
+  };
+
+  const handleAdditionalFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    if (pendingAdditionalAction === "new") {
+      await uploadAdditionalPhotos(Array.from(files));
+    } else {
+      await replaceAdditionalPhoto(pendingAdditionalAction as number, files[0]);
+    }
+    if (additionalFileRef.current) additionalFileRef.current.value = "";
+  };
+
   const handleSubmit = async () => {
     const stepError = validateStep(STEP_LISTING) || validateStep(STEP_VEHICLE) || validateStep(STEP_CONDITION) || validateStep(STEP_PRICING) || validateStep(STEP_REPO) || validateStep(STEP_DETAILS) || validateStep(STEP_PHOTOS);
     if (stepError) {
@@ -618,6 +721,7 @@ export default function AddVehiclePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          additionalPhotos: additionalPhotos.map((p) => ({ url: p.url, category: p.category || null })),
           interiorPhoto: disableInteriorPhotoUpload ? "" : form.interiorPhoto,
           expectedPrice: form.expectedPrice.replace(/\D/g, ""),
           reservePrice: form.reservePrice.replace(/\D/g, ""),
@@ -668,6 +772,7 @@ export default function AddVehiclePage() {
             onClick={() => {
               setSubmitted(false);
               setStep(1);
+              setAdditionalPhotos([]);
               setForm({
                 ...emptyForm,
                 listingType: form.listingType,
@@ -1033,6 +1138,13 @@ export default function AddVehiclePage() {
               : "Front, back, and side photos are required. Interior photo is optional for Trailer Only."}
           </p>
 
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+            <span className="text-sm text-slate-600">Photos uploaded</span>
+            <span className={`text-sm font-semibold ${totalPhotosCount >= MAX_PHOTOS ? "text-rose-600" : "text-slate-900"}`}>
+              {totalPhotosCount} / {MAX_PHOTOS}
+            </span>
+          </div>
+
           {(
             [
               { key: "frontPhoto", label: "Front Photo", required: true, disabled: false },
@@ -1096,6 +1208,79 @@ export default function AddVehiclePage() {
             );
           })}
 
+          <div className="space-y-3">
+            <h2 className="text-base font-semibold text-slate-900">Additional Photos <span className="text-slate-400 font-normal text-sm">(Optional)</span></h2>
+
+            {additionalPhotos.map((photo, index) => (
+              <div key={index} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={photo.category}
+                    onChange={(event) =>
+                      setAdditionalPhotos((previous) =>
+                        previous.map((p, i) => (i === index ? { ...p, category: event.target.value } : p))
+                      )
+                    }
+                    className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                  >
+                    <option value="">Category (optional)</option>
+                    {ADDITIONAL_PHOTO_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingAdditionalAction(index);
+                      additionalFileRef.current?.click();
+                    }}
+                    disabled={uploadingAdditional || uploadingField !== ""}
+                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdditionalPhotos((previous) => previous.filter((_, i) => i !== index))}
+                    aria-label="Remove photo"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <Image src={photo.url} alt={`Additional photo ${index + 1}`} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
+              </div>
+            ))}
+
+            {canAddMorePhotos ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingAdditionalAction("new");
+                  if (additionalFileRef.current) {
+                    additionalFileRef.current.multiple = true;
+                    additionalFileRef.current.click();
+                  }
+                }}
+                disabled={uploadingAdditional || uploadingField !== ""}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-sm font-medium text-slate-600 disabled:opacity-50"
+              >
+                {uploadingAdditional && pendingAdditionalAction === "new" ? "Uploading..." : "+ Add Photo"}
+              </button>
+            ) : (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">Maximum 20 photos allowed.</p>
+            )}
+
+            <input
+              ref={additionalFileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleAdditionalFileChange}
+            />
+          </div>
+
           <TextField label="Walkaround Video URL" value={form.walkaroundVideo} onChange={(value) => update("walkaroundVideo", value)} placeholder="Optional" />
           <TextField label="Engine Start-up Video URL" value={form.engineStartUpVideo} onChange={(value) => update("engineStartUpVideo", value)} placeholder="Optional" />
 
@@ -1142,7 +1327,7 @@ export default function AddVehiclePage() {
         <button
           type="button"
           onClick={canSubmit ? handleSubmit : next}
-          disabled={submitting || uploadingField !== ""}
+          disabled={submitting || uploadingField !== "" || uploadingAdditional}
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
           {step === TOTAL_STEPS ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}

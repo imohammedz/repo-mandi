@@ -175,6 +175,17 @@ export const mediaCategoryEnum = pgEnum("vehicle_media_category", [
   "FITNESS",
   "PERMIT",
   "OTHER",
+  "TYRES",
+  "ENGINE",
+  "CABIN",
+  "CHASSIS",
+  "SUSPENSION",
+  "AXLES",
+  "DASHBOARD",
+  "DAMAGE",
+  "TRAILER_BODY",
+  "LOAD_BODY",
+  "HYDRAULIC_SYSTEM",
 ]);
 
 export const nocStatusEnum = pgEnum("noc_status", [
