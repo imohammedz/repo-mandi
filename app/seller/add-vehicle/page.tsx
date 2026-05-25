@@ -201,6 +201,7 @@ const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
 
 const MIN_YEAR = 2000;
 const years = Array.from({ length: new Date().getFullYear() - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i)).reverse();
+const TRAILER_BODY_KEYWORD_REGEX = /(trailer|body|flatbed|low[\s-]?bed|tanker|tipper|skeletal|container|bulker)/i;
 
 const indiaStates = [
   "Andhra Pradesh",
@@ -484,10 +485,10 @@ export default function AddVehiclePage() {
   }, [user]);
 
   const isCompleteVehicle = form.assetConfiguration === "Complete Vehicle";
+  const isPowerOnly = form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
   const isTrailerOnly = form.assetConfiguration === "Trailer Only";
   const requiresPoweredFields = !isTrailerOnly;
-  const trailerBodyIndicatorRegex = /(trailer|body|flatbed|low[\s-]?bed|tanker|tipper|skeletal|container|bulker)/i;
-  const vehicleSubTypeHintsTrailerOrBody = trailerBodyIndicatorRegex.test(form.vehicleSubType);
+  const vehicleSubTypeHintsTrailerOrBody = TRAILER_BODY_KEYWORD_REGEX.test(form.vehicleSubType);
   const optionalTrailerBodyDetailsIndicated =
     form.vehicleType === "Trailer" || vehicleSubTypeHintsTrailerOrBody || Boolean(form.trailerType);
   const showOptionalTrailerBodySection = isTrailerOnly || (isCompleteVehicle && optionalTrailerBodyDetailsIndicated);
@@ -923,7 +924,7 @@ export default function AddVehiclePage() {
           ) : null}
           {showCompleteVehicleTrailerTypeWarning ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Trailer type usually means trailer-only. For horse + trailer, choose HCV and add trailer details later.
+              Selecting Trailer as Vehicle Type usually indicates a trailer-only listing. For horse + trailer, choose HCV and add trailer details later.
             </p>
           ) : null}
           <TextField label="Vehicle Sub-Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="Trailer subtype, tanker subtype, etc." />
@@ -1100,7 +1101,9 @@ export default function AddVehiclePage() {
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Powered Vehicle Details</summary>
               <div className="mt-4 space-y-3">
-                <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
+                {isPowerOnly ? (
+                  <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
+                ) : null}
                 <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
                 <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
                 <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
