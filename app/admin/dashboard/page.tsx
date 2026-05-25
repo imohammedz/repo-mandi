@@ -19,6 +19,7 @@ export default async function AdminDashboardPage() {
 
   const soldThroughPlatformCount = saleFeedbackRows.filter((row) => row.soldThroughPlatform === true).length;
 
+  // Midpoint estimates (in weeks) for each bucket to approximate average time-to-sell.
   const timeToSellWeights: Record<NonNullable<typeof saleFeedbackRows[number]["timeToSell"]>, number> = {
     LESS_THAN_1_WEEK: 0.5,
     ONE_TO_TWO_WEEKS: 1.5,

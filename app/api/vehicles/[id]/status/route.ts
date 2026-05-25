@@ -114,12 +114,17 @@ export async function PATCH(
       .returning();
 
     if (isSellerMarkingSold && saleFeedback?.soldThroughPlatform) {
-      const soldThroughPlatform =
-        saleFeedback.soldThroughPlatform === "YES"
-          ? true
-          : saleFeedback.soldThroughPlatform === "NO"
-            ? false
-            : null;
+      let soldThroughPlatform: boolean | null;
+      switch (saleFeedback.soldThroughPlatform) {
+        case "YES":
+          soldThroughPlatform = true;
+          break;
+        case "NO":
+          soldThroughPlatform = false;
+          break;
+        default:
+          soldThroughPlatform = null;
+      }
 
       await db.insert(vehicleSaleFeedback).values({
         vehicleId: id,

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
-type SoldThroughPlatform = "YES" | "NO" | "NOT_SURE";
+type SoldThroughPlatformResponse = "YES" | "NO" | "NOT_SURE";
 type BuyerContactMethod =
   | "PHONE_CALL"
   | "WHATSAPP"
@@ -14,7 +14,7 @@ type BuyerContactMethod =
   | "OTHER";
 type TimeToSell = "LESS_THAN_1_WEEK" | "ONE_TO_TWO_WEEKS" | "TWO_TO_FOUR_WEEKS" | "MORE_THAN_1_MONTH";
 
-const soldThroughPlatformOptions: { value: SoldThroughPlatform; label: string }[] = [
+const soldThroughPlatformOptions: { value: SoldThroughPlatformResponse; label: string }[] = [
   { value: "YES", label: "Yes" },
   { value: "NO", label: "No" },
   { value: "NOT_SURE", label: "Not Sure" },
@@ -40,7 +40,7 @@ export function MarkSoldButton({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"idle" | "confirm" | "feedback">("idle");
-  const [soldThroughPlatform, setSoldThroughPlatform] = useState<SoldThroughPlatform | "">("");
+  const [soldThroughPlatform, setSoldThroughPlatform] = useState<SoldThroughPlatformResponse | "">("");
   const [buyerContactMethod, setBuyerContactMethod] = useState<BuyerContactMethod | "">("");
   const [timeToSell, setTimeToSell] = useState<TimeToSell | "">("");
   const [feedback, setFeedback] = useState("");
