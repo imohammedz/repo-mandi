@@ -72,7 +72,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       } catch (error) {
         console.error("Failed to bootstrap saved listings", error);
         if (!active) return;
-        setIsAuthenticated(true);
+        setIsAuthenticated(false);
         setSavedListings([]);
       } finally {
         if (!active) return;
@@ -103,10 +103,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
 
       const currentlySaved = savedListings.some((item) => item.vehicleId === vehicleId);
       const optimisticCreatedAt = new Date().toISOString();
-      const tempId =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? `temp-${crypto.randomUUID()}`
-          : `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const tempId = `temp-${crypto.randomUUID()}`;
 
       setPendingVehicleIds((prev) => [...prev, vehicleId]);
       if (currentlySaved) {
