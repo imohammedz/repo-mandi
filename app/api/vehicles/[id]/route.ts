@@ -145,7 +145,7 @@ export async function PUT(
         return Response.json({ message: "gallery must be an array of Supabase public URLs." }, { status: 400 });
       } else {
         const invalidGalleryUrl = rawGallery.find(
-          (item) => typeof item === "string" && item.trim() && !isSupabasePublicStorageUrl(item)
+          (item) => typeof item === "string" && item.trim() && !isSupabasePublicStorageUrl(item.trim())
         );
         if (invalidGalleryUrl) {
           return Response.json({ message: "gallery must only contain Supabase public URLs." }, { status: 400 });

@@ -13,6 +13,7 @@ function getConfiguredSupabaseStorageHost() {
 }
 
 const SUPABASE_STORAGE_HOST = getConfiguredSupabaseStorageHost();
+const ALLOWED_LOCAL_IMAGE_PATHS = new Set([VEHICLE_IMAGE_PLACEHOLDER_SRC]);
 
 export function shouldLogMediaDebug() {
   return (
@@ -73,6 +74,8 @@ export function resolveImageSrcForRender(value: unknown, fallback = VEHICLE_IMAG
   const url = toTrimmedString(value);
   if (!url) return fallback;
   if (isLegacyLocalUploadUrl(url)) return fallback;
-  if (url.startsWith("/")) return url;
+  if (url.startsWith("/")) {
+    return ALLOWED_LOCAL_IMAGE_PATHS.has(url) ? url : fallback;
+  }
   return isSupabasePublicStorageUrl(url) ? url : fallback;
 }
