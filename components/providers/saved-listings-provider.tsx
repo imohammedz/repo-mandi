@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Vehicle } from "@/types/vehicle";
 
 type SavedListing = {
-  id: number;
+  id: number | string;
   userId: number;
   vehicleId: string;
   createdAt: string;
@@ -69,7 +69,8 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
         if (!active) return;
         setIsAuthenticated(!result.unauthorized);
         setSavedListings(result.items);
-      } catch {
+      } catch (error) {
+        console.error("Failed to bootstrap saved listings", error);
         if (!active) return;
         setIsAuthenticated(true);
         setSavedListings([]);
@@ -109,7 +110,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       } else if (vehicle) {
         setSavedListings((prev) => [
           {
-            id: -Date.now(),
+            id: `temp-${Date.now()}`,
             userId: -1,
             vehicleId,
             createdAt: optimisticCreatedAt,

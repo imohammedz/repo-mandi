@@ -11,7 +11,7 @@ import { formatCurrency } from "@/data/vehicles";
 
 function formatSavedTime(timestamp: string) {
   const diff = Date.now() - new Date(timestamp).getTime();
-  if (Number.isNaN(diff) || diff < 0) return "Just now";
+  if (Number.isNaN(diff) || diff < 0) return "Recently";
 
   const minute = 60_000;
   const hour = minute * 60;

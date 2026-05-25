@@ -18,8 +18,8 @@ function mapSavedListing(row: typeof savedListings.$inferSelect, vehicleRow: typ
     id: row.id,
     userId: row.userId,
     vehicleId: row.vehicleId,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    createdAt: row.createdAt?.toISOString() ?? new Date().toISOString(),
+    updatedAt: row.updatedAt?.toISOString() ?? new Date().toISOString(),
     vehicle: dbToVehicle(vehicleRow),
   };
 }
