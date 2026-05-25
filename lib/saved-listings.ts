@@ -13,6 +13,10 @@ export type SavedListingItem = {
   vehicle: Vehicle;
 };
 
+/**
+ * Converts a saved_listings row and its matching vehicle row into the API-safe shape
+ * used by saved-listing endpoints and client state.
+ */
 function mapSavedListing(row: typeof savedListings.$inferSelect, vehicleRow: typeof vehicles.$inferSelect): SavedListingItem {
   return {
     id: row.id,

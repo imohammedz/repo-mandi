@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Vehicle } from "@/types/vehicle";
 
 type SavedListing = {
-  id: number | string;
+  id: number | `temp-${string}`;
   userId: number;
   vehicleId: string;
   createdAt: string;
@@ -13,6 +13,7 @@ type SavedListing = {
 };
 
 type SaveResult = { ok: boolean; message?: string };
+const OPTIMISTIC_USER_ID = -1;
 
 type SavedListingsContextValue = {
   savedListings: SavedListing[];
@@ -105,7 +106,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       const currentlySaved = savedListings.some((item) => item.vehicleId === vehicleId);
       const optimisticCreatedAt = new Date().toISOString();
       tempIdCounter.current += 1;
-      const tempId = `temp-${Date.now()}-${tempIdCounter.current}`;
+      const tempId = `temp-${Date.now()}-${tempIdCounter.current}` as const;
 
       setPendingVehicleIds((prev) => [...prev, vehicleId]);
       if (currentlySaved) {
@@ -114,7 +115,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
         setSavedListings((prev) => [
           {
             id: tempId,
-            userId: -1,
+            userId: OPTIMISTIC_USER_ID,
             vehicleId,
             createdAt: optimisticCreatedAt,
             updatedAt: optimisticCreatedAt,
