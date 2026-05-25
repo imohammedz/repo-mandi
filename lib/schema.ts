@@ -330,9 +330,11 @@ export const savedListings = pgTable(
     id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
+      // Saved records should be removed if the owning user is deleted.
       .references(() => users.id, { onDelete: "cascade" }),
     vehicleId: varchar("vehicle_id", { length: 100 })
       .notNull()
+      // Saved records should be removed if the listing itself is deleted.
       .references(() => vehicles.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

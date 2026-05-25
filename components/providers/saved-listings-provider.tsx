@@ -103,6 +103,10 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
 
       const currentlySaved = savedListings.some((item) => item.vehicleId === vehicleId);
       const optimisticCreatedAt = new Date().toISOString();
+      const tempId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? `temp-${crypto.randomUUID()}`
+          : `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       setPendingVehicleIds((prev) => [...prev, vehicleId]);
       if (currentlySaved) {
@@ -110,7 +114,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       } else if (vehicle) {
         setSavedListings((prev) => [
           {
-            id: `temp-${Date.now()}`,
+            id: tempId,
             userId: -1,
             vehicleId,
             createdAt: optimisticCreatedAt,
