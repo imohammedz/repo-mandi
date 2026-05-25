@@ -25,7 +25,7 @@ export function TopHeader() {
           className="inline-flex items-center gap-2.5 sm:gap-3"
         >
           <Image
-            src="/favicon_io/favicon.ico"
+            src="/favicon_io/favicon-32x32.png"
             alt="RepoMandi Logo"
             width={28}
             height={28}
