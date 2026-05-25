@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Vehicle } from "@/types/vehicle";
 
 type SavedListing = {
@@ -52,6 +52,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
   const [pendingVehicleIds, setPendingVehicleIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const tempIdCounter = useRef(0);
 
   const refreshSavedListings = useCallback(async () => {
     const result = await fetchSavedListings();
@@ -103,7 +104,8 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
 
       const currentlySaved = savedListings.some((item) => item.vehicleId === vehicleId);
       const optimisticCreatedAt = new Date().toISOString();
-      const tempId = `temp-${crypto.randomUUID()}`;
+      tempIdCounter.current += 1;
+      const tempId = `temp-${Date.now()}-${tempIdCounter.current}`;
 
       setPendingVehicleIds((prev) => [...prev, vehicleId]);
       if (currentlySaved) {
