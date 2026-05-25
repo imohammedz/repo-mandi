@@ -8,6 +8,14 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
+// Midpoint estimates (in weeks) for each bucket to approximate average time-to-sell.
+const TIME_TO_SELL_WEEK_ESTIMATES = {
+  LESS_THAN_1_WEEK: 0.5,
+  ONE_TO_TWO_WEEKS: 1.5,
+  TWO_TO_FOUR_WEEKS: 3,
+  MORE_THAN_1_MONTH: 5,
+} as const;
+
 export default async function AdminDashboardPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect("/admin/login");
@@ -19,21 +27,14 @@ export default async function AdminDashboardPage() {
 
   const soldThroughPlatformCount = saleFeedbackRows.filter((row) => row.soldThroughPlatform === true).length;
 
-  // Midpoint estimates (in weeks) for each bucket to approximate average time-to-sell.
-  const timeToSellWeights: Record<NonNullable<typeof saleFeedbackRows[number]["timeToSell"]>, number> = {
-    LESS_THAN_1_WEEK: 0.5,
-    ONE_TO_TWO_WEEKS: 1.5,
-    TWO_TO_FOUR_WEEKS: 3,
-    MORE_THAN_1_MONTH: 5,
-  };
-
   const timeToSellEntries = saleFeedbackRows
     .map((row) => row.timeToSell)
-    .filter((value): value is keyof typeof timeToSellWeights => Boolean(value));
+    .filter((value): value is keyof typeof TIME_TO_SELL_WEEK_ESTIMATES => Boolean(value));
   const averageTimeToSellWeeks =
     timeToSellEntries.length > 0
       ? (
-          timeToSellEntries.reduce((sum, value) => sum + timeToSellWeights[value], 0) / timeToSellEntries.length
+          timeToSellEntries.reduce((sum, value) => sum + TIME_TO_SELL_WEEK_ESTIMATES[value], 0) /
+          timeToSellEntries.length
         ).toFixed(1)
       : null;
 
