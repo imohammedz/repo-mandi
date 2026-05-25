@@ -57,7 +57,7 @@ export default async function SellerListingsPage() {
                   Edit
                 </Link>
               )}
-              {item.listingStatus === "VERIFIED" && (
+              {(item.listingStatus === "VERIFIED" || item.listingStatus === "PENDING") && (
                 <MarkSoldButton vehicleId={item.id} />
               )}
             </div>

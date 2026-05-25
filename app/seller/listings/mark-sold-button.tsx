@@ -9,14 +9,26 @@ export function MarkSoldButton({ vehicleId }: { vehicleId: string }) {
 
   const onClick = async () => {
     if (loading) return;
+    const confirmed = window.confirm(
+      "Are you sure this vehicle is sold? This will remove it from public listings."
+    );
+    if (!confirmed) return;
+
     setLoading(true);
     try {
-      await fetch(`/api/vehicles/${vehicleId}/status`, {
+      const response = await fetch(`/api/seller/vehicles/${vehicleId}/mark-sold`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "SOLD" }),
       });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(data?.message ?? "Failed to mark vehicle as sold.");
+      }
+
       router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to mark vehicle as sold.";
+      window.alert(message);
     } finally {
       setLoading(false);
     }
@@ -28,8 +40,7 @@ export function MarkSoldButton({ vehicleId }: { vehicleId: string }) {
       disabled={loading}
       className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 disabled:opacity-50"
     >
-      {loading ? "Updating..." : "Mark Sold"}
+      {loading ? "Updating..." : "Mark as Sold"}
     </button>
   );
 }
-
