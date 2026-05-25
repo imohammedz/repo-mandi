@@ -51,9 +51,8 @@ export default async function AdminDashboardPage() {
     acc[row.buyerContactMethod] = (acc[row.buyerContactMethod] ?? 0) + 1;
     return acc;
   }, {});
-  const mostCommonContactMethodKey = Object.entries(contactMethodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] as
-    | keyof typeof methodLabels
-    | undefined;
+  const sortedContactEntries = Object.entries(contactMethodCounts).sort((a, b) => b[1] - a[1]);
+  const mostCommonContactMethodKey = sortedContactEntries[0]?.[0] as keyof typeof methodLabels | undefined;
   const mostCommonContactMethod = mostCommonContactMethodKey ? methodLabels[mostCommonContactMethodKey] : null;
 
   const stats = [

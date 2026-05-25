@@ -59,7 +59,8 @@ export async function PATCH(
 
     const isAdmin = currentUser.accountType === "ADMIN";
     const isOwner = existing.sellerId === currentUser.id;
-    if (!isAdmin && !(isOwner && body.status === "SOLD")) {
+    const canModify = isAdmin || (isOwner && body.status === "SOLD");
+    if (!canModify) {
       return Response.json({ message: "Forbidden." }, { status: 403 });
     }
 
