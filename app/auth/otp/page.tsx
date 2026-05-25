@@ -1,4 +1,4 @@
-import OtpClientPage from "./otp-client";
+import { redirect } from "next/navigation";
 
 export default async function OtpPage({
   searchParams,
@@ -7,6 +7,5 @@ export default async function OtpPage({
 }) {
   const params = await searchParams;
   const phone = (params.phone ?? "").replace(/\D/g, "").slice(0, 10);
-
-  return <OtpClientPage phone={phone} />;
+  redirect(`/auth/login${phone ? `?phone=${encodeURIComponent(phone)}` : ""}`);
 }
