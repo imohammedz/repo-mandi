@@ -40,7 +40,7 @@ export async function PATCH(
       .update(vehicles)
       .set({
         listingStatus: "SOLD",
-        status: "APPROVED",
+        status: "SOLD",
         isPublished: false,
         updatedAt: new Date(),
       })
