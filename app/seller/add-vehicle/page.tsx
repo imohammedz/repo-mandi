@@ -161,6 +161,7 @@ const trailerSuspensionOptions = [
   "Mixed",
   "Unknown",
 ];
+const trailerBodyIncludedOptions = ["Yes", "No", "Not Sure"] as const;
 
 const financeCompanies = [
   "SBI",
@@ -201,8 +202,6 @@ const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
 
 const MIN_YEAR = 2000;
 const years = Array.from({ length: new Date().getFullYear() - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i)).reverse();
-const TRAILER_BODY_KEYWORD_REGEX = /(trailer|body|flatbed|low[\s-]?bed|tanker|tipper|skeletal|container|bulker)/i;
-
 const indiaStates = [
   "Andhra Pradesh",
   "Arunachal Pradesh",
@@ -420,6 +419,7 @@ export default function AddVehiclePage() {
   const [additionalPhotos, setAdditionalPhotos] = useState<AdditionalPhoto[]>([]);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [pendingAdditionalAction, setPendingAdditionalAction] = useState<"new" | number>("new");
+  const [trailerBodyIncluded, setTrailerBodyIncluded] = useState("");
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
@@ -488,10 +488,7 @@ export default function AddVehiclePage() {
   const isPowerOnly = form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
   const isTrailerOnly = form.assetConfiguration === "Trailer Only";
   const requiresPoweredFields = !isTrailerOnly;
-  const vehicleSubTypeHintsTrailerOrBody = TRAILER_BODY_KEYWORD_REGEX.test(form.vehicleSubType);
-  const optionalTrailerBodyDetailsIndicated =
-    form.vehicleType === "Trailer" || vehicleSubTypeHintsTrailerOrBody || Boolean(form.trailerType);
-  const showOptionalTrailerBodySection = isTrailerOnly || (isCompleteVehicle && optionalTrailerBodyDetailsIndicated);
+  const showCompleteVehicleTrailerBodyFields = trailerBodyIncluded === "Yes";
   const showCompleteVehicleTypeGuidance = isCompleteVehicle;
   const showCompleteVehicleTrailerTypeWarning = isCompleteVehicle && form.vehicleType === "Trailer";
   const requiresInteriorPhoto = !isTrailerOnly;
@@ -1059,9 +1056,9 @@ export default function AddVehiclePage() {
               Trailer specs are required for this asset configuration.
             </div>
           ) : null}
-          {isCompleteVehicle && showOptionalTrailerBodySection ? (
+          {isCompleteVehicle ? (
             <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-              Trailer/body details are optional for complete vehicle listings, but adding them improves buyer trust.
+              If this complete vehicle includes an attached trailer or load body, add details here to improve buyer trust.
             </div>
           ) : null}
           {isTrailerOnly ? (
@@ -1120,24 +1117,35 @@ export default function AddVehiclePage() {
               <SelectField label="Tyre Condition" value={form.tyreCondition} options={["NEW", "GOOD", "FAIR", "AROUND_50", "POOR", "MIXED", "UNKNOWN"]} onChange={(value) => update("tyreCondition", value)} />
             </div>
           </details>
-          {isCompleteVehicle && showOptionalTrailerBodySection ? (
+          {isCompleteVehicle ? (
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
-              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Optional Trailer / Body Details</summary>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Trailer / Body Details (Optional)</summary>
               <div className="mt-4 space-y-3">
-                <SelectField label="Trailer Type" value={form.trailerType} options={trailerTypeOptions} onChange={(value) => update("trailerType", value)} />
-                <TextField label="Trailer Length" value={form.trailerLength} onChange={(value) => update("trailerLength", value)} placeholder="e.g. 32 ft" />
-                <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
-                <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="e.g. 32x8x8 ft" />
-                <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
-                <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
-                <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} placeholder="Optional" />
-                <TextField label="Trailer Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} placeholder="Optional" />
-                <TextField
-                  label="Trailer Manufacturing Month-Year"
-                  value={form.trailerManufacturingMonthYear}
-                  onChange={(value) => update("trailerManufacturingMonthYear", value)}
-                  placeholder="e.g. 03/2021"
+                <SelectField
+                  label="Is trailer/body included?"
+                  value={trailerBodyIncluded}
+                  options={[...trailerBodyIncludedOptions]}
+                  onChange={setTrailerBodyIncluded}
                 />
+                {showCompleteVehicleTrailerBodyFields ? (
+                  <>
+                    <SelectField label="Trailer Type" value={form.trailerType} options={trailerTypeOptions} onChange={(value) => update("trailerType", value)} />
+                    <TextField label="Trailer Length" value={form.trailerLength} onChange={(value) => update("trailerLength", value)} placeholder="e.g. 32 ft" />
+                    <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
+                    <TextField label="Body Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="e.g. Flatbed / Tanker / Tip Trailer" />
+                    <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="e.g. 32x8x8 ft" />
+                    <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
+                    <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
+                    <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} placeholder="Optional" />
+                    <TextField label="Trailer Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} placeholder="Optional" />
+                    <TextField
+                      label="Trailer Manufacturing Month-Year"
+                      value={form.trailerManufacturingMonthYear}
+                      onChange={(value) => update("trailerManufacturingMonthYear", value)}
+                      placeholder="e.g. 03/2021"
+                    />
+                  </>
+                ) : null}
               </div>
             </details>
           ) : null}
