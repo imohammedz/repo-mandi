@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export function ImageGallery({ images, title }: { images: string[]; title: string }) {
   const normalizedImages = useMemo(() => {
@@ -11,31 +11,19 @@ export function ImageGallery({ images, title }: { images: string[]; title: strin
     return deduped.length > 0 ? deduped : [VEHICLE_IMAGE_PLACEHOLDER_SRC];
   }, [images]);
   const [active, setActive] = useState(0);
-  const [activeImage, setActiveImage] = useState(normalizedImages[0]);
-
-  useEffect(() => {
-    const nextImage = normalizedImages[active] ?? normalizedImages[0] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
-    setActiveImage(nextImage);
-  }, [active, normalizedImages]);
-
-  useEffect(() => {
-    console.info("Rendered frontend image URL", {
-      component: "ImageGallery",
-      activeImage,
-    });
-  }, [activeImage]);
+  const activeImage = normalizedImages[active] ?? normalizedImages[0] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
 
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl bg-slate-100">
-        <Image
+        <SafeImage
           src={activeImage}
           alt={title}
           width={1200}
           height={720}
           className="h-64 w-full object-cover"
           priority
-          onError={() => setActiveImage(VEHICLE_IMAGE_PLACEHOLDER_SRC)}
+          logContext={{ component: "ImageGallery", imageType: "active" }}
         />
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -45,13 +33,13 @@ export function ImageGallery({ images, title }: { images: string[]; title: strin
             onClick={() => setActive(index)}
             className={`overflow-hidden rounded-xl border ${active === index ? "border-slate-900" : "border-slate-200"}`}
           >
-            <Image
+            <SafeImage
               src={image}
               alt={`${title} ${index + 1}`}
               width={300}
               height={200}
               className="h-16 w-full object-cover"
-              onError={() => setActiveImage(VEHICLE_IMAGE_PLACEHOLDER_SRC)}
+              logContext={{ component: "ImageGallery", imageType: "thumbnail", index }}
             />
           </button>
         ))}

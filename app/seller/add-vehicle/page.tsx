@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowLeft, CheckCircle2, Info, X } from "lucide-react";
-import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
+import { SafeImage } from "@/components/ui/safe-image";
 
 type ListingType = "REGULAR" | "REPO";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
@@ -407,28 +406,14 @@ function TextField({
 }
 
 function UploadPreviewImage({ src, alt }: { src: string; alt: string }) {
-  const [safeSrc, setSafeSrc] = useState(resolveImageSrcForRender(src));
-
-  useEffect(() => {
-    setSafeSrc(resolveImageSrcForRender(src));
-  }, [src]);
-
-  useEffect(() => {
-    console.info("Rendered frontend image URL", {
-      component: "AddVehiclePage",
-      imageSrc: safeSrc,
-      alt,
-    });
-  }, [alt, safeSrc]);
-
   return (
-    <Image
-      src={safeSrc}
+    <SafeImage
+      src={src}
       alt={alt}
       width={600}
       height={360}
       className="h-32 w-full rounded-lg object-cover"
-      onError={() => setSafeSrc(VEHICLE_IMAGE_PLACEHOLDER_SRC)}
+      logContext={{ component: "AddVehiclePage", alt }}
     />
   );
 }

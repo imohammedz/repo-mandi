@@ -353,7 +353,7 @@ export async function POST(request: Request) {
           category: toSafeString(it?.category),
         };
       })
-      .filter((item): item is { url: string; category?: string | null } => Boolean(item.url))
+      .filter((item) => Boolean(item.url))
       .slice(0, MAX_PHOTOS);
 
     const requiredPhotoCount = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto].filter(Boolean).length;

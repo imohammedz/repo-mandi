@@ -1,15 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 import { formatCurrency } from "@/data/vehicles";
-import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
+import { resolveImageSrcForRender } from "@/lib/media";
+import { SafeImage } from "@/components/ui/safe-image";
 
 function formatSavedTime(timestamp: string) {
   const diff = Date.now() - new Date(timestamp).getTime();
@@ -75,7 +74,14 @@ export function SavedListingsPanel() {
           <article key={item.vehicleId} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <div className="flex gap-3">
               <Link href={`/vehicles/${item.vehicleId}`} className="relative h-24 w-28 overflow-hidden rounded-xl bg-slate-100">
-                <SafeSavedImage src={imageSrc} alt={item.vehicle.title} vehicleId={item.vehicleId} />
+                <SafeImage
+                  src={imageSrc}
+                  alt={item.vehicle.title}
+                  fill
+                  className="object-cover"
+                  sizes="112px"
+                  logContext={{ component: "SavedListingsPanel", vehicleId: item.vehicleId }}
+                />
               </Link>
 
               <div className="min-w-0 flex-1">
@@ -106,32 +112,5 @@ export function SavedListingsPanel() {
         );
       })}
     </section>
-  );
-}
-
-function SafeSavedImage({ src, alt, vehicleId }: { src: string; alt: string; vehicleId: string }) {
-  const [safeSrc, setSafeSrc] = useState(src);
-
-  useEffect(() => {
-    setSafeSrc(src);
-  }, [src]);
-
-  useEffect(() => {
-    console.info("Rendered frontend image URL", {
-      component: "SavedListingsPanel",
-      vehicleId,
-      imageSrc: safeSrc,
-    });
-  }, [safeSrc, vehicleId]);
-
-  return (
-    <Image
-      src={safeSrc}
-      alt={alt}
-      fill
-      className="object-cover"
-      sizes="112px"
-      onError={() => setSafeSrc(VEHICLE_IMAGE_PLACEHOLDER_SRC)}
-    />
   );
 }
