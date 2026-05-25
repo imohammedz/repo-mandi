@@ -1,5 +1,6 @@
 import type { DbVehicle } from "./schema";
 import type { Vehicle } from "@/types/vehicle";
+import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 
 /**
  * Maps a database row (DbVehicle) to the application's Vehicle shape,
@@ -10,6 +11,9 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
   if (row.rcVerified) trustBadges.push("RC Verified");
   if (row.photosVerified) trustBadges.push("Photos Verified");
   if (row.yardVerified) trustBadges.push("Yard Verified");
+  const image = sanitizeSupabaseMediaUrl(row.image);
+  const gallery = sanitizeSupabaseMediaArray(row.gallery);
+  const normalizedImage = image || gallery[0] || "";
 
   return {
     id: row.id,
@@ -46,14 +50,14 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     city: row.city,
     state: row.state,
     vehicleOrYardLocation: row.vehicleOrYardLocation,
-    image: row.image,
-    gallery: row.gallery as string[],
-    frontPhoto: row.frontPhoto,
-    backPhoto: row.backPhoto,
-    sidePhoto: row.sidePhoto,
-    interiorPhoto: row.interiorPhoto,
-    walkaroundVideo: row.walkaroundVideo,
-    engineStartUpVideo: row.engineStartUpVideo,
+    image: normalizedImage,
+    gallery,
+    frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto) || undefined,
+    backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto) || undefined,
+    sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto) || undefined,
+    interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto) || undefined,
+    walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
+    engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
     financeCompany: row.financeCompany,
     bankInstitutionName: row.bankInstitutionName,
     branchName: row.branchName,

@@ -1,0 +1,55 @@
+const SUPABASE_STORAGE_HOST = "qssywsfjbkqzatwbzvvw.supabase.co";
+const SUPABASE_PUBLIC_STORAGE_PATH = "/storage/v1/object/public/";
+
+export const VEHICLE_IMAGE_PLACEHOLDER_SRC = "/file.svg";
+
+function toTrimmedString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function isLegacyLocalUploadUrl(value: unknown): boolean {
+  const url = toTrimmedString(value);
+  if (!url) return false;
+  return url.startsWith("/uploads/") || url.startsWith("uploads/") || url.includes("public/uploads");
+}
+
+export function isSupabasePublicStorageUrl(value: unknown): boolean {
+  const url = toTrimmedString(value);
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === SUPABASE_STORAGE_HOST &&
+      parsed.pathname.startsWith(SUPABASE_PUBLIC_STORAGE_PATH)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function sanitizeSupabaseMediaUrl(value: unknown): string {
+  const url = toTrimmedString(value);
+  if (!url || isLegacyLocalUploadUrl(url)) return "";
+  return isSupabasePublicStorageUrl(url) ? url : "";
+}
+
+export function sanitizeSupabaseMediaArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => sanitizeSupabaseMediaUrl(item))
+        .filter(Boolean)
+    )
+  );
+}
+
+export function resolveImageSrcForRender(value: unknown, fallback = VEHICLE_IMAGE_PLACEHOLDER_SRC): string {
+  const url = toTrimmedString(value);
+  if (!url) return fallback;
+  if (isLegacyLocalUploadUrl(url)) return fallback;
+  if (url.startsWith("/")) return url;
+  return isSupabasePublicStorageUrl(url) ? url : fallback;
+}

@@ -4,11 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { formatCurrency } from "@/data/vehicles";
 import { Vehicle } from "@/types/vehicle";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
 
 type Props = {
   vehicle: Vehicle;
@@ -21,6 +23,20 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const isTrailerOnly = vehicle.assetConfiguration === "Trailer Only";
   const assetConfigurationLabel = vehicle.assetConfiguration ?? "Complete Vehicle";
+  const preferredImage = resolveImageSrcForRender(vehicle.image || vehicle.gallery[0]);
+  const [imageSrc, setImageSrc] = useState(preferredImage);
+
+  useEffect(() => {
+    setImageSrc(preferredImage);
+  }, [preferredImage]);
+
+  useEffect(() => {
+    console.info("Rendered frontend image URL", {
+      component: "VehicleCard",
+      vehicleId: vehicle.id,
+      imageSrc,
+    });
+  }, [imageSrc, vehicle.id]);
 
   return (
     <motion.article
@@ -31,11 +47,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     >
       <div className="relative">
         <Image
-          src={vehicle.image}
+          src={imageSrc}
           alt={vehicle.title}
           width={1200}
           height={800}
           className={compact ? "h-40 w-full object-cover" : "h-52 w-full object-cover"}
+          onError={() => setImageSrc(VEHICLE_IMAGE_PLACEHOLDER_SRC)}
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3" />
       </div>

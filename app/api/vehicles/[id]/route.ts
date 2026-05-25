@@ -1,33 +1,10 @@
 import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { unlink } from "node:fs/promises";
-import path from "node:path";
 import { getCurrentUser } from "@/lib/auth";
+import { isSupabasePublicStorageUrl, sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 
 export const runtime = "nodejs";
-
-async function cleanupUploadedImages(paths: string[]) {
-  const uploadRoot = path.resolve(process.cwd(), "public", "uploads");
-
-  await Promise.all(
-    paths.map(async (urlPath) => {
-      if (!urlPath.startsWith("/uploads/")) return;
-
-      const relativeFilePath = urlPath.replace(/^\/uploads\//, "");
-      const absoluteFilePath = path.resolve(uploadRoot, relativeFilePath);
-
-      // Ensure deletion stays within /public/uploads
-      if (!absoluteFilePath.startsWith(uploadRoot)) return;
-
-      try {
-        await unlink(absoluteFilePath);
-      } catch {
-        // ignore missing files
-      }
-    })
-  );
-}
 
 // ── GET /api/vehicles/[id] ────────────────────────────────────────────────────
 export async function GET(
@@ -47,7 +24,18 @@ export async function GET(
     if (!isPublicLive && !canViewPrivate) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
     }
-    return Response.json(row);
+    const normalizedRow = {
+      ...row,
+      image: sanitizeSupabaseMediaUrl(row.image),
+      gallery: sanitizeSupabaseMediaArray(row.gallery),
+      frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto),
+      backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto),
+      sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto),
+      interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto),
+      walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
+      engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
+    };
+    return Response.json(normalizedRow);
   } catch (error) {
     console.error("GET /api/vehicles/[id] failed", error);
     return Response.json({ message: "Failed to fetch vehicle." }, { status: 500 });
@@ -98,6 +86,74 @@ export async function PUT(
     ]);
     const updates = Object.fromEntries(Object.entries(body).filter(([key]) => !blocked.has(key)));
 
+    if ("engineStartupVideo" in updates && !("engineStartUpVideo" in updates)) {
+      updates.engineStartUpVideo = updates.engineStartupVideo;
+      delete updates.engineStartupVideo;
+    }
+
+    const mediaFields: Array<{
+      key: "image" | "frontPhoto" | "backPhoto" | "sidePhoto" | "interiorPhoto";
+      nullable: false;
+    }> = [
+      { key: "image", nullable: false },
+      { key: "frontPhoto", nullable: false },
+      { key: "backPhoto", nullable: false },
+      { key: "sidePhoto", nullable: false },
+      { key: "interiorPhoto", nullable: false },
+    ];
+    const optionalMediaFields: Array<{
+      key: "walkaroundVideo" | "engineStartUpVideo";
+      nullable: true;
+    }> = [
+      { key: "walkaroundVideo", nullable: true },
+      { key: "engineStartUpVideo", nullable: true },
+    ];
+
+    for (const field of mediaFields) {
+      if (!(field.key in updates)) continue;
+      const rawValue = updates[field.key];
+      if (typeof rawValue !== "string" || !rawValue.trim()) {
+        updates[field.key] = "";
+        continue;
+      }
+      const sanitized = sanitizeSupabaseMediaUrl(rawValue);
+      if (!sanitized) {
+        return Response.json({ message: `${field.key} must be a Supabase public URL.` }, { status: 400 });
+      }
+      updates[field.key] = sanitized;
+    }
+
+    for (const field of optionalMediaFields) {
+      if (!(field.key in updates)) continue;
+      const rawValue = updates[field.key];
+      if (rawValue === null || rawValue === undefined || (typeof rawValue === "string" && !rawValue.trim())) {
+        updates[field.key] = null;
+        continue;
+      }
+      const sanitized = sanitizeSupabaseMediaUrl(rawValue);
+      if (!sanitized) {
+        return Response.json({ message: `${field.key} must be a Supabase public URL.` }, { status: 400 });
+      }
+      updates[field.key] = sanitized;
+    }
+
+    if ("gallery" in updates) {
+      const rawGallery = updates.gallery;
+      if (rawGallery === null || rawGallery === undefined) {
+        updates.gallery = [];
+      } else if (!Array.isArray(rawGallery)) {
+        return Response.json({ message: "gallery must be an array of Supabase public URLs." }, { status: 400 });
+      } else {
+        const invalidGalleryUrl = rawGallery.find(
+          (item) => typeof item === "string" && item.trim() && !isSupabasePublicStorageUrl(item)
+        );
+        if (invalidGalleryUrl) {
+          return Response.json({ message: "gallery must only contain Supabase public URLs." }, { status: 400 });
+        }
+        updates.gallery = sanitizeSupabaseMediaArray(rawGallery);
+      }
+    }
+
     const [updated] = await db
       .update(vehicles)
       .set({ ...(updates as Partial<typeof vehicles.$inferInsert>), updatedAt: new Date() })
@@ -107,6 +163,30 @@ export async function PUT(
     if (!updated) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
     }
+
+    if (
+      "image" in updates ||
+      "gallery" in updates ||
+      "frontPhoto" in updates ||
+      "backPhoto" in updates ||
+      "sidePhoto" in updates ||
+      "interiorPhoto" in updates ||
+      "walkaroundVideo" in updates ||
+      "engineStartUpVideo" in updates
+    ) {
+      console.info("Stored DB media URLs (update)", {
+        vehicleId: updated.id,
+        image: updated.image,
+        frontPhoto: updated.frontPhoto,
+        backPhoto: updated.backPhoto,
+        sidePhoto: updated.sidePhoto,
+        interiorPhoto: updated.interiorPhoto,
+        walkaroundVideo: updated.walkaroundVideo,
+        engineStartUpVideo: updated.engineStartUpVideo,
+        galleryCount: updated.gallery?.length ?? 0,
+      });
+    }
+
     return Response.json(updated);
   } catch (error) {
     console.error("PUT /api/vehicles/[id] failed", error);
@@ -128,8 +208,7 @@ export async function DELETE(
     const { id } = await params;
     const [existing] = await db
       .select({
-        image: vehicles.image,
-        gallery: vehicles.gallery,
+        id: vehicles.id,
       })
       .from(vehicles)
       .where(eq(vehicles.id, id));
@@ -149,11 +228,6 @@ export async function DELETE(
       .delete(vehicles)
       .where(eq(vehicles.id, id))
       .returning({ id: vehicles.id });
-
-    const candidatePaths = Array.from(
-      new Set([existing.image, ...(existing.gallery ?? [])].filter(Boolean))
-    );
-    await cleanupUploadedImages(candidatePaths);
 
     return Response.json({ success: true, id: deleted.id });
   } catch (error) {
