@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleUserRound, House, PlusCircle, Search, Heart } from "lucide-react";
+import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
 const items = [
   { label: "Home", href: "/", icon: House },
@@ -14,6 +15,7 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { savedCount, isAuthenticated } = useSavedListings();
 
   if (pathname.startsWith("/auth") || pathname.startsWith("/onboarding")) {
     return null;
@@ -39,7 +41,14 @@ export function BottomNav() {
                   active ? "bg-slate-900 text-white" : "text-slate-600"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <span className="relative">
+                  <Icon className="h-4 w-4" />
+                  {item.href === "/saved" && isAuthenticated && savedCount > 0 ? (
+                    <span className="absolute -right-2 -top-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF3B30] px-1 text-[9px] font-semibold text-white">
+                      {savedCount > 99 ? "99+" : savedCount}
+                    </span>
+                  ) : null}
+                </span>
                 {item.label}
               </Link>
             </li>

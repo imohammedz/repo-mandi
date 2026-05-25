@@ -1,9 +1,20 @@
 import { db } from "@/lib/db";
-import { vehicles } from "@/lib/schema";
+import { buyerContactMethodEnum, timeToSellEnum, vehicleSaleFeedback, vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
+
+function mapSoldThroughPlatformToBoolean(value: "YES" | "NO" | "NOT_SURE"): boolean | null {
+  switch (value) {
+    case "YES":
+      return true;
+    case "NO":
+      return false;
+    default:
+      return null;
+  }
+}
 
 // ── PATCH /api/vehicles/[id]/status ──────────────────────────────────────────
 // Body: { status: "VERIFIED" | "REJECTED" | "PENDING" | "SOLD" }
@@ -25,6 +36,12 @@ export async function PATCH(
       photosVerified?: boolean;
       yardVerified?: boolean;
       sellerVerified?: boolean;
+      saleFeedback?: {
+        soldThroughPlatform?: "YES" | "NO" | "NOT_SURE";
+        buyerContactMethod?: (typeof buyerContactMethodEnum.enumValues)[number];
+        timeToSell?: (typeof timeToSellEnum.enumValues)[number];
+        feedback?: string;
+      };
     };
     const allowed = ["PENDING", "VERIFIED", "REJECTED", "SOLD"];
 
@@ -41,8 +58,29 @@ export async function PATCH(
     }
 
     const isAdmin = currentUser.accountType === "ADMIN";
-    if (!isAdmin) {
+    const isOwner = existing.sellerId === currentUser.id;
+    const canModify = isAdmin || (isOwner && body.status === "SOLD");
+    if (!canModify) {
       return Response.json({ message: "Forbidden." }, { status: 403 });
+    }
+
+    const soldThroughPlatformAllowed = ["YES", "NO", "NOT_SURE"] as const;
+    const contactMethodsAllowed = buyerContactMethodEnum.enumValues;
+    const timeToSellAllowed = timeToSellEnum.enumValues;
+    const saleFeedback = body.saleFeedback;
+    const isSellerMarkingSold = body.status === "SOLD" && isOwner;
+
+    if (isSellerMarkingSold) {
+      if (!saleFeedback?.soldThroughPlatform || !soldThroughPlatformAllowed.includes(saleFeedback.soldThroughPlatform)) {
+        return Response.json({ message: "Please answer whether this sale came from RepoMandi." }, { status: 400 });
+      }
+    }
+
+    if (saleFeedback?.buyerContactMethod && !contactMethodsAllowed.includes(saleFeedback.buyerContactMethod)) {
+      return Response.json({ message: "Invalid buyer contact method." }, { status: 400 });
+    }
+    if (saleFeedback?.timeToSell && !timeToSellAllowed.includes(saleFeedback.timeToSell)) {
+      return Response.json({ message: "Invalid time to sell." }, { status: 400 });
     }
 
     const updates: Partial<typeof vehicles.$inferInsert> = {
@@ -69,6 +107,7 @@ export async function PATCH(
       updates.verifiedAt = new Date();
     } else if (body.status === "SOLD") {
       updates.isPublished = false;
+      updates.soldAt = new Date();
     } else if (body.status === "PENDING") {
       updates.verificationStatus = "PENDING_VERIFICATION";
       updates.isPublished = false;
@@ -76,12 +115,28 @@ export async function PATCH(
       updates.verifiedBy = null;
       updates.verifiedAt = null;
     }
+    if (body.status !== "SOLD") {
+      updates.soldAt = null;
+    }
 
     const [updated] = await db
       .update(vehicles)
       .set(updates)
       .where(eq(vehicles.id, id))
       .returning();
+
+    if (isSellerMarkingSold && saleFeedback?.soldThroughPlatform) {
+      const soldThroughPlatform = mapSoldThroughPlatformToBoolean(saleFeedback.soldThroughPlatform);
+
+      await db.insert(vehicleSaleFeedback).values({
+        vehicleId: id,
+        sellerId: currentUser.id,
+        soldThroughPlatform,
+        buyerContactMethod: saleFeedback.buyerContactMethod ?? null,
+        timeToSell: saleFeedback.timeToSell ?? null,
+        feedback: saleFeedback.feedback?.trim() ? saleFeedback.feedback.trim() : null,
+      });
+    }
 
     return Response.json(updated);
   } catch (error) {

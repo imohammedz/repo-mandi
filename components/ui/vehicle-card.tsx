@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatCurrency } from "@/data/vehicles";
 import { Vehicle } from "@/types/vehicle";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
+import { SaveHeartButton } from "@/components/ui/save-heart-button";
 
 type Props = {
   vehicle: Vehicle;
@@ -36,9 +37,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           height={800}
           className={compact ? "h-40 w-full object-cover" : "h-52 w-full object-cover"}
         />
-        <button className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-slate-600 shadow-sm">
-          <Heart className="h-4 w-4" />
-        </button>
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3" />
       </div>
 
       <div className="space-y-3 p-4">

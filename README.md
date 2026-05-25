@@ -63,16 +63,17 @@ Uploaded files are saved in `public/uploads` (ignored by git), and vehicle delet
 Create a `.env.local` file (or copy from `.env.example`) with:
 
 ```bash
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_VERIFY_SERVICE_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+NEXT_PUBLIC_MSG91_WIDGET_ID=366579704a4f393038343731
+MSG91_AUTH_KEY=your_msg91_auth_key
+MSG91_WIDGET_TOKEN=your_msg91_widget_token
 ADMIN_PHONE_NUMBERS=+1XXXXXXXXXX,+91XXXXXXXXXX
 ```
 
-The app sends and verifies OTP via:
+Seller/admin login now uses the MSG91 OTP widget:
 
-- `POST /api/auth/otp/send`
-- `POST /api/auth/otp/verify`
+- Client loads `https://verify.msg91.com/otp-provider.js` with fallback to `https://verify.phone91.com/otp-provider.js` from `/auth/login` or `/admin/login`
+- Widget success callback posts `{ accessToken, phone }` to `POST /api/auth/msg91/verify`
+- Server verifies the MSG91 access token, creates/loads the user, and sets the existing RepoMandi session cookie
 
 ## Learn More
 

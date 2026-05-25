@@ -101,6 +101,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     rejectionReason: row.rejectionReason,
     verifiedBy: row.verifiedBy,
     verifiedAt: row.verifiedAt ? row.verifiedAt.toISOString() : null,
+    soldAt: row.soldAt ? row.soldAt.toISOString() : null,
     missingPhotos: row.missingPhotos,
     priceTooLow: row.priceTooLow,
     duplicateRegistration: row.duplicateRegistration,

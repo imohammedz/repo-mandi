@@ -8,6 +8,7 @@ import {
   pgEnum,
   serial,
   boolean,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -92,6 +93,22 @@ export const leadSourceEnum = pgEnum("lead_source", [
   "REQUEST_DETAILS",
 ]);
 
+export const buyerContactMethodEnum = pgEnum("buyer_contact_method", [
+  "PHONE_CALL",
+  "WHATSAPP",
+  "DIRECT_VISIT",
+  "EXISTING_CONTACT",
+  "REQUEST_DETAILS",
+  "OTHER",
+]);
+
+export const timeToSellEnum = pgEnum("time_to_sell", [
+  "LESS_THAN_1_WEEK",
+  "ONE_TO_TWO_WEEKS",
+  "TWO_TO_FOUR_WEEKS",
+  "MORE_THAN_1_MONTH",
+]);
+
 export const listingTypeEnum = pgEnum("listing_type", [
   "REGULAR",
   "REPO",
@@ -158,6 +175,17 @@ export const mediaCategoryEnum = pgEnum("vehicle_media_category", [
   "FITNESS",
   "PERMIT",
   "OTHER",
+  "TYRES",
+  "ENGINE",
+  "CABIN",
+  "CHASSIS",
+  "SUSPENSION",
+  "AXLES",
+  "DASHBOARD",
+  "DAMAGE",
+  "TRAILER_BODY",
+  "LOAD_BODY",
+  "HYDRAULIC_SYSTEM",
 ]);
 
 export const nocStatusEnum = pgEnum("noc_status", [
@@ -296,6 +324,7 @@ export const vehicles = pgTable("vehicles", {
   rejectionReason: text("rejection_reason").notNull().default(""),
   verifiedBy: integer("verified_by"),
   verifiedAt: timestamp("verified_at"),
+  soldAt: timestamp("sold_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -323,6 +352,44 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const vehicleSaleFeedback = pgTable("vehicle_sale_feedback", {
+  id: serial("id").primaryKey(),
+  vehicleId: varchar("vehicle_id", { length: 100 })
+    .notNull()
+    .references(() => vehicles.id, { onDelete: "cascade" }),
+  sellerId: integer("seller_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  soldThroughPlatform: boolean("sold_through_platform"),
+  buyerContactMethod: buyerContactMethodEnum("buyer_contact_method"),
+  timeToSell: timeToSellEnum("time_to_sell"),
+  feedback: text("feedback"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const savedListings = pgTable(
+  "saved_listings",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      // Saved records should be removed if the owning user is deleted.
+      .references(() => users.id, { onDelete: "cascade" }),
+    vehicleId: varchar("vehicle_id", { length: 100 })
+      .notNull()
+      // Saved records should be removed if the listing itself is deleted.
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userVehicleUnique: uniqueIndex("saved_listings_user_vehicle_unique").on(
+      table.userId,
+      table.vehicleId
+    ),
+  })
+);
+
 export const platformSettings = pgTable("platform_settings", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 100 }).notNull().unique(),
@@ -338,6 +405,10 @@ export type DbUser = typeof users.$inferSelect;
 export type DbUserInsert = typeof users.$inferInsert;
 export type DbLead = typeof leads.$inferSelect;
 export type DbLeadInsert = typeof leads.$inferInsert;
+export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
+export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
 export type DbVehicleMediaInsert = typeof vehicleMedia.$inferInsert;
+export type DbSavedListing = typeof savedListings.$inferSelect;
+export type DbSavedListingInsert = typeof savedListings.$inferInsert;
 export type DbPlatformSetting = typeof platformSettings.$inferSelect;

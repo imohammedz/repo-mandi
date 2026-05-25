@@ -12,6 +12,7 @@ import { VehicleCard } from "@/components/ui/vehicle-card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { getCurrentUser } from "@/lib/auth";
 import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
+import { SaveHeartButton } from "@/components/ui/save-heart-button";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,10 @@ export default async function VehicleDetailPage({
         <ArrowLeft className="h-4 w-4" /> Back to listings
       </Link>
 
-      <ImageGallery images={vehicle.gallery} title={vehicle.title} />
+      <div className="relative">
+        <ImageGallery images={vehicle.gallery} title={vehicle.title} />
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
+      </div>
 
       <section className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${vehicle.listingType === "REPO" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>

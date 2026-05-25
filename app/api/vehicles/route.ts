@@ -60,6 +60,25 @@ const LEGACY_RUNNING_MAP: Record<string, RunningCondition> = {
 
 const MIN_REASONABLE_PRICE = 100000; // INR threshold for low-price risk flagging in admin review.
 const MIN_VEHICLE_YEAR = 2000;
+const MAX_PHOTOS = 20;
+
+// Categories sellers can assign to additional (non-required) photos.
+const VALID_ADDITIONAL_PHOTO_CATEGORIES = new Set([
+  "TYRES",
+  "ENGINE",
+  "CABIN",
+  "CHASSIS",
+  "SUSPENSION",
+  "AXLES",
+  "DASHBOARD",
+  "RC",
+  "INSURANCE",
+  "DAMAGE",
+  "TRAILER_BODY",
+  "LOAD_BODY",
+  "HYDRAULIC_SYSTEM",
+  "OTHER",
+]);
 
 function normalizeRegNumber(input: string) {
   return input
@@ -253,6 +272,7 @@ export async function POST(request: Request) {
     const backPhoto = toSafeString(body.backPhoto);
     const sidePhoto = toSafeString(body.sidePhoto);
     const interiorPhoto = toSafeString(body.interiorPhoto);
+    const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : [];
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
@@ -320,6 +340,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate and cap additional photos.
+    const additionalPhotoItems = additionalPhotosRaw
+      .filter((item): item is { url: string; category?: string | null } => {
+        const it = item as Record<string, unknown>;
+        return typeof it?.url === "string" && Boolean(it.url);
+      })
+      .slice(0, MAX_PHOTOS);
+
+    const requiredPhotoCount = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto].filter(Boolean).length;
+    if (requiredPhotoCount + additionalPhotoItems.length > MAX_PHOTOS) {
+      return Response.json({ message: `Maximum ${MAX_PHOTOS} photos allowed.` }, { status: 400 });
+    }
+
     if (isTrailerOnly && interiorPhoto) {
       return Response.json({ message: "interiorPhoto is not allowed for Trailer Only assets." }, { status: 400 });
     }
@@ -375,7 +408,7 @@ export async function POST(request: Request) {
       .join(" ");
     const id = nanoid(title, brand, model, normalizedYear);
 
-    const gallery = [frontPhoto, backPhoto, sidePhoto, interiorPhoto].filter(Boolean);
+    const gallery = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto, ...additionalPhotoItems.map((p) => p.url)].filter(Boolean);
 
     // Check auto-approval setting
     const [autoApproveRow] = await db
@@ -548,6 +581,11 @@ export async function POST(request: Request) {
       ...(toSafeString(body.permitDocument)
         ? [{ type: "DOCUMENT", category: "PERMIT", url: toSafeString(body.permitDocument) }]
         : []),
+      ...additionalPhotoItems.map((p) => {
+        const rawCat = p.category ? p.category.toUpperCase() : "";
+        const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCat) ? rawCat : "OTHER";
+        return { type: "PHOTO", category, url: p.url };
+      }),
     ].filter((item) => Boolean(item.url));
 
     if (mediaRows.length > 0) {
