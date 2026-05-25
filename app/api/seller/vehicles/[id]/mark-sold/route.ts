@@ -36,19 +36,14 @@ export async function PATCH(
       );
     }
 
-    const soldUpdates: Partial<typeof vehicles.$inferInsert> & Record<string, unknown> = {
-      listingStatus: "SOLD",
-      status: "APPROVED",
-      isPublished: false,
-      updatedAt: new Date(),
-    };
-    if ("soldAt" in (existing as Record<string, unknown>)) {
-      soldUpdates.soldAt = new Date();
-    }
-
     const [updated] = await db
       .update(vehicles)
-      .set(soldUpdates as Partial<typeof vehicles.$inferInsert>)
+      .set({
+        listingStatus: "SOLD",
+        status: "APPROVED",
+        isPublished: false,
+        updatedAt: new Date(),
+      })
       .where(eq(vehicles.id, id))
       .returning();
 
