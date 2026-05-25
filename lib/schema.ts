@@ -93,6 +93,22 @@ export const leadSourceEnum = pgEnum("lead_source", [
   "REQUEST_DETAILS",
 ]);
 
+export const buyerContactMethodEnum = pgEnum("buyer_contact_method", [
+  "PHONE_CALL",
+  "WHATSAPP",
+  "DIRECT_VISIT",
+  "EXISTING_CONTACT",
+  "REQUEST_DETAILS",
+  "OTHER",
+]);
+
+export const timeToSellEnum = pgEnum("time_to_sell", [
+  "LESS_THAN_1_WEEK",
+  "ONE_TO_TWO_WEEKS",
+  "TWO_TO_FOUR_WEEKS",
+  "MORE_THAN_1_MONTH",
+]);
+
 export const listingTypeEnum = pgEnum("listing_type", [
   "REGULAR",
   "REPO",
@@ -297,6 +313,7 @@ export const vehicles = pgTable("vehicles", {
   rejectionReason: text("rejection_reason").notNull().default(""),
   verifiedBy: integer("verified_by"),
   verifiedAt: timestamp("verified_at"),
+  soldAt: timestamp("sold_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -321,6 +338,21 @@ export const leads = pgTable("leads", {
   source: leadSourceEnum("source").notNull(),
   message: text("message"),
   phoneVerified: boolean("phone_verified").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const vehicleSaleFeedback = pgTable("vehicle_sale_feedback", {
+  id: serial("id").primaryKey(),
+  vehicleId: varchar("vehicle_id", { length: 100 })
+    .notNull()
+    .references(() => vehicles.id, { onDelete: "cascade" }),
+  sellerId: integer("seller_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  soldThroughPlatform: boolean("sold_through_platform"),
+  buyerContactMethod: buyerContactMethodEnum("buyer_contact_method"),
+  timeToSell: timeToSellEnum("time_to_sell"),
+  feedback: text("feedback"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -362,6 +394,8 @@ export type DbUser = typeof users.$inferSelect;
 export type DbUserInsert = typeof users.$inferInsert;
 export type DbLead = typeof leads.$inferSelect;
 export type DbLeadInsert = typeof leads.$inferInsert;
+export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
+export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
 export type DbVehicleMediaInsert = typeof vehicleMedia.$inferInsert;
 export type DbSavedListing = typeof savedListings.$inferSelect;

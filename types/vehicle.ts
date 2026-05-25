@@ -116,6 +116,7 @@ export type Vehicle = {
   rejectionReason?: string;
   verifiedBy?: number | null;
   verifiedAt?: string | null;
+  soldAt?: string | null;
   missingPhotos?: boolean;
   priceTooLow?: boolean;
   duplicateRegistration?: boolean;
