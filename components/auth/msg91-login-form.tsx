@@ -43,13 +43,21 @@ function getObject(value: unknown) {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
 }
 
+function looksLikeMsg91Token(value: string) {
+  return value.length >= 20 && !/\s/.test(value);
+}
+
 function extractMsg91Token(payload: unknown) {
   const roots = [getObject(payload), getObject(getObject(payload)?.data)];
   for (const root of roots) {
     if (!root) continue;
-    for (const key of ["access-token", "accessToken", "token", "message"]) {
+    for (const key of ["access-token", "accessToken", "token"]) {
       const candidate = getString(root[key]);
       if (candidate) return candidate;
+    }
+    const messageToken = getString(root.message);
+    if (messageToken && looksLikeMsg91Token(messageToken)) {
+      return messageToken;
     }
   }
   return null;

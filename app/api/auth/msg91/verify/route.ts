@@ -42,26 +42,27 @@ function getAdminPhoneNumbers() {
 const ADMIN_PHONE_NUMBERS = getAdminPhoneNumbers();
 
 function extractProviderPhone(payload: unknown) {
-  const values: unknown[] = [];
+  const root = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+  const data = root?.data && typeof root.data === "object" ? (root.data as Record<string, unknown>) : null;
 
-  const visit = (value: unknown) => {
-    if (!value || typeof value !== "object") return;
-    const record = value as Record<string, unknown>;
-    values.push(
-      record.mobile,
-      record.phone,
-      record.phone_number,
-      record.identifier,
-      record.number,
-      record.msisdn,
-      record.message
-    );
-    if (record.data && typeof record.data === "object") visit(record.data);
-  };
+  const candidates = [
+    root?.mobile,
+    root?.phone,
+    root?.phone_number,
+    root?.identifier,
+    root?.number,
+    root?.msisdn,
+    data?.mobile,
+    data?.phone,
+    data?.phone_number,
+    data?.identifier,
+    data?.number,
+    data?.msisdn,
+    root?.message,
+    data?.message,
+  ];
 
-  visit(payload);
-
-  for (const value of values) {
+  for (const value of candidates) {
     if (typeof value !== "string") continue;
     const normalized = normalizeIndianPhone(value);
     if (normalized) return normalized;
