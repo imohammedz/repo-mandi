@@ -683,8 +683,13 @@ export default function AddVehiclePage() {
         setError(data.message ?? "Failed to upload image.");
         return;
       }
+      const nextUrl = data.urls[0];
+      if (!nextUrl) {
+        setError("Failed to upload image.");
+        return;
+      }
       setAdditionalPhotos((previous) =>
-        previous.map((p, i) => (i === index ? { ...p, url: data.urls![0] } : p))
+        previous.map((p, i) => (i === index ? { ...p, url: nextUrl } : p))
       );
     } catch {
       setError("Failed to upload image.");

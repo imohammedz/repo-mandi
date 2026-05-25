@@ -152,7 +152,8 @@ export async function POST(request: Request) {
       return Response.json({ message: verification.message }, { status: 400 });
     }
 
-    if (verification.phone !== phone) {
+    const submittedPhone = normalizeIndianPhone(phone);
+    if (!submittedPhone || verification.phone !== submittedPhone) {
       return Response.json({ message: "Verified phone number did not match the submitted number." }, { status: 400 });
     }
 

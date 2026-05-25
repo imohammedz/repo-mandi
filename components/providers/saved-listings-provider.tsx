@@ -107,7 +107,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       const currentlySaved = savedListings.some((item) => item.vehicleId === vehicleId);
       const optimisticCreatedAt = new Date().toISOString();
       tempIdCounter.current += 1;
-      const optimisticId = `temp-${Date.now()}-${tempIdCounter.current}` as const;
+      const optimisticId: SavedListing["id"] = `temp-${Date.now()}-${tempIdCounter.current}`;
 
       setPendingVehicleIds((prev) => [...prev, vehicleId]);
       if (currentlySaved) {

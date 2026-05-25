@@ -222,7 +222,7 @@ export default function Msg91LoginForm({
 
   return (
     <>
-      <Script src="https://verify.msg91.com/otp-provider.js" strategy="afterInteractive" />
+      <Script src="https://verify.msg91.com/otp-provider.js" strategy="afterInteractive" crossOrigin="anonymous" />
 
       <main className="space-y-6 px-4 pb-8 pt-10">
         {backHref ? (
