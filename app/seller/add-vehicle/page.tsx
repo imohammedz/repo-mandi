@@ -919,12 +919,12 @@ export default function AddVehiclePage() {
           <SelectField label="Vehicle Type" value={form.vehicleType} options={vehicleTypes} onChange={(value) => update("vehicleType", value)} required />
           {showCompleteVehicleTypeGuidance ? (
             <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-              If you are selling horse + trailer together, select Vehicle Type as HCV and add trailer details in Optional Details.
+              If you are selling horse + trailer together, select Vehicle Type as HCV and add trailer details in Step 6: Additional Details.
             </p>
           ) : null}
           {showCompleteVehicleTrailerTypeWarning ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Selecting Trailer as Vehicle Type usually indicates a trailer-only listing. For horse + trailer, choose HCV and add trailer details later.
+              Selecting Trailer as Vehicle Type usually indicates a trailer-only listing. For horse + trailer, choose HCV and add trailer details in Step 6: Additional Details.
             </p>
           ) : null}
           <TextField label="Vehicle Sub-Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="Trailer subtype, tanker subtype, etc." />

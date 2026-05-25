@@ -1,6 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -77,10 +76,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "vehicle-images";
     const urls: string[] = [];
+    const supabaseAdmin = getSupabaseAdmin();
 
     for (const file of files) {
       if (!file.type.startsWith("image/")) {
@@ -108,11 +106,22 @@ export async function POST(request: Request) {
         );
       }
 
-      const fileName = `${randomUUID()}.${extension}`;
-      const filePath = path.join(uploadDir, fileName);
+      const filePath = `vehicles/${randomUUID()}.${extension}`;
 
-      await writeFile(filePath, fileBuffer);
-      urls.push(`/uploads/${fileName}`);
+      const { error } = await supabaseAdmin.storage
+        .from(bucket)
+        .upload(filePath, fileBuffer, {
+          contentType: file.type,
+          upsert: true,
+        });
+
+      if (error) {
+        console.error("Supabase storage upload error", filePath, error);
+        return Response.json({ message: "Failed to upload image." }, { status: 500 });
+      }
+
+      const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
+      urls.push(data.publicUrl);
     }
 
     return Response.json({ urls }, { status: 201 });
