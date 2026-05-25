@@ -6,7 +6,6 @@ import { users } from "@/lib/schema";
 
 export const runtime = "nodejs";
 
-const MSG91_VERIFY_URL = "https://control.msg91.com/api/v5/widget/verifyAccessToken";
 const indianMobilePattern = /^\d{10}$/;
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
 
@@ -77,7 +76,8 @@ async function verifyMsg91Token(verifiedToken: string) {
     throw new Error("MSG91_AUTH_KEY environment variable is required.");
   }
 
-  const response = await fetch(MSG91_VERIFY_URL, {
+  const url = new URL("https://control.msg91.com/api/v5/widget/verifyAccessToken");
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -121,16 +121,17 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
       phone?: string;
+      accessToken?: string;
       verifiedToken?: string;
       token?: string;
       intent?: "admin";
     };
 
     const phone = (body.phone ?? "").replace(/\D/g, "").slice(0, 10);
-    const verifiedToken = String(body.verifiedToken ?? body.token ?? "").trim();
+    const verifiedToken = String(body.accessToken ?? body.verifiedToken ?? body.token ?? "").trim();
     const intent = body.intent === "admin" ? "admin" : "default";
 
-    if (!indianMobilePattern.test(phone)) {
+    if (body.phone && !indianMobilePattern.test(phone)) {
       return Response.json({ message: "Enter a valid 10-digit mobile number." }, { status: 400 });
     }
 
@@ -153,19 +154,20 @@ export async function POST(request: Request) {
       return Response.json({ message: verification.message }, { status: 400 });
     }
 
-    const submittedPhone = normalizeIndianPhone(phone);
-    if (!submittedPhone || verification.phone !== submittedPhone) {
+    const submittedPhone = phone ? normalizeIndianPhone(phone) : null;
+    if (submittedPhone && verification.phone !== submittedPhone) {
       return Response.json({ message: "Verified phone number did not match the submitted number." }, { status: 400 });
     }
 
-    const normalizedPhone = `+91${phone}`;
+    const verifiedPhone = verification.phone;
+    const normalizedPhone = `+91${verifiedPhone}`;
     const isAuthorizedAdmin = ADMIN_PHONE_NUMBERS ? ADMIN_PHONE_NUMBERS.has(normalizedPhone) : false;
 
     if (intent === "admin" && !isAuthorizedAdmin) {
       return Response.json({ message: "This phone number is not authorized for admin access." }, { status: 403 });
     }
 
-    const [existing] = await db.select().from(users).where(eq(users.phone, phone));
+    const [existing] = await db.select().from(users).where(eq(users.phone, verifiedPhone));
     let currentUser = existing;
 
     if (isAuthorizedAdmin) {
@@ -182,7 +184,7 @@ export async function POST(request: Request) {
         : await db
             .insert(users)
             .values({
-              phone,
+              phone: verifiedPhone,
               ...adminPayload,
             })
             .returning();
@@ -190,7 +192,7 @@ export async function POST(request: Request) {
       [currentUser] = await db
         .insert(users)
         .values({
-          phone,
+          phone: verifiedPhone,
           accountType: "BUYER",
           isProfileComplete: false,
         })

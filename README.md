@@ -70,11 +70,9 @@ ADMIN_PHONE_NUMBERS=+1XXXXXXXXXX,+91XXXXXXXXXX
 
 Seller/admin login now uses the MSG91 OTP widget:
 
-- Client opens `https://verify.msg91.com/otp-provider.js` from `/auth/login` or `/admin/login`
-- Widget success callback posts `{ phone, verifiedToken }` to `POST /api/auth/msg91/verify`
+- Client loads `https://verify.msg91.com/otp-provider.js` with fallback to `https://verify.phone91.com/otp-provider.js` from `/auth/login` or `/admin/login`
+- Widget success callback posts `{ accessToken, phone }` to `POST /api/auth/msg91/verify`
 - Server verifies the MSG91 access token, creates/loads the user, and sets the existing RepoMandi session cookie
-
-Twilio environment variables are still required only for the separate lead/contact OTP routes.
 
 ## Learn More
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Script from "next/script";
 import { ArrowLeft } from "lucide-react";
 import type { AuthVerifyResponse } from "@/app/auth/types";
 
@@ -88,6 +87,51 @@ async function waitForMsg91Widget(timeoutMs = 5000) {
   throw new Error("OTP service is unavailable right now. Please try again.");
 }
 
+let msg91ScriptLoadPromise: Promise<void> | null = null;
+
+function loadMsg91ScriptWithFallback() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("OTP service is unavailable right now. Please try again."));
+  }
+  if (typeof window.initSendOTP === "function") {
+    return Promise.resolve();
+  }
+  if (msg91ScriptLoadPromise) return msg91ScriptLoadPromise;
+
+  const urls = ["https://verify.msg91.com/otp-provider.js", "https://verify.phone91.com/otp-provider.js"];
+  msg91ScriptLoadPromise = new Promise<void>((resolve, reject) => {
+    const attempt = (index: number) => {
+      if (index >= urls.length) {
+        reject(new Error("Unable to load OTP widget. Please check your network and try again."));
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = urls[index];
+      script.async = true;
+      script.crossOrigin = "anonymous";
+      script.onload = () => {
+        waitForMsg91Widget(6000)
+          .then(resolve)
+          .catch(() => attempt(index + 1));
+      };
+      script.onerror = () => attempt(index + 1);
+      document.head.appendChild(script);
+    };
+
+    attempt(0);
+  }).catch((error: unknown) => {
+      msg91ScriptLoadPromise = null;
+      throw error instanceof Error ? error : new Error("Unable to load OTP widget right now.");
+    })
+    .finally(() => {
+      if (typeof window.initSendOTP === "function") return;
+      msg91ScriptLoadPromise = null;
+    });
+
+  return msg91ScriptLoadPromise;
+}
+
 export default function Msg91LoginForm({
   title,
   subtitle,
@@ -169,6 +213,7 @@ export default function Msg91LoginForm({
     setError("");
 
     try {
+      await loadMsg91ScriptWithFallback();
       await waitForMsg91Widget();
 
       window.initSendOTP?.({
@@ -192,7 +237,7 @@ export default function Msg91LoginForm({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   phone,
-                  verifiedToken,
+                  accessToken: verifiedToken,
                   intent: intent === "admin" ? "admin" : undefined,
                 }),
               });
@@ -229,53 +274,49 @@ export default function Msg91LoginForm({
   };
 
   return (
-    <>
-      <Script src="https://verify.msg91.com/otp-provider.js" strategy="afterInteractive" crossOrigin="anonymous" />
+    <main className="space-y-6 px-4 pb-8 pt-10">
+      {backHref ? (
+        <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-slate-500">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Link>
+      ) : null}
 
-      <main className="space-y-6 px-4 pb-8 pt-10">
-        {backHref ? (
-          <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-slate-500">
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Link>
-        ) : null}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+        <p className="text-sm text-slate-500">{subtitle}</p>
+      </div>
 
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-          <p className="text-sm text-slate-500">{subtitle}</p>
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-slate-700">Mobile Number</span>
+        <div className="flex">
+          <span className="inline-flex min-h-12 items-center rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
+            +91
+          </span>
+          <input
+            type="tel"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="98XXXXXXXX"
+            value={mobile}
+            onChange={(event) => setMobile(event.target.value.replace(/\D/g, ""))}
+            className="min-h-12 w-full rounded-r-xl border border-slate-200 bg-white px-4 text-base outline-none placeholder:text-slate-400"
+          />
         </div>
+      </label>
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-slate-700">Mobile Number</span>
-          <div className="flex">
-            <span className="inline-flex min-h-12 items-center rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
-              +91
-            </span>
-            <input
-              type="tel"
-              inputMode="numeric"
-              maxLength={10}
-              placeholder="98XXXXXXXX"
-              value={mobile}
-              onChange={(event) => setMobile(event.target.value.replace(/\D/g, ""))}
-              className="min-h-12 w-full rounded-r-xl border border-slate-200 bg-white px-4 text-base outline-none placeholder:text-slate-400"
-            />
-          </div>
-        </label>
+      <button
+        onClick={handleContinue}
+        disabled={mobile.length !== 10 || submitting}
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {submitting ? "Opening OTP..." : "Continue"}
+      </button>
 
-        <button
-          onClick={handleContinue}
-          disabled={mobile.length !== 10 || submitting}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          {submitting ? "Opening OTP..." : "Continue"}
-        </button>
+      <p className="text-center text-xs text-slate-500">
+        After you continue, the MSG91 OTP widget will open and verify your number.
+      </p>
 
-        <p className="text-center text-xs text-slate-500">
-          After you continue, the MSG91 OTP widget will open and verify your number.
-        </p>
-
-        {error ? <p className="text-center text-sm text-red-600">{error}</p> : null}
-      </main>
-    </>
+      {error ? <p className="text-center text-sm text-red-600">{error}</p> : null}
+    </main>
   );
 }
