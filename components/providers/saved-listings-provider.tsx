@@ -13,6 +13,7 @@ type SavedListing = {
 };
 
 type SaveResult = { ok: boolean; message?: string };
+// Sentinel user id for optimistic entries that exist only in client state.
 const OPTIMISTIC_USER_ID = -1;
 
 type SavedListingsContextValue = {
@@ -106,7 +107,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       const currentlySaved = savedListings.some((item) => item.vehicleId === vehicleId);
       const optimisticCreatedAt = new Date().toISOString();
       tempIdCounter.current += 1;
-      const tempId = `temp-${Date.now()}-${tempIdCounter.current}` as const;
+      const optimisticId = `temp-${Date.now()}-${tempIdCounter.current}` as const;
 
       setPendingVehicleIds((prev) => [...prev, vehicleId]);
       if (currentlySaved) {
@@ -114,7 +115,7 @@ export function SavedListingsProvider({ children }: { children: React.ReactNode 
       } else if (vehicle) {
         setSavedListings((prev) => [
           {
-            id: tempId,
+            id: optimisticId,
             userId: OPTIMISTIC_USER_ID,
             vehicleId,
             createdAt: optimisticCreatedAt,
