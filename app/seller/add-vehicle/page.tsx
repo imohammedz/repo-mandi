@@ -161,6 +161,7 @@ const trailerSuspensionOptions = [
   "Mixed",
   "Unknown",
 ];
+const trailerBodyIncludedOptions = ["Yes", "No", "Not Sure"] as const;
 
 const financeCompanies = [
   "SBI",
@@ -201,7 +202,6 @@ const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
 
 const MIN_YEAR = 2000;
 const years = Array.from({ length: new Date().getFullYear() - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i)).reverse();
-
 const indiaStates = [
   "Andhra Pradesh",
   "Arunachal Pradesh",
@@ -419,6 +419,7 @@ export default function AddVehiclePage() {
   const [additionalPhotos, setAdditionalPhotos] = useState<AdditionalPhoto[]>([]);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [pendingAdditionalAction, setPendingAdditionalAction] = useState<"new" | number>("new");
+  const [trailerBodyIncluded, setTrailerBodyIncluded] = useState("");
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
@@ -483,24 +484,16 @@ export default function AddVehiclePage() {
     return { canRegular: true, canRepo: false };
   }, [user]);
 
+  const isCompleteVehicle = form.assetConfiguration === "Complete Vehicle";
+  const isPowerOnly = form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
   const isTrailerOnly = form.assetConfiguration === "Trailer Only";
-  const hasTrailerConfiguration =
-    form.assetConfiguration === "Trailer Only" || form.assetConfiguration === "Prime Mover + Trailer";
-  const appliesTrailerLogic = form.vehicleType === "Trailer" || hasTrailerConfiguration;
   const requiresPoweredFields = !isTrailerOnly;
-  const requiresTrailerFields = appliesTrailerLogic;
-  // Business rule: non-REPO prime-mover-only listings do not include trailer assets,
-  // so trailer-focused Step 6 metadata is not applicable.
-  // Keep this in sync with the mirrored API validation in app/api/vehicles/route.ts.
-  const shouldHideTrailerFieldsInStep6 =
-    form.listingType !== "REPO" && form.assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
-  // Trailer-focused fields are shown only when trailer logic applies and the non-REPO prime-mover-only override does not hide them.
-  const showTrailerFieldsInStep6 = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
-  // For non-trailer flows, keep trailer-linked metadata fields optional unless the prime-mover-only hide rule applies.
-  const showOptionalTrailerLinkedFieldsInStep6 = !requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
+  const showCompleteVehicleTrailerBodyFields = trailerBodyIncluded === "Yes";
+  const showCompleteVehicleTypeGuidance = isCompleteVehicle;
+  const showCompleteVehicleTrailerTypeWarning = isCompleteVehicle && form.vehicleType === "Trailer";
   const requiresInteriorPhoto = !isTrailerOnly;
   const disableInteriorPhotoUpload = isTrailerOnly;
-  const interiorPhotoDisabledMessage = "Interior photo is not applicable for Trailer Only.";
+  const interiorPhotoDisabledMessage = "Interior photo is not required for Trailer Only.";
   const assetConfigurationContext =
     form.assetConfiguration && assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
       ? assetConfigurationHelperText[form.assetConfiguration as AssetConfiguration]
@@ -566,13 +559,10 @@ export default function AddVehiclePage() {
       }
     }
 
-    // Step 6: Optional Vehicle Details — trailer specs required when applicable
-    if (targetStep === STEP_DETAILS && showTrailerFieldsInStep6) {
+    // Step 6: Additional Details
+    if (targetStep === STEP_DETAILS && isTrailerOnly) {
       if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim() || !form.bodyDimensions.trim()) {
         return "Trailer type, trailer length, number of axles, and body dimensions are required.";
-      }
-      if (form.assetConfiguration === "Prime Mover + Trailer" && (!form.suspensionType || !form.abs)) {
-        return "Suspension type and ABS are required for Prime Mover + Trailer.";
       }
     }
 
@@ -924,6 +914,16 @@ export default function AddVehiclePage() {
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 2: Vehicle Basics</h1>
           <SelectField label="Vehicle Type" value={form.vehicleType} options={vehicleTypes} onChange={(value) => update("vehicleType", value)} required />
+          {showCompleteVehicleTypeGuidance ? (
+            <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+              If you are selling horse + trailer together, select Vehicle Type as HCV and add trailer details in Step 6: Additional Details.
+            </p>
+          ) : null}
+          {showCompleteVehicleTrailerTypeWarning ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Selecting Trailer as Vehicle Type usually indicates a trailer-only listing. For horse + trailer, choose HCV and add trailer details in Step 6: Additional Details.
+            </p>
+          ) : null}
           <TextField label="Vehicle Sub-Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="Trailer subtype, tanker subtype, etc." />
           {requiresPoweredFields ? (
             <>
@@ -1050,13 +1050,18 @@ export default function AddVehiclePage() {
 
       {step === 6 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 6: Optional Vehicle Details</h1>
-          {showTrailerFieldsInStep6 ? (
+          <h1 className="text-xl font-semibold text-slate-900">Step 6: Additional Details (Optional)</h1>
+          {isTrailerOnly ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               Trailer specs are required for this asset configuration.
             </div>
           ) : null}
-          {showTrailerFieldsInStep6 ? (
+          {isCompleteVehicle ? (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+              If this complete vehicle includes an attached trailer or load body, add details here to improve buyer trust.
+            </div>
+          ) : null}
+          {isTrailerOnly ? (
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Trailer Specifications</summary>
               <div className="mt-4 space-y-3">
@@ -1069,14 +1074,14 @@ export default function AddVehiclePage() {
                   value={form.suspensionType}
                   options={trailerSuspensionOptions}
                   onChange={(value) => update("suspensionType", value)}
-                  required={form.assetConfiguration === "Prime Mover + Trailer"}
+                  required={false}
                 />
                 <SelectField
                   label="ABS"
                   value={form.abs}
                   options={["YES", "NO", "UNKNOWN"]}
                   onChange={(value) => update("abs", value)}
-                  required={form.assetConfiguration === "Prime Mover + Trailer"}
+                  required={false}
                 />
                 <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} placeholder="Optional" />
                 <TextField label="Trailer Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} placeholder="Optional" />
@@ -1089,48 +1094,61 @@ export default function AddVehiclePage() {
               </div>
             </details>
           ) : null}
-          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Vehicle, Tyre &amp; Roadworthiness</summary>
-            <div className="mt-4 space-y-3">
-              {!requiresTrailerFields ? (
-                <>
+          {!isTrailerOnly ? (
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Powered Vehicle Details</summary>
+              <div className="mt-4 space-y-3">
+                {isPowerOnly ? (
                   <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
-                  <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} />
-                  {!shouldHideTrailerFieldsInStep6 ? (
-                    <TextField label="Suspension Type" value={form.suspensionType} onChange={(value) => update("suspensionType", value)} placeholder="Leaf / Balloon by axle" />
-                  ) : null}
-                </>
-              ) : null}
+                ) : null}
+                <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
+                <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
+                <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
+                <SelectField label="GPS Installed" value={form.gpsInstalled} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("gpsInstalled", value)} />
+              </div>
+            </details>
+          ) : null}
+          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Tyres</summary>
+            <div className="mt-4 space-y-3">
               <SelectField label="Tyre Inspection Report" value={form.tyreInspectionReport} options={["AVAILABLE", "NOT_AVAILABLE"]} onChange={(value) => update("tyreInspectionReport", value)} />
               <TextField label="Tyre Count" value={form.tyreCount} onChange={(value) => update("tyreCount", value.replace(/\D/g, ""))} type="tel" />
               <TextField label="Current Tyre Count" value={form.currentTyreCount} onChange={(value) => update("currentTyreCount", value.replace(/\D/g, ""))} type="tel" />
               <SelectField label="Tyre Condition" value={form.tyreCondition} options={["NEW", "GOOD", "FAIR", "AROUND_50", "POOR", "MIXED", "UNKNOWN"]} onChange={(value) => update("tyreCondition", value)} />
             </div>
           </details>
-          <details className="rounded-xl border border-slate-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Compliance &amp; Technical</summary>
-            <div className="mt-4 space-y-3">
-              <TextField label="Tax Due" value={form.taxDue} onChange={(value) => update("taxDue", value)} />
-              <TextField label="Challans" value={form.challans} onChange={(value) => update("challans", value)} />
-              <TextField label="Insurance Expiry" value={form.insuranceExpiry} onChange={(value) => update("insuranceExpiry", value)} type="date" />
-              <TextField label="Fitness Expiry" value={form.fitnessExpiry} onChange={(value) => update("fitnessExpiry", value)} type="date" />
-              <TextField label="Permit Expiry" value={form.permitExpiry} onChange={(value) => update("permitExpiry", value)} type="date" />
-              <SelectField label="NOC Status" value={form.nocStatus} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("nocStatus", value)} />
-              <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
-              <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              {showOptionalTrailerLinkedFieldsInStep6 ? (
-                <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
-              ) : null}
-              <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
-              <SelectField label="GPS Installed" value={form.gpsInstalled} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("gpsInstalled", value)} />
-              {showOptionalTrailerLinkedFieldsInStep6 ? (
-                <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
-              ) : null}
-              {!shouldHideTrailerFieldsInStep6 ? (
-                <SelectField label="Fleet Management Software" value={form.fleetManagementSoftwareAvailable} options={["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
-              ) : null}
-            </div>
-          </details>
+          {isCompleteVehicle ? (
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Trailer / Body Details (Optional)</summary>
+              <div className="mt-4 space-y-3">
+                <SelectField
+                  label="Is trailer/body included?"
+                  value={trailerBodyIncluded}
+                  options={[...trailerBodyIncludedOptions]}
+                  onChange={setTrailerBodyIncluded}
+                />
+                {showCompleteVehicleTrailerBodyFields ? (
+                  <>
+                    <SelectField label="Trailer Type" value={form.trailerType} options={trailerTypeOptions} onChange={(value) => update("trailerType", value)} />
+                    <TextField label="Trailer Length" value={form.trailerLength} onChange={(value) => update("trailerLength", value)} placeholder="e.g. 32 ft" />
+                    <TextField label="Number of Axles" value={form.numberOfAxles} onChange={(value) => update("numberOfAxles", value.replace(/\D/g, ""))} type="tel" />
+                    <TextField label="Body Type" value={form.vehicleSubType} onChange={(value) => update("vehicleSubType", value)} placeholder="e.g. Flatbed / Tanker / Tip Trailer" />
+                    <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="e.g. 32x8x8 ft" />
+                    <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
+                    <SelectField label="ABS" value={form.abs} options={["YES", "NO", "UNKNOWN"]} onChange={(value) => update("abs", value)} />
+                    <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} placeholder="Optional" />
+                    <TextField label="Trailer Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} placeholder="Optional" />
+                    <TextField
+                      label="Trailer Manufacturing Month-Year"
+                      value={form.trailerManufacturingMonthYear}
+                      onChange={(value) => update("trailerManufacturingMonthYear", value)}
+                      placeholder="e.g. 03/2021"
+                    />
+                  </>
+                ) : null}
+              </div>
+            </details>
+          ) : null}
         </section>
       ) : null}
 
@@ -1139,8 +1157,8 @@ export default function AddVehiclePage() {
           <h1 className="text-xl font-semibold text-slate-900">Step 7: Photos &amp; Documents</h1>
           <p className="text-sm text-slate-500">
             {requiresInteriorPhoto
-              ? "Front, back, side, and interior photos are required."
-              : "Front, back, and side photos are required. Interior photo is optional for Trailer Only."}
+              ? "Front, back, side, and interior photos are required. Additional photos are optional up to 20 total."
+              : "Front, back, and side photos are required. Interior photo is not required for Trailer Only. Additional photos are optional up to 20 total."}
           </p>
 
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
