@@ -8,6 +8,7 @@ import { dbToVehicle } from "@/lib/mappers";
 import { desc, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { MarkSoldButton } from "../listings/mark-sold-button";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,9 @@ export default async function SellerDashboardPage() {
                   >
                     Edit
                   </Link>
+                ) : null}
+                {vehicle.listingStatus === "VERIFIED" || vehicle.listingStatus === "PENDING" ? (
+                  <MarkSoldButton vehicleId={vehicle.id} />
                 ) : null}
               </div>
             </div>
