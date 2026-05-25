@@ -21,8 +21,15 @@ export function MarkSoldButton({ vehicleId }: { vehicleId: string }) {
       });
 
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(data?.message ?? "Failed to mark vehicle as sold.");
+        const data = (await response.json().catch(() => null)) as unknown;
+        const message =
+          typeof data === "object" &&
+          data !== null &&
+          "message" in data &&
+          typeof data.message === "string"
+            ? data.message
+            : "Failed to mark vehicle as sold.";
+        throw new Error(message);
       }
 
       router.refresh();
