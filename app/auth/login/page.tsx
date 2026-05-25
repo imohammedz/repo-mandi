@@ -14,8 +14,6 @@ export default async function LoginPage({
       subtitle="Sell repossessed commercial vehicles faster."
       backHref="/sell"
       initialPhone={initialPhone}
-      widgetId={process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ?? ""}
-      widgetToken={process.env.MSG91_WIDGET_TOKEN ?? ""}
     />
   );
 }

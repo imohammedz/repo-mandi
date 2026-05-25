@@ -6,8 +6,6 @@ export default function AdminLoginPage() {
       title="Admin Login"
       subtitle="Enter your approved admin number."
       intent="admin"
-      widgetId={process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ?? ""}
-      widgetToken={process.env.MSG91_WIDGET_TOKEN ?? ""}
     />
   );
 }

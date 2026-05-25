@@ -6,11 +6,13 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { AuthVerifyResponse } from "@/app/auth/types";
 
+// These NEXT_PUBLIC_ vars are inlined at build time for client components.
+const MSG91_WIDGET_ID = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ?? "";
+const MSG91_WIDGET_TOKEN = process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN ?? "";
+
 type Msg91LoginFormProps = {
   title: string;
   subtitle: string;
-  widgetId: string;
-  widgetToken: string;
   intent?: "default" | "admin";
   backHref?: string;
   initialPhone?: string;
@@ -47,18 +49,24 @@ function looksLikeMsg91Token(value: string) {
 }
 
 function extractMsg91Token(payload: unknown) {
+  console.log("[MSG91] Widget success payload:", payload);
   const roots = [getObject(payload), getObject(getObject(payload)?.data)];
   for (const root of roots) {
     if (!root) continue;
     for (const key of ["access-token", "accessToken", "token"]) {
       const candidate = getString(root[key]);
-      if (candidate) return candidate;
+      if (candidate) {
+        console.log(`[MSG91] Found token in field '${key}':`, candidate.slice(0, 8) + "...");
+        return candidate;
+      }
     }
     const messageToken = getString(root.message);
     if (messageToken && looksLikeMsg91Token(messageToken)) {
+      console.log("[MSG91] Using message field as token");
       return messageToken;
     }
   }
+  console.warn("[MSG91] Could not extract access token from payload:", JSON.stringify(payload));
   return null;
 }
 
@@ -94,40 +102,55 @@ function loadMsg91ScriptWithFallback() {
     return Promise.reject(new Error("OTP service is unavailable right now. Please try again."));
   }
   if (typeof window.initSendOTP === "function") {
+    console.log("[MSG91] Widget already loaded.");
     return Promise.resolve();
   }
-  if (msg91ScriptLoadPromise) return msg91ScriptLoadPromise;
+  if (msg91ScriptLoadPromise) {
+    console.log("[MSG91] Script load already in progress, reusing promise.");
+    return msg91ScriptLoadPromise;
+  }
 
   const urls = ["https://verify.msg91.com/otp-provider.js", "https://verify.phone91.com/otp-provider.js"];
+  console.log("[MSG91] Starting script load with fallback:", urls);
+
   msg91ScriptLoadPromise = new Promise<void>((resolve, reject) => {
     const attempt = (index: number) => {
       if (index >= urls.length) {
+        console.error("[MSG91] All script URLs failed to load.");
         reject(new Error("Unable to load OTP widget. Please check your network and try again."));
         return;
       }
 
+      console.log(`[MSG91] Attempting to load script from: ${urls[index]}`);
       const script = document.createElement("script");
       script.src = urls[index];
       script.async = true;
-      script.crossOrigin = "anonymous";
       script.onload = () => {
+        console.log(`[MSG91] Script loaded from: ${urls[index]}, waiting for initSendOTP...`);
         waitForMsg91Widget(6000)
-          .then(resolve)
-          .catch(() => attempt(index + 1));
+          .then(() => {
+            console.log("[MSG91] initSendOTP is ready.");
+            resolve();
+          })
+          .catch((err: unknown) => {
+            console.warn(`[MSG91] initSendOTP not found after load from ${urls[index]}, trying fallback.`, err);
+            attempt(index + 1);
+          });
       };
-      script.onerror = () => attempt(index + 1);
+      script.onerror = (err) => {
+        console.warn(`[MSG91] Script failed to load from: ${urls[index]}`, err);
+        attempt(index + 1);
+      };
       document.head.appendChild(script);
     };
 
     attempt(0);
   }).catch((error: unknown) => {
-      msg91ScriptLoadPromise = null;
-      throw error instanceof Error ? error : new Error("Unable to load OTP widget right now.");
-    })
-    .finally(() => {
-      if (typeof window.initSendOTP === "function") return;
-      msg91ScriptLoadPromise = null;
-    });
+    msg91ScriptLoadPromise = null;
+    const err = error instanceof Error ? error : new Error("Unable to load OTP widget right now.");
+    console.error("[MSG91] Script load failed:", err.message);
+    throw err;
+  });
 
   return msg91ScriptLoadPromise;
 }
@@ -135,8 +158,6 @@ function loadMsg91ScriptWithFallback() {
 export default function Msg91LoginForm({
   title,
   subtitle,
-  widgetId,
-  widgetToken,
   intent = "default",
   backHref,
   initialPhone = "",
@@ -147,6 +168,14 @@ export default function Msg91LoginForm({
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!MSG91_WIDGET_ID || !MSG91_WIDGET_TOKEN) {
+      console.error(
+        "[MSG91] Missing env vars: NEXT_PUBLIC_MSG91_WIDGET_ID and/or NEXT_PUBLIC_MSG91_WIDGET_TOKEN are not set."
+      );
+    } else {
+      console.log("[MSG91] Widget env vars present. ID:", MSG91_WIDGET_ID);
+    }
+
     const load = async () => {
       try {
         const response = await fetch("/api/auth/session");
@@ -204,8 +233,9 @@ export default function Msg91LoginForm({
     const phone = mobile.replace(/\D/g, "").slice(0, 10);
     if (phone.length !== 10 || submitting) return;
 
-    if (!widgetId || !widgetToken) {
-      setError("OTP service is not configured.");
+    if (!MSG91_WIDGET_ID || !MSG91_WIDGET_TOKEN) {
+      setError("OTP service is not configured. Contact support.");
+      console.error("[MSG91] Cannot open widget: missing NEXT_PUBLIC_MSG91_WIDGET_ID or NEXT_PUBLIC_MSG91_WIDGET_TOKEN");
       return;
     }
 
@@ -214,11 +244,11 @@ export default function Msg91LoginForm({
 
     try {
       await loadMsg91ScriptWithFallback();
-      await waitForMsg91Widget();
 
+      console.log("[MSG91] Calling initSendOTP with identifier:", `91${phone}`);
       window.initSendOTP?.({
-        widgetId,
-        tokenAuth: widgetToken,
+        widgetId: MSG91_WIDGET_ID,
+        tokenAuth: MSG91_WIDGET_TOKEN,
         identifier: `91${phone}`,
         exposeMethods: false,
         captchaRenderId: "",
@@ -226,12 +256,14 @@ export default function Msg91LoginForm({
           const verifiedToken = extractMsg91Token(payload);
           if (!verifiedToken) {
             setError("Failed to read verification token from MSG91.");
+            setSubmitting(false);
             return;
           }
 
           setSubmitting(true);
           void (async () => {
             try {
+              console.log("[MSG91] Sending token to /api/auth/msg91/verify...");
               const response = await fetch("/api/auth/msg91/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -243,6 +275,8 @@ export default function Msg91LoginForm({
               });
 
               const data = (await response.json()) as AuthVerifyResponse;
+              console.log("[MSG91] Verify API response:", response.status, data);
+
               if (!response.ok) {
                 setError(data.message ?? "OTP verification failed. Please try again.");
                 return;
@@ -254,7 +288,8 @@ export default function Msg91LoginForm({
               }
 
               redirectAfterAuth(data);
-            } catch {
+            } catch (err) {
+              console.error("[MSG91] Verify API error:", err);
               setError(REDIRECT_ERROR_MESSAGE);
             } finally {
               setSubmitting(false);
@@ -262,13 +297,14 @@ export default function Msg91LoginForm({
           })();
         },
         failure: (payload) => {
+          console.warn("[MSG91] Widget failure callback:", payload);
           setError(extractErrorMessage(payload) ?? "OTP verification failed. Please try again.");
           setSubmitting(false);
         },
       });
     } catch (err) {
+      console.error("[MSG91] handleContinue error:", err);
       setError(err instanceof Error ? err.message : "Unable to open OTP widget right now. Please try again.");
-    } finally {
       setSubmitting(false);
     }
   };
