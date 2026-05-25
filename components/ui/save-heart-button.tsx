@@ -49,40 +49,42 @@ export function SaveHeartButton({ vehicleId, vehicle, className = "" }: Props) {
       whileTap={{ scale: 0.86 }}
       disabled={pending}
       aria-label={saved ? "Remove from saved listings" : "Save listing"}
-      className={`relative rounded-full bg-white/90 p-2 shadow-sm backdrop-blur transition disabled:opacity-60 ${className}`}
+      className={`rounded-full bg-white/90 p-2 shadow-sm backdrop-blur transition disabled:opacity-60 ${className}`}
     >
-      <motion.span
-        key={saved ? "saved" : "unsaved"}
-        initial={{ scale: 0.85 }}
-        animate={{ scale: [0.85, saved ? 1.28 : 0.9, 1] }}
-        transition={{ duration: 0.24, ease: "easeOut" }}
-        className="block"
-      >
-        <Heart
-          className={`h-4 w-4 ${iconClass}`}
-          fill={saved ? "#FF3B30" : "none"}
-          strokeWidth={2}
-        />
-      </motion.span>
+      <span className="relative block">
+        <motion.span
+          key={saved ? "saved" : "unsaved"}
+          initial={{ scale: 0.85 }}
+          animate={{ scale: [0.85, saved ? 1.28 : 0.9, 1] }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
+          className="block"
+        >
+          <Heart
+            className={`h-4 w-4 ${iconClass}`}
+            fill={saved ? "#FF3B30" : "none"}
+            strokeWidth={2}
+          />
+        </motion.span>
 
-      <AnimatePresence>
-        {showBurst ? (
-          <>
-            {floatingHeartVariants.map((variant, index) => (
-              <motion.span
-                key={`${vehicleId}-${index}`}
-                className="pointer-events-none absolute left-1/2 top-1/2"
-                initial={{ x: 0, y: 0, opacity: 0.8, scale: 0.4 }}
-                animate={{ x: variant.x, y: variant.y, opacity: 0, scale: 0.9 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: "easeOut" }}
-              >
-                <Heart className="h-2.5 w-2.5 text-[#FF3B30]" fill="#FF3B30" />
-              </motion.span>
-            ))}
-          </>
-        ) : null}
-      </AnimatePresence>
+        <AnimatePresence>
+          {showBurst ? (
+            <>
+              {floatingHeartVariants.map((variant, index) => (
+                <motion.span
+                  key={`${vehicleId}-${index}`}
+                  className="pointer-events-none absolute left-1/2 top-1/2"
+                  initial={{ x: 0, y: 0, opacity: 0.8, scale: 0.4 }}
+                  animate={{ x: variant.x, y: variant.y, opacity: 0, scale: 0.9 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                >
+                  <Heart className="h-2.5 w-2.5 text-[#FF3B30]" fill="#FF3B30" />
+                </motion.span>
+              ))}
+            </>
+          ) : null}
+        </AnimatePresence>
+      </span>
     </motion.button>
   );
 }
