@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopHeader } from "@/components/layout/top-header";
 import { StickyWhatsAppCTA } from "@/components/layout/sticky-whatsapp-cta";
+import { SavedListingsProvider } from "@/components/providers/saved-listings-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,10 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} antialiased`}>
       <body className="bg-slate-50 font-sans text-slate-900">
-        <TopHeader />
-        <div className="mx-auto min-h-screen w-full max-w-xl pb-24 pt-14">{children}</div>
-        <StickyWhatsAppCTA />
-        <BottomNav />
+        <SavedListingsProvider>
+          <TopHeader />
+          <div className="mx-auto min-h-screen w-full max-w-xl pb-24 pt-14">{children}</div>
+          <StickyWhatsAppCTA />
+          <BottomNav />
+        </SavedListingsProvider>
       </body>
     </html>
   );
