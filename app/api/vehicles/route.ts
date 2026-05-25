@@ -289,18 +289,9 @@ export async function POST(request: Request) {
     const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
     const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
     const isTrailerOnly = assetConfiguration === "Trailer Only";
-    const hasTrailerConfiguration = assetConfiguration === "Trailer Only" || assetConfiguration === "Prime Mover + Trailer";
-    const appliesTrailerLogic = vehicleType === "Trailer" || hasTrailerConfiguration;
     const requiresPoweredFields = !isTrailerOnly;
-    const requiresTrailerFields = appliesTrailerLogic;
-    // Non-REPO prime-mover-only listings do not include trailer assets,
-    // so trailer-focused fields are not applicable.
-    // Mirrors the Step 6 client-side visibility rule in app/seller/add-vehicle/page.tsx.
-    // Keep both sides aligned to avoid client/server validation mismatches.
-    const shouldHideTrailerFieldsInStep6 =
-      listingType !== "REPO" && assetConfiguration === "Power / Horse / Tractor / Prime Mover Only";
-    // Trailer fields are required only when trailer logic applies and the Step 6 hide rule does not suppress them.
-    const requiresTrailerFieldsForValidation = requiresTrailerFields && !shouldHideTrailerFieldsInStep6;
+    // MVP1: Trailer specs are required only for Trailer Only listings.
+    const requiresTrailerFieldsForValidation = isTrailerOnly;
     const requiresInteriorPhoto = !isTrailerOnly;
     const normalizedInteriorPhoto = isTrailerOnly ? "" : interiorPhoto;
 
@@ -322,8 +313,6 @@ export async function POST(request: Request) {
     if (requiresTrailerFieldsForValidation && !trailerLength) alwaysRequiredMissing.push("trailerLength");
     if (requiresTrailerFieldsForValidation && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
     if (requiresTrailerFieldsForValidation && !bodyDimensions) alwaysRequiredMissing.push("bodyDimensions");
-    if (requiresTrailerFieldsForValidation && assetConfiguration === "Prime Mover + Trailer" && !suspensionType) alwaysRequiredMissing.push("suspensionType");
-    if (requiresTrailerFieldsForValidation && assetConfiguration === "Prime Mover + Trailer" && !abs) alwaysRequiredMissing.push("abs");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
