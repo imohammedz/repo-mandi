@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Info, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
+import { shouldLogMediaDebug } from "@/lib/media";
 
 type ListingType = "REGULAR" | "REPO";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
@@ -625,7 +626,9 @@ export default function AddVehiclePage() {
         setError(data.message ?? "Failed to upload image.");
         return;
       }
-      console.info("Upload response", { category, urls: data.urls });
+      if (shouldLogMediaDebug()) {
+        console.info("Upload response", { category, urls: data.urls });
+      }
       update(category, data.urls[0]);
     } catch {
       setError("Failed to upload image.");
@@ -661,7 +664,9 @@ export default function AddVehiclePage() {
           setError(data.message ?? "Failed to upload image.");
           break;
         }
-        console.info("Upload response", { category: "additional", urls: data.urls });
+        if (shouldLogMediaDebug()) {
+          console.info("Upload response", { category: "additional", urls: data.urls });
+        }
         results.push({ url: data.urls[0], category: "" });
       } catch {
         setError("Failed to upload image.");
@@ -688,7 +693,9 @@ export default function AddVehiclePage() {
         setError(data.message ?? "Failed to upload image.");
         return;
       }
-      console.info("Upload response", { category: "additional-replace", urls: data.urls });
+      if (shouldLogMediaDebug()) {
+        console.info("Upload response", { category: "additional-replace", urls: data.urls });
+      }
       const nextUrl = data.urls[0];
       if (!nextUrl) {
         setError("Failed to upload image.");

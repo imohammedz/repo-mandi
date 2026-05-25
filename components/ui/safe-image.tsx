@@ -2,7 +2,7 @@
 
 import Image, { type ImageProps } from "next/image";
 import { useEffect, useState } from "react";
-import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
+import { resolveImageSrcForRender, shouldLogMediaDebug, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
 
 type SafeImageProps = Omit<ImageProps, "src"> & {
   src: string;
@@ -22,14 +22,16 @@ export function SafeImage({
   const normalizedSrc = resolveImageSrcForRender(src, fallbackSrc);
   const [failedSource, setFailedSource] = useState<string | null>(null);
   const displaySrc = failedSource === normalizedSrc ? fallbackSrc : normalizedSrc;
+  const serializedLogContext = JSON.stringify(logContext ?? {});
 
   useEffect(() => {
+    if (!shouldLogMediaDebug()) return;
     console.info("Rendered frontend image URL", {
       component: "SafeImage",
       src: displaySrc,
-      ...logContext,
+      ...JSON.parse(serializedLogContext),
     });
-  }, [displaySrc, logContext]);
+  }, [displaySrc, serializedLogContext]);
 
   return (
     <Image

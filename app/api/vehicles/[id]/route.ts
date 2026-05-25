@@ -2,7 +2,12 @@ import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
-import { isSupabasePublicStorageUrl, sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
+import {
+  isSupabasePublicStorageUrl,
+  sanitizeSupabaseMediaArray,
+  sanitizeSupabaseMediaUrl,
+  shouldLogMediaDebug,
+} from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -86,6 +91,7 @@ export async function PUT(
     ]);
     const updates = Object.fromEntries(Object.entries(body).filter(([key]) => !blocked.has(key)));
 
+    // Backward compatibility: accept legacy client payload key `engineStartupVideo`.
     if ("engineStartupVideo" in updates && !("engineStartUpVideo" in updates)) {
       updates.engineStartUpVideo = updates.engineStartupVideo;
       delete updates.engineStartupVideo;
@@ -174,17 +180,19 @@ export async function PUT(
       "walkaroundVideo" in updates ||
       "engineStartUpVideo" in updates
     ) {
-      console.info("Stored DB media URLs (update)", {
-        vehicleId: updated.id,
-        image: updated.image,
-        frontPhoto: updated.frontPhoto,
-        backPhoto: updated.backPhoto,
-        sidePhoto: updated.sidePhoto,
-        interiorPhoto: updated.interiorPhoto,
-        walkaroundVideo: updated.walkaroundVideo,
-        engineStartUpVideo: updated.engineStartUpVideo,
-        galleryCount: updated.gallery?.length ?? 0,
-      });
+      if (shouldLogMediaDebug()) {
+        console.info("Stored DB media URLs (update)", {
+          vehicleId: updated.id,
+          image: updated.image,
+          frontPhoto: updated.frontPhoto,
+          backPhoto: updated.backPhoto,
+          sidePhoto: updated.sidePhoto,
+          interiorPhoto: updated.interiorPhoto,
+          walkaroundVideo: updated.walkaroundVideo,
+          engineStartUpVideo: updated.engineStartUpVideo,
+          galleryCount: updated.gallery?.length ?? 0,
+        });
+      }
     }
 
     return Response.json(updated);

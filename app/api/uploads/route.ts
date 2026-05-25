@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { isSupabasePublicStorageUrl } from "@/lib/media";
+import { isSupabasePublicStorageUrl, shouldLogMediaDebug } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -128,7 +128,9 @@ export async function POST(request: Request) {
         return Response.json({ message: "Failed to generate public image URL." }, { status: 500 });
       }
 
-      console.info("Upload response URL", { filePath, publicUrl });
+      if (shouldLogMediaDebug()) {
+        console.info("Upload response URL", { filePath, publicUrl });
+      }
       urls.push(publicUrl);
     }
 

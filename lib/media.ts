@@ -1,7 +1,28 @@
-const SUPABASE_STORAGE_HOST = "qssywsfjbkqzatwbzvvw.supabase.co";
+// Repository default Supabase Storage host; override using NEXT_PUBLIC_SUPABASE_URL.
+const DEFAULT_SUPABASE_STORAGE_HOST = "qssywsfjbkqzatwbzvvw.supabase.co";
 const SUPABASE_PUBLIC_STORAGE_PATH = "/storage/v1/object/public/";
 
 export const VEHICLE_IMAGE_PLACEHOLDER_SRC = "/file.svg";
+
+function getConfiguredSupabaseStorageHost() {
+  const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!configuredUrl) return DEFAULT_SUPABASE_STORAGE_HOST;
+  try {
+    return new URL(configuredUrl).hostname;
+  } catch {
+    return DEFAULT_SUPABASE_STORAGE_HOST;
+  }
+}
+
+const SUPABASE_STORAGE_HOST = getConfiguredSupabaseStorageHost();
+
+export function shouldLogMediaDebug() {
+  return (
+    process.env.NODE_ENV !== "production" ||
+    process.env.NEXT_PUBLIC_MEDIA_DEBUG_LOGS === "true" ||
+    process.env.MEDIA_DEBUG_LOGS === "true"
+  );
+}
 
 function toTrimmedString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";

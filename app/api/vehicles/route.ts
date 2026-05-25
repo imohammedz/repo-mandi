@@ -3,7 +3,7 @@ import { vehicleMedia, vehicles, platformSettings } from "@/lib/schema";
 import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
-import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
+import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -615,17 +615,19 @@ export async function POST(request: Request) {
       );
     }
 
-    console.info("Stored DB media URLs", {
-      vehicleId: inserted.id,
-      image: inserted.image,
-      frontPhoto: inserted.frontPhoto,
-      backPhoto: inserted.backPhoto,
-      sidePhoto: inserted.sidePhoto,
-      interiorPhoto: inserted.interiorPhoto,
-      walkaroundVideo: inserted.walkaroundVideo,
-      engineStartUpVideo: inserted.engineStartUpVideo,
-      galleryCount: inserted.gallery?.length ?? 0,
-    });
+    if (shouldLogMediaDebug()) {
+      console.info("Stored DB media URLs", {
+        vehicleId: inserted.id,
+        image: inserted.image,
+        frontPhoto: inserted.frontPhoto,
+        backPhoto: inserted.backPhoto,
+        sidePhoto: inserted.sidePhoto,
+        interiorPhoto: inserted.interiorPhoto,
+        walkaroundVideo: inserted.walkaroundVideo,
+        engineStartUpVideo: inserted.engineStartUpVideo,
+        galleryCount: inserted.gallery?.length ?? 0,
+      });
+    }
 
     return Response.json(inserted, { status: 201 });
   } catch (error) {
