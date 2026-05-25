@@ -97,50 +97,44 @@ export async function PUT(
       delete updates.engineStartupVideo;
     }
 
-    const mediaFields: Array<{
-      key: "image" | "frontPhoto" | "backPhoto" | "sidePhoto" | "interiorPhoto";
-      nullable: false;
-    }> = [
-      { key: "image", nullable: false },
-      { key: "frontPhoto", nullable: false },
-      { key: "backPhoto", nullable: false },
-      { key: "sidePhoto", nullable: false },
-      { key: "interiorPhoto", nullable: false },
+    const mediaFields: Array<"image" | "frontPhoto" | "backPhoto" | "sidePhoto" | "interiorPhoto"> = [
+      "image",
+      "frontPhoto",
+      "backPhoto",
+      "sidePhoto",
+      "interiorPhoto",
     ];
-    const optionalMediaFields: Array<{
-      key: "walkaroundVideo" | "engineStartUpVideo";
-      nullable: true;
-    }> = [
-      { key: "walkaroundVideo", nullable: true },
-      { key: "engineStartUpVideo", nullable: true },
+    const optionalMediaFields: Array<"walkaroundVideo" | "engineStartUpVideo"> = [
+      "walkaroundVideo",
+      "engineStartUpVideo",
     ];
 
     for (const field of mediaFields) {
-      if (!(field.key in updates)) continue;
-      const rawValue = updates[field.key];
+      if (!(field in updates)) continue;
+      const rawValue = updates[field];
       if (typeof rawValue !== "string" || !rawValue.trim()) {
-        updates[field.key] = "";
+        updates[field] = "";
         continue;
       }
       const sanitized = sanitizeSupabaseMediaUrl(rawValue);
       if (!sanitized) {
-        return Response.json({ message: `${field.key} must be a Supabase public URL.` }, { status: 400 });
+        return Response.json({ message: `${field} must be a Supabase public URL.` }, { status: 400 });
       }
-      updates[field.key] = sanitized;
+      updates[field] = sanitized;
     }
 
     for (const field of optionalMediaFields) {
-      if (!(field.key in updates)) continue;
-      const rawValue = updates[field.key];
+      if (!(field in updates)) continue;
+      const rawValue = updates[field];
       if (rawValue === null || rawValue === undefined || (typeof rawValue === "string" && !rawValue.trim())) {
-        updates[field.key] = null;
+        updates[field] = null;
         continue;
       }
       const sanitized = sanitizeSupabaseMediaUrl(rawValue);
       if (!sanitized) {
-        return Response.json({ message: `${field.key} must be a Supabase public URL.` }, { status: 400 });
+        return Response.json({ message: `${field} must be a Supabase public URL.` }, { status: 400 });
       }
-      updates[field.key] = sanitized;
+      updates[field] = sanitized;
     }
 
     if ("gallery" in updates) {

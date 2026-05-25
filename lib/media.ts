@@ -29,7 +29,11 @@ function toTrimmedString(value: unknown): string {
 export function isLegacyLocalUploadUrl(value: unknown): boolean {
   const url = toTrimmedString(value);
   if (!url) return false;
-  return url.startsWith("/uploads/") || url.startsWith("uploads/") || url.includes("public/uploads");
+  return (
+    url.startsWith("/uploads/") ||
+    url.startsWith("uploads/") ||
+    /(^|\/)public\/uploads(\/|$)/.test(url)
+  );
 }
 
 export function isSupabasePublicStorageUrl(value: unknown): boolean {

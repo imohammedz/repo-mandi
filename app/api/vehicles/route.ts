@@ -346,13 +346,14 @@ export async function POST(request: Request) {
 
     // Validate and cap additional photos.
     const additionalPhotoItems = additionalPhotosRaw
-      .reduce<Array<{ url: string; category: string }>>((acc, item) => {
+      .map((item) => {
         const it = item as Record<string, unknown>;
-        const url = sanitizeSupabaseMediaUrl(it?.url);
-        if (!url) return acc;
-        acc.push({ url, category: toSafeString(it?.category) });
-        return acc;
-      }, [])
+        return {
+          url: sanitizeSupabaseMediaUrl(it?.url),
+          category: toSafeString(it?.category),
+        };
+      })
+      .filter((item) => Boolean(item.url))
       .slice(0, MAX_PHOTOS);
 
     const requiredPhotoCount = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto].filter(Boolean).length;
