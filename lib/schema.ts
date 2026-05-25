@@ -8,6 +8,7 @@ import {
   pgEnum,
   serial,
   boolean,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -323,6 +324,27 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const savedListings = pgTable(
+  "saved_listings",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    vehicleId: varchar("vehicle_id", { length: 100 })
+      .notNull()
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userVehicleUnique: uniqueIndex("saved_listings_user_vehicle_unique").on(
+      table.userId,
+      table.vehicleId
+    ),
+  })
+);
+
 export const platformSettings = pgTable("platform_settings", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 100 }).notNull().unique(),
@@ -340,4 +362,6 @@ export type DbLead = typeof leads.$inferSelect;
 export type DbLeadInsert = typeof leads.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
 export type DbVehicleMediaInsert = typeof vehicleMedia.$inferInsert;
+export type DbSavedListing = typeof savedListings.$inferSelect;
+export type DbSavedListingInsert = typeof savedListings.$inferInsert;
 export type DbPlatformSetting = typeof platformSettings.$inferSelect;
