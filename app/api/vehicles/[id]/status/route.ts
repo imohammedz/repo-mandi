@@ -113,7 +113,7 @@ export async function PATCH(
       .where(eq(vehicles.id, id))
       .returning();
 
-    if (body.status === "SOLD" && saleFeedback?.soldThroughPlatform) {
+    if (isSellerMarkingSold && saleFeedback?.soldThroughPlatform) {
       const soldThroughPlatform =
         saleFeedback.soldThroughPlatform === "YES"
           ? true
@@ -123,7 +123,7 @@ export async function PATCH(
 
       await db.insert(vehicleSaleFeedback).values({
         vehicleId: id,
-        sellerId: existing.sellerId ?? currentUser.id,
+        sellerId: currentUser.id,
         soldThroughPlatform,
         buyerContactMethod: saleFeedback.buyerContactMethod ?? null,
         timeToSell: saleFeedback.timeToSell ?? null,

@@ -124,7 +124,7 @@ export function MarkSoldButton({ vehicleId }: { vehicleId: string }) {
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-slate-200" />
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-900">
-                {step === "confirm" ? "Mark Vehicle as Sold?" : "Sale feedback"}
+                {step === "confirm" ? "Mark Vehicle as Sold?" : "Sale Feedback"}
               </h3>
               <button
                 onClick={closeSheet}
