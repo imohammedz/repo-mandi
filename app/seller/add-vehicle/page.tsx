@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowLeft, CheckCircle2, Info, X } from "lucide-react";
+import { SafeImage } from "@/components/ui/safe-image";
+import { shouldLogMediaDebug } from "@/lib/media";
 
 type ListingType = "REGULAR" | "REPO";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
@@ -405,6 +406,19 @@ function TextField({
   );
 }
 
+function UploadPreviewImage({ src, alt }: { src: string; alt: string }) {
+  return (
+    <SafeImage
+      src={src}
+      alt={alt}
+      width={600}
+      height={360}
+      className="h-32 w-full rounded-lg object-cover"
+      logContext={{ component: "AddVehiclePage", alt }}
+    />
+  );
+}
+
 export default function AddVehiclePage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -612,6 +626,9 @@ export default function AddVehiclePage() {
         setError(data.message ?? "Failed to upload image.");
         return;
       }
+      if (shouldLogMediaDebug()) {
+        console.info("Upload response", { category, urls: data.urls });
+      }
       update(category, data.urls[0]);
     } catch {
       setError("Failed to upload image.");
@@ -647,6 +664,9 @@ export default function AddVehiclePage() {
           setError(data.message ?? "Failed to upload image.");
           break;
         }
+        if (shouldLogMediaDebug()) {
+          console.info("Upload response", { category: "additional", urls: data.urls });
+        }
         results.push({ url: data.urls[0], category: "" });
       } catch {
         setError("Failed to upload image.");
@@ -672,6 +692,9 @@ export default function AddVehiclePage() {
       if (!response.ok || !data.urls?.[0]) {
         setError(data.message ?? "Failed to upload image.");
         return;
+      }
+      if (shouldLogMediaDebug()) {
+        console.info("Upload response", { category: "additional-replace", urls: data.urls });
       }
       const nextUrl = data.urls[0];
       if (!nextUrl) {
@@ -1217,7 +1240,7 @@ export default function AddVehiclePage() {
                   onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)}
                 />
                 {photoValue ? (
-                  <Image src={photoValue} alt={item.label} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
+                  <UploadPreviewImage src={photoValue} alt={item.label} />
                 ) : (
                   <div
                     className={`flex h-32 items-center justify-center rounded-lg border border-dashed text-center text-xs ${
@@ -1271,7 +1294,7 @@ export default function AddVehiclePage() {
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                <Image src={photo.url} alt={`Additional photo ${index + 1}`} width={600} height={360} className="h-32 w-full rounded-lg object-cover" />
+                <UploadPreviewImage src={photo.url} alt={`Additional photo ${index + 1}`} />
               </div>
             ))}
 

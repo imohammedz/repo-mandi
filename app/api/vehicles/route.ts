@@ -3,6 +3,7 @@ import { vehicleMedia, vehicles, platformSettings } from "@/lib/schema";
 import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
+import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -196,7 +197,19 @@ export async function GET(request: Request) {
       ? await db.select().from(vehicles).where(whereClause).orderBy(desc(vehicles.createdAt))
       : await db.select().from(vehicles).orderBy(desc(vehicles.createdAt));
 
-    return Response.json(rows);
+    const normalizedRows = rows.map((row) => ({
+      ...row,
+      image: sanitizeSupabaseMediaUrl(row.image),
+      gallery: sanitizeSupabaseMediaArray(row.gallery),
+      frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto),
+      backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto),
+      sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto),
+      interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto),
+      walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
+      engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
+    }));
+
+    return Response.json(normalizedRows);
   } catch (error) {
     console.error("GET /api/vehicles failed", error);
     return Response.json({ message: "Failed to fetch vehicles." }, { status: 500 });
@@ -268,11 +281,13 @@ export async function POST(request: Request) {
     const city = toSafeString(body.city) || toSafeString(currentUser.city);
     const location = toSafeString(body.vehicleOrYardLocation || body.yardLocation);
     const conditionNotes = toSafeString(body.conditionNotes);
-    const frontPhoto = toSafeString(body.frontPhoto);
-    const backPhoto = toSafeString(body.backPhoto);
-    const sidePhoto = toSafeString(body.sidePhoto);
-    const interiorPhoto = toSafeString(body.interiorPhoto);
+    const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto);
+    const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto);
+    const sidePhoto = sanitizeSupabaseMediaUrl(body.sidePhoto);
+    const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto);
     const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : [];
+    const walkaroundVideo = sanitizeSupabaseMediaUrl(body.walkaroundVideo);
+    const engineStartUpVideo = sanitizeSupabaseMediaUrl(body.engineStartUpVideo ?? body.engineStartupVideo);
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
@@ -331,10 +346,14 @@ export async function POST(request: Request) {
 
     // Validate and cap additional photos.
     const additionalPhotoItems = additionalPhotosRaw
-      .filter((item): item is { url: string; category?: string | null } => {
+      .map((item) => {
         const it = item as Record<string, unknown>;
-        return typeof it?.url === "string" && Boolean(it.url);
+        return {
+          url: sanitizeSupabaseMediaUrl(it?.url),
+          category: toSafeString(it?.category),
+        };
       })
+      .filter((item) => Boolean(item.url))
       .slice(0, MAX_PHOTOS);
 
     const requiredPhotoCount = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto].filter(Boolean).length;
@@ -397,7 +416,13 @@ export async function POST(request: Request) {
       .join(" ");
     const id = nanoid(title, brand, model, normalizedYear);
 
-    const gallery = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto, ...additionalPhotoItems.map((p) => p.url)].filter(Boolean);
+    const gallery = sanitizeSupabaseMediaArray([
+      frontPhoto,
+      backPhoto,
+      sidePhoto,
+      normalizedInteriorPhoto,
+      ...additionalPhotoItems.map((p) => p.url),
+    ]);
 
     // Check auto-approval setting
     const [autoApproveRow] = await db
@@ -460,8 +485,8 @@ export async function POST(request: Request) {
         backPhoto,
         sidePhoto,
         interiorPhoto: normalizedInteriorPhoto,
-        walkaroundVideo: toSafeString(body.walkaroundVideo) || null,
-        engineStartUpVideo: toSafeString(body.engineStartUpVideo) || null,
+        walkaroundVideo: walkaroundVideo || null,
+        engineStartUpVideo: engineStartUpVideo || null,
         financeCompany: listingType === "REPO" ? financeCompany : "",
         bankInstitutionName:
           currentUser.accountType === "BANK_PARTNER" ? currentUser.institutionName : "",
@@ -533,7 +558,7 @@ export async function POST(request: Request) {
         photosVerified: false,
         yardVerified: false,
         sellerVerified: currentUser.isVerified,
-        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || (requiresInteriorPhoto && !interiorPhoto),
+        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || (requiresInteriorPhoto && !normalizedInteriorPhoto),
         priceTooLow: expectedPrice < MIN_REASONABLE_PRICE,
         duplicateRegistration: false,
         newSeller: !currentUser.isVerified,
@@ -549,11 +574,11 @@ export async function POST(request: Request) {
       { type: "PHOTO", category: "BACK", url: backPhoto },
       { type: "PHOTO", category: "SIDE", url: sidePhoto },
       { type: "PHOTO", category: "INTERIOR", url: interiorPhoto },
-      ...(toSafeString(body.walkaroundVideo)
-        ? [{ type: "VIDEO", category: "WALKAROUND", url: toSafeString(body.walkaroundVideo) }]
+      ...(walkaroundVideo
+        ? [{ type: "VIDEO", category: "WALKAROUND", url: walkaroundVideo }]
         : []),
-      ...(toSafeString(body.engineStartUpVideo)
-        ? [{ type: "VIDEO", category: "ENGINE_STARTUP", url: toSafeString(body.engineStartUpVideo) }]
+      ...(engineStartUpVideo
+        ? [{ type: "VIDEO", category: "ENGINE_STARTUP", url: engineStartUpVideo }]
         : []),
       ...(toSafeString(body.inspectionReport)
         ? [{ type: "DOCUMENT", category: "INSPECTION_REPORT", url: toSafeString(body.inspectionReport) }]
@@ -588,6 +613,20 @@ export async function POST(request: Request) {
           customName: null,
         }))
       );
+    }
+
+    if (shouldLogMediaDebug()) {
+      console.info("Stored DB media URLs", {
+        vehicleId: inserted.id,
+        image: inserted.image,
+        frontPhoto: inserted.frontPhoto,
+        backPhoto: inserted.backPhoto,
+        sidePhoto: inserted.sidePhoto,
+        interiorPhoto: inserted.interiorPhoto,
+        walkaroundVideo: inserted.walkaroundVideo,
+        engineStartUpVideo: inserted.engineStartUpVideo,
+        galleryCount: inserted.gallery?.length ?? 0,
+      });
     }
 
     return Response.json(inserted, { status: 201 });

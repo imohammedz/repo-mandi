@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { isSupabasePublicStorageUrl, shouldLogMediaDebug } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -121,7 +122,16 @@ export async function POST(request: Request) {
       }
 
       const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
-      urls.push(data.publicUrl);
+      const publicUrl = data.publicUrl;
+      if (!isSupabasePublicStorageUrl(publicUrl)) {
+        console.error("Supabase upload returned non-public storage URL", { filePath, publicUrl });
+        return Response.json({ message: "Failed to generate public image URL." }, { status: 500 });
+      }
+
+      if (shouldLogMediaDebug()) {
+        console.info("Upload response URL", { filePath, publicUrl });
+      }
+      urls.push(publicUrl);
     }
 
     return Response.json({ urls }, { status: 201 });

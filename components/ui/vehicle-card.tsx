@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
@@ -9,6 +8,8 @@ import { Vehicle } from "@/types/vehicle";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import { resolveImageSrcForRender } from "@/lib/media";
+import { SafeImage } from "@/components/ui/safe-image";
 
 type Props = {
   vehicle: Vehicle;
@@ -21,6 +22,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const isTrailerOnly = vehicle.assetConfiguration === "Trailer Only";
   const assetConfigurationLabel = vehicle.assetConfiguration ?? "Complete Vehicle";
+  const preferredImage = resolveImageSrcForRender(vehicle.image || vehicle.gallery[0]);
 
   return (
     <motion.article
@@ -30,12 +32,13 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
     >
       <div className="relative">
-        <Image
-          src={vehicle.image}
+        <SafeImage
+          src={preferredImage}
           alt={vehicle.title}
           width={1200}
           height={800}
           className={compact ? "h-40 w-full object-cover" : "h-52 w-full object-cover"}
+          logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3" />
       </div>
