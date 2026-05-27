@@ -40,7 +40,8 @@ export type Vehicle = {
     | "Tipper"
     | "Bus"
     | "Truck"
-    | "Tractor";
+    | "Tractor"
+    | "Equipment";
   assetCategory?: string | null;
   vehicleSubType?: string | null;
   bodyApplicationType?: string | null;

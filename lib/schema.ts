@@ -26,6 +26,7 @@ export const vehicleTypeEnum = pgEnum("vehicle_type", [
   "Bus",
   "Trailer",
   "Tractor",
+  "Equipment",
 ]);
 
 export const fuelTypeEnum = pgEnum("fuel_type", ["Diesel", "CNG"]);

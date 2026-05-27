@@ -215,7 +215,7 @@ export function toLegacyVehicleType(
   assetStructure: AssetStructure,
   detachableType?: DetachableType | null
 ) {
-  if (assetStructure === "EQUIPMENT") return "Truck";
+  if (assetStructure === "EQUIPMENT") return "Equipment";
   if (assetStructure === "DETACHABLE" && detachableType === "TRAILER") return "Trailer";
   if (assetStructure === "DETACHABLE" && detachableType === "PRIME_MOVER") return "Tractor";
 
