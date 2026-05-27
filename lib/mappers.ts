@@ -1,6 +1,10 @@
 import type { DbVehicle } from "./schema";
 import type { Vehicle } from "@/types/vehicle";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
+import {
+  normalizeClassification,
+  normalizeListingMode,
+} from "@/lib/vehicle-classification";
 
 /**
  * Maps a database row (DbVehicle) to the application's Vehicle shape,
@@ -14,29 +18,50 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
   const image = sanitizeSupabaseMediaUrl(row.image);
   const gallery = sanitizeSupabaseMediaArray(row.gallery);
   const normalizedImage = image || gallery[0] || "";
+  const classification = normalizeClassification({
+    assetStructure: row.assetStructure,
+    detachableType: row.detachableType,
+    assetConfiguration: row.assetConfiguration,
+  });
 
   return {
     id: row.id,
     sellerId: row.sellerId,
     createdByUserId: row.createdByUserId,
     listingType: row.listingType,
+    listingMode: normalizeListingMode(row.listingMode),
     assetConfiguration: (row.assetConfiguration || "Complete Vehicle") as Vehicle["assetConfiguration"],
+    assetStructure: classification.assetStructure,
+    detachableType: classification.detachableType,
     status: row.status,
     title: row.title,
     type: row.type as Vehicle["type"],
+    assetCategory: row.assetCategory || row.type,
     vehicleSubType: row.vehicleSubType,
+    bodyApplicationType: row.bodyApplicationType || row.vehicleSubType || row.bodyType,
     brand: row.brand,
     model: row.model,
     year: row.year,
+    isRegistered: row.isRegistered,
     kmDriven: row.kmDriven,
     vehicleRegistrationNumber: row.vehicleRegistrationNumber,
     kmMeterStatus: row.kmMeterStatus,
     runningCondition: row.runningCondition,
     fuelType: row.fuelType as Vehicle["fuelType"],
+    bsNorm: row.bsNorm,
+    transmission: row.transmission,
+    axleConfiguration: row.axleConfiguration || row.axleType,
+    horsepower: row.horsepower,
+    odometerReading: row.odometerReading,
+    hourMeterReading: row.hourMeterReading,
     axleType: row.axleType,
     numberOfAxles: row.numberOfAxles,
     bodyType: row.bodyType,
+    bodyLength: row.bodyLength,
     bodyDimensions: row.bodyDimensions,
+    payloadCapacity: row.payloadCapacity,
+    bodyAttached: row.bodyAttached,
+    bodyCondition: row.bodyCondition,
     trailerType: row.trailerType,
     trailerLength: row.trailerLength,
     trailerManufacturer: row.trailerManufacturer,
@@ -88,12 +113,22 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     fitnessExpiry: row.fitnessExpiry,
     permitExpiry: row.permitExpiry,
     nocStatus: row.nocStatus,
+    machineSerialNumber: row.machineSerialNumber,
     engineNumber: row.engineNumber,
     chassisNumber: row.chassisNumber,
     trailerNumber: row.trailerNumber,
     gvwTonnes: row.gvwTonnes,
     gpsInstalled: row.gpsInstalled,
     abs: row.abs,
+    batteryAvailable: row.batteryAvailable,
+    keyAvailable: row.keyAvailable,
+    tyresIncluded: row.tyresIncluded,
+    rimsDiscsIncluded: row.rimsDiscsIncluded,
+    batteryIncluded: row.batteryIncluded,
+    cabinAvailable: row.cabinAvailable,
+    engineAvailable: row.engineAvailable,
+    documentsAvailable: row.documentsAvailable,
+    remarks: row.remarks,
     fleetManagementSoftwareAvailable: row.fleetManagementSoftwareAvailable,
     verifiedBadges: trustBadges,
     rcVerified: row.rcVerified,
