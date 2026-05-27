@@ -123,6 +123,7 @@ function parseRunningCondition(value: unknown): RunningCondition {
 }
 
 function parseBoolean(value: unknown) {
+  // Accept boolean payloads as well as YES/NO strings from form submissions.
   if (typeof value === "boolean") return value;
   const normalized = toSafeString(value).toUpperCase();
   if (["YES", "TRUE", "1"].includes(normalized)) return true;

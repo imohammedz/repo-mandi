@@ -241,7 +241,7 @@ const indiaStates = [
 ];
 
 const TOTAL_STEPS = 8;
-const STEP_LABELS = ["Listing", "Asset Basics", "Condition", "Pricing", "Repo", "Technical", "Photos", "Review"];
+const STEP_LABELS = ["Listing", "Asset Basics", "Condition", "Pricing", "Repo Details", "Technical", "Photos", "Review"];
 const STEP_LISTING = 1;
 const STEP_BASICS = 2;
 const STEP_CONDITION = 3;
@@ -1089,7 +1089,7 @@ export default function AddVehiclePage() {
               <SelectField label="Finance Company" value={form.financeCompany} options={financeCompanies} onChange={(value) => update("financeCompany", value)} required />
               <SelectField label="Repo Status" value={form.repoStatus} options={repoStatusOptions} onChange={(value) => update("repoStatus", value)} required />
               <TextField label="Yard Name" value={form.yardName} onChange={(value) => update("yardName", value)} required />
-              <TextField label="Yard Contact" value={form.yardContact} onChange={(value) => update("yardContact", value)} required />
+              <TextField label="Yard Contact" value={form.yardContact} onChange={(value) => update("yardContact", value)} required type="tel" />
               <TextField label="Reserve Price" value={form.reservePrice} onChange={(value) => update("reservePrice", value.replace(/\D/g, ""))} type="tel" />
               <TextField label="Auction Date" value={form.auctionDate} onChange={(value) => update("auctionDate", value)} type="date" />
             </>
