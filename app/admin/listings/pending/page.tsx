@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { vehicles } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { getAssetStructureLabel, getDetachableTypeLabel, getListingModeLabel } from "@/lib/vehicle-classification";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,18 @@ export default async function AdminPendingListingsPage() {
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
                 <p className="text-xs text-slate-500">{vehicle.city}, {vehicle.state}</p>
+                <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold">
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">{vehicle.listingType}</span>
+                  <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">{getListingModeLabel(vehicle.listingMode)}</span>
+                  <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">
+                    {getAssetStructureLabel(vehicle.assetStructure) || vehicle.assetConfiguration || "Complete Vehicle"}
+                  </span>
+                  {vehicle.detachableType ? (
+                    <span className="rounded-full bg-fuchsia-50 px-2 py-0.5 text-fuchsia-700">
+                      {getDetachableTypeLabel(vehicle.detachableType)}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}
             </div>

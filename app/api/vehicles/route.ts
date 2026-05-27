@@ -6,7 +6,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
 import {
   ASSET_STRUCTURE_VALUES,
-  DETACHABLE_TYPE_VALUES,
   LEGACY_ASSET_CONFIGURATION_VALUES,
   LISTING_MODE_VALUES,
   getAssetCategoryOptions,
@@ -17,7 +16,6 @@ import {
   toLegacyAssetConfiguration,
   toLegacyVehicleType,
   type AssetStructure,
-  type DetachableType,
   type ListingMode,
 } from "@/lib/vehicle-classification";
 

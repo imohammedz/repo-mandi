@@ -20,7 +20,6 @@ import {
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
-type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 
 type SessionUser = {
   id: number;
@@ -519,19 +518,20 @@ export default function AddVehiclePage() {
           router.replace("/auth/login");
           return;
         }
-        if (data.user.accountType === "BUYER") {
+        const sessionUser = data.user;
+        if (sessionUser.accountType === "BUYER") {
           router.replace("/sell");
           return;
         }
-        if (!data.user.isProfileComplete) {
+        if (!sessionUser.isProfileComplete) {
           router.replace("/onboarding");
           return;
         }
-        setUser(data.user);
+        setUser(sessionUser);
         setForm((previous) => ({
           ...previous,
           listingType:
-            data.user.accountType === "BANK_PARTNER" || data.user.sellerRole === "RECOVERY_AGENT"
+            sessionUser.accountType === "BANK_PARTNER" || sessionUser.sellerRole === "RECOVERY_AGENT"
               ? "REPO"
               : "REGULAR",
           listingMode: "NORMAL",

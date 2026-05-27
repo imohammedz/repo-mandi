@@ -169,7 +169,7 @@ export function hasEngineOrPowertrain(input: {
 export function getAssetCategoryOptions(
   assetStructure: AssetStructure,
   detachableType?: DetachableType | null
-) {
+): string[] {
   if (assetStructure === "STANDALONE") return [...STANDALONE_ASSET_CATEGORIES];
   if (assetStructure === "EQUIPMENT") return [...EQUIPMENT_ASSET_CATEGORIES];
   if (detachableType === "PRIME_MOVER") return [...PRIME_MOVER_ASSET_CATEGORIES];
@@ -179,7 +179,7 @@ export function getAssetCategoryOptions(
 export function getBodyApplicationOptions(
   assetStructure: AssetStructure,
   detachableType?: DetachableType | null
-) {
+): string[] {
   if (assetStructure === "STANDALONE") return [...STANDALONE_BODY_APPLICATION_OPTIONS];
   if (assetStructure === "DETACHABLE" && detachableType === "PRIME_MOVER") {
     return [...PRIME_MOVER_BODY_APPLICATION_OPTIONS];

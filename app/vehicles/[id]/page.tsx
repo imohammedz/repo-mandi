@@ -13,6 +13,12 @@ import { VerificationBadge } from "@/components/ui/verification-badge";
 import { getCurrentUser } from "@/lib/auth";
 import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import {
+  getAssetStructureLabel,
+  getDetachableTypeLabel,
+  getListingModeLabel,
+  hasEngineOrPowertrain,
+} from "@/lib/vehicle-classification";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +39,14 @@ export default async function VehicleDetailPage({
   const vehicle = dbToVehicle(row);
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
-  const isTrailerOnly = vehicle.assetConfiguration === "Trailer Only";
-  const assetConfigurationLabel = vehicle.assetConfiguration ?? "Complete Vehicle";
+  const showsRunning = hasEngineOrPowertrain({
+    assetStructure: vehicle.assetStructure,
+    detachableType: vehicle.detachableType,
+    assetConfiguration: vehicle.assetConfiguration,
+  });
+  const isTrailerOnly = !showsRunning && vehicle.detachableType === "TRAILER";
+  const assetStructureLabel = getAssetStructureLabel(vehicle.assetStructure) || vehicle.assetConfiguration || "Complete Vehicle";
+  const detachableTypeLabel = getDetachableTypeLabel(vehicle.detachableType);
 
   const similarRows = await db
     .select()
@@ -65,14 +77,22 @@ export default async function VehicleDetailPage({
         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${vehicle.listingType === "REPO" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
           {vehicle.listingType === "REPO" ? "REPO" : "REGULAR"}
         </span>
-        <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-          {assetConfigurationLabel}
+        <span className="ml-2 inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+          {getListingModeLabel(vehicle.listingMode)}
         </span>
+        <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+          {assetStructureLabel}
+        </span>
+        {detachableTypeLabel ? (
+          <span className="ml-2 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+            {detachableTypeLabel}
+          </span>
+        ) : null}
         <h1 className="text-2xl font-semibold text-slate-900">{vehicle.title}</h1>
         <p className="text-xl font-semibold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
         <div className="grid grid-cols-2 gap-2 text-sm text-slate-600">
-          <p>Type: {[vehicle.type, vehicle.vehicleSubType].filter(Boolean).join(" • ")}</p>
-          {!isTrailerOnly ? <p>Running: {vehicle.runningCondition ?? vehicle.condition}</p> : null}
+          <p>Type: {[vehicle.assetCategory || vehicle.type, vehicle.bodyApplicationType || vehicle.vehicleSubType].filter(Boolean).join(" • ")}</p>
+          {showsRunning ? <p>Running: {vehicle.runningCondition ?? vehicle.condition}</p> : null}
           {vehicle.listingType === "REPO" ? <p>Finance: {vehicle.financeCompany}</p> : null}
           {vehicle.listingType === "REPO" ? <p>Repo Status: {vehicle.repoStatus}</p> : null}
           <p>{displayLocation || "Location unavailable"}</p>
@@ -123,9 +143,11 @@ export default async function VehicleDetailPage({
             <div><dt className="text-slate-500">Year</dt><dd className="font-medium text-slate-900">{vehicle.year}</dd></div>
             <div><dt className="text-slate-500">KM Driven</dt><dd className="font-medium text-slate-900">{typeof vehicle.kmDriven === "number" ? vehicle.kmDriven.toLocaleString("en-IN") : "Unknown"}</dd></div>
             <div><dt className="text-slate-500">Fuel</dt><dd className="font-medium text-slate-900">{vehicle.fuelType}</dd></div>
-            <div><dt className="text-slate-500">Axle</dt><dd className="font-medium text-slate-900">{vehicle.axleType}</dd></div>
+            <div><dt className="text-slate-500">Axle</dt><dd className="font-medium text-slate-900">{vehicle.axleConfiguration || vehicle.axleType || "N/A"}</dd></div>
             <div><dt className="text-slate-500">Registration</dt><dd className="font-medium text-slate-900">{vehicle.registrationState}</dd></div>
             <div><dt className="text-slate-500">Condition</dt><dd className="font-medium text-slate-900">{vehicle.condition}</dd></div>
+            {vehicle.tyresIncluded ? <div><dt className="text-slate-500">Tyres Included</dt><dd className="font-medium text-slate-900">{vehicle.tyresIncluded}</dd></div> : null}
+            {vehicle.rimsDiscsIncluded ? <div><dt className="text-slate-500">Rims / Discs</dt><dd className="font-medium text-slate-900">{vehicle.rimsDiscsIncluded}</dd></div> : null}
           </dl>
         </section>
       ) : null}
