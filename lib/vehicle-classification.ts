@@ -111,6 +111,7 @@ const LEGACY_CLASSIFICATION_MAP: Record<
   "Prime Mover + Trailer": { assetStructure: "STANDALONE", detachableType: null },
   Other: { assetStructure: "EQUIPMENT", detachableType: null },
 };
+const DEFAULT_LEGACY_ASSET_CONFIGURATION: LegacyAssetConfiguration = "Complete Vehicle";
 
 export function normalizeListingMode(value: string | null | undefined): ListingMode {
   return value === "BULK" ? "BULK" : "NORMAL";
@@ -135,7 +136,9 @@ export function normalizeClassification(input: {
     };
   }
 
-  const fallback = LEGACY_CLASSIFICATION_MAP[input.assetConfiguration ?? ""] ?? LEGACY_CLASSIFICATION_MAP["Complete Vehicle"];
+  const fallback =
+    LEGACY_CLASSIFICATION_MAP[input.assetConfiguration ?? ""] ??
+    LEGACY_CLASSIFICATION_MAP[DEFAULT_LEGACY_ASSET_CONFIGURATION];
   return fallback;
 }
 

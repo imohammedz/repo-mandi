@@ -1225,7 +1225,10 @@ export default function AddVehiclePage() {
           })}
 
           <div className="space-y-3">
-            <h2 className="text-base font-semibold text-slate-900">Additional Photos <span className="font-normal text-sm text-slate-400">(Optional)</span></h2>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-base font-semibold text-slate-900">Additional Photos</h2>
+              <span className="text-sm text-slate-400">(Optional)</span>
+            </div>
 
             {additionalPhotos.map((photo, index) => (
               <div key={index} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">

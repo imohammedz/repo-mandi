@@ -384,6 +384,7 @@ export async function POST(request: Request) {
     const kmMeterStatus = (toSafeString(body.kmMeterStatus) || "UNKNOWN") as KmMeterStatus;
     const runningCondition = parseRunningCondition(body.runningCondition ?? body.condition);
     const kmDriven = toNumberOrNull(body.kmDriven);
+    // Keep odometer aligned with KM Driven when only the Step 3 field is supplied.
     const odometerReading = toNumberOrNull(body.odometerReading ?? body.kmDriven);
     const hourMeterReading = toNumberOrNull(body.hourMeterReading);
     const trailerType = toSafeString(body.trailerType);
@@ -399,6 +400,7 @@ export async function POST(request: Request) {
     const financeCompany = toSafeString(body.financeCompany);
     const repoStatus = toSafeString(body.repoStatus || "Ready For Sale");
     const yardName = toSafeString(body.yardName);
+    const yardContact = toSafeString(body.yardContact);
     const machineSerialNumber = toSafeString(body.machineSerialNumber);
 
     const alwaysRequiredMissing: string[] = [];
@@ -499,7 +501,7 @@ export async function POST(request: Request) {
     }
 
     if (listingType === "REPO") {
-      if (!financeCompany || !repoStatus || !yardName || !toSafeString(body.yardContact)) {
+      if (!financeCompany || !repoStatus || !yardName || !yardContact) {
         return Response.json({ message: "financeCompany, repoStatus, yardName, and yardContact are required for repo listings." }, { status: 400 });
       }
       if (!VALID_REPO_STATUS.includes(repoStatus as (typeof VALID_REPO_STATUS)[number])) {
@@ -638,7 +640,7 @@ export async function POST(request: Request) {
         accidentNotes: toSafeString(body.accidentNotes),
         auctionDate: toSafeString(body.auctionDate),
         yardName: listingType === "REPO" ? yardName : "",
-        yardContact: toSafeString(body.yardContact),
+        yardContact,
         yardLocation: location,
         taxDue: toSafeString(body.taxDue),
         challans: toSafeString(body.challans),
