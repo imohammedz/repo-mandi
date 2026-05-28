@@ -38,6 +38,8 @@ const ASSET_CATEGORY_META_LABELS: Record<string, string> = {
 const TIPPER_PATTERN = /tipper/i;
 const PRIME_MOVER_PATTERN = /prime mover/i;
 const SUSPENSION_PATTERN = /suspension/i;
+const MAX_CONDITION_CHIPS = 8;
+const MAX_VERIFICATION_BADGES = 3;
 
 const toNormalizedToken = (value: string | null | undefined) =>
   value
@@ -81,10 +83,12 @@ const combineMetaParts = (parts: string[]) => {
 };
 
 const composeTrailerMetaValue = (bodyApplicationType: string, trailerLength: string) => {
-  if (!bodyApplicationType) return trailerLength;
-  if (!trailerLength) return bodyApplicationType;
-  if (bodyApplicationType.toLowerCase().includes(trailerLength.toLowerCase())) return bodyApplicationType;
-  return `${bodyApplicationType} ${trailerLength}`;
+  const normalizedBody = bodyApplicationType.trim();
+  const normalizedLength = trailerLength.trim();
+  if (!normalizedBody) return normalizedLength;
+  if (!normalizedLength) return normalizedBody;
+  if (normalizedBody.toLowerCase().includes(normalizedLength.toLowerCase())) return normalizedBody;
+  return `${normalizedBody} ${normalizedLength}`;
 };
 
 const buildListingTitle = (vehicle: Vehicle) => {
@@ -95,7 +99,7 @@ const buildListingTitle = (vehicle: Vehicle) => {
   });
   const bodyApplicationType = toReadableLabel(vehicle.bodyApplicationType || vehicle.vehicleSubType);
   const trailerLength = toReadableLabel(vehicle.trailerLength || vehicle.bodyLength);
-  const isTipper = TIPPER_PATTERN.test(`${bodyApplicationType} ${vehicle.type || ""}`);
+  const isTipper = TIPPER_PATTERN.test(bodyApplicationType) || TIPPER_PATTERN.test(vehicle.type || "");
 
   if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER") {
     const trailerTitle = composeTrailerMetaValue(bodyApplicationType, trailerLength);
@@ -194,7 +198,7 @@ const buildConditionChips = (vehicle: Vehicle, showsRunning: boolean) => {
   if (yesNoToken(vehicle.keyAvailable) === "YES") chips.push("Keys Available");
   if (vehicle.listingType === "REPO" && vehicle.repoStatus) chips.push(toReadableLabel(vehicle.repoStatus));
 
-  return chips.slice(0, 8);
+  return chips.slice(0, MAX_CONDITION_CHIPS);
 };
 
 const buildVerificationBadges = (vehicle: Vehicle) => {
@@ -213,7 +217,13 @@ const buildVerificationBadges = (vehicle: Vehicle) => {
   for (const badge of vehicle.verifiedBadges || []) {
     addBadge(toReadableLabel(badge));
   }
-  return badges.slice(0, 3);
+  return badges.slice(0, MAX_VERIFICATION_BADGES);
+};
+
+const getTopTagClasses = (tag: string) => {
+  if (tag === "Repo") return "bg-amber-50 text-amber-700";
+  if (tag === "Regular") return "bg-emerald-50 text-emerald-700";
+  return "bg-slate-100 text-slate-700";
 };
 
 export function VehicleCard({ vehicle, compact = false }: Props) {
@@ -273,13 +283,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {topTags.map((tag) => (
               <span
                 key={tag}
-                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                  tag === "Repo"
-                    ? "bg-amber-50 text-amber-700"
-                    : tag === "Regular"
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-slate-100 text-slate-700"
-                }`}
+                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${getTopTagClasses(tag)}`}
               >
                 {tag}
               </span>
