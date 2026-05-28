@@ -744,43 +744,53 @@ export async function POST(request: Request) {
       mimeType?: string;
       sizeBytes?: number | null;
     };
-    const mediaRows: MediaRow[] = [
-      { type: "PHOTO", category: "FRONT", url: frontPhoto },
-      { type: "PHOTO", category: "BACK", url: backPhoto },
-      { type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto },
-      { type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto },
-      { type: "PHOTO", category: "SIDE", url: sidePhoto },
-      { type: "PHOTO", category: "INTERIOR", url: interiorPhoto },
-      ...videoItems.map((video) => ({
-        type: "VIDEO" as const,
+    const mediaRows: MediaRow[] = [];
+    if (frontPhoto) mediaRows.push({ type: "PHOTO", category: "FRONT", url: frontPhoto });
+    if (backPhoto) mediaRows.push({ type: "PHOTO", category: "BACK", url: backPhoto });
+    if (leftSidePhoto) mediaRows.push({ type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto });
+    if (rightSidePhoto) mediaRows.push({ type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto });
+    if (sidePhoto) mediaRows.push({ type: "PHOTO", category: "SIDE", url: sidePhoto });
+    if (interiorPhoto) mediaRows.push({ type: "PHOTO", category: "INTERIOR", url: interiorPhoto });
+
+    for (const video of videoItems) {
+      mediaRows.push({
+        type: "VIDEO",
         category: ["WALKAROUND", "ENGINE_STARTUP", "DAMAGE", "OTHER"].includes(video.category)
           ? (video.category as MediaRow["category"])
           : "OTHER",
         url: video.url,
         mimeType: video.mimeType,
         sizeBytes: video.sizeBytes,
-      })),
-      ...(toSafeString(body.inspectionReport)
-        ? [{ type: "DOCUMENT" as const, category: "INSPECTION_REPORT" as const, url: toSafeString(body.inspectionReport) }]
-        : []),
-      ...(toSafeString(body.rcDocument)
-        ? [{ type: "DOCUMENT" as const, category: "RC" as const, url: toSafeString(body.rcDocument) }]
-        : []),
-      ...(toSafeString(body.insuranceDocument)
-        ? [{ type: "DOCUMENT" as const, category: "INSURANCE" as const, url: toSafeString(body.insuranceDocument) }]
-        : []),
-      ...(toSafeString(body.fitnessDocument)
-        ? [{ type: "DOCUMENT" as const, category: "FITNESS" as const, url: toSafeString(body.fitnessDocument) }]
-        : []),
-      ...(toSafeString(body.permitDocument)
-        ? [{ type: "DOCUMENT" as const, category: "PERMIT" as const, url: toSafeString(body.permitDocument) }]
-        : []),
-      ...additionalPhotoItems.map((p) => {
-        const rawCat = p.category ? p.category.toUpperCase() : "";
-        const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCat) ? rawCat : "OTHER";
-        return { type: "PHOTO" as const, category: category as MediaRow["category"], url: p.url };
-      }),
-    ].filter((item) => Boolean(item.url));
+      });
+    }
+
+    const documentRows: Array<{ value: string; category: MediaRow["category"] }> = [
+      { value: toSafeString(body.inspectionReport), category: "INSPECTION_REPORT" },
+      { value: toSafeString(body.rcDocument), category: "RC" },
+      { value: toSafeString(body.insuranceDocument), category: "INSURANCE" },
+      { value: toSafeString(body.fitnessDocument), category: "FITNESS" },
+      { value: toSafeString(body.permitDocument), category: "PERMIT" },
+    ];
+    for (const documentRow of documentRows) {
+      if (!documentRow.value) continue;
+      mediaRows.push({
+        type: "DOCUMENT",
+        category: documentRow.category,
+        url: documentRow.value,
+      });
+    }
+
+    for (const photo of additionalPhotoItems) {
+      const rawCat = photo.category ? photo.category.toUpperCase() : "";
+      const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCat)
+        ? (rawCat as MediaRow["category"])
+        : "OTHER";
+      mediaRows.push({
+        type: "PHOTO",
+        category,
+        url: photo.url,
+      });
+    }
 
     if (mediaRows.length > 0) {
       await db.insert(vehicleMedia).values(
