@@ -32,12 +32,11 @@ export function SellerCard({
   yardVerified = false,
   className = "",
 }: Props) {
-  const trustBadges = [
-    sellerVerified ? "Verified Seller" : "",
-    photosVerified ? "Photos Verified" : "",
-    rcVerified ? "RC Verified" : "",
-    yardVerified ? "Yard Verified" : "",
-  ].filter(Boolean);
+  const trustBadges: string[] = [];
+  if (sellerVerified) trustBadges.push("Verified Seller");
+  if (photosVerified) trustBadges.push("Photos Verified");
+  if (rcVerified) trustBadges.push("RC Verified");
+  if (yardVerified) trustBadges.push("Yard Verified");
 
   return (
     <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>

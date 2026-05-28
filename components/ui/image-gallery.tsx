@@ -34,7 +34,7 @@ export function ImageGallery({ images, title, videoCount = 0 }: Props) {
         </div>
         <div className="flex snap-x snap-mandatory overflow-x-auto">
           {normalizedImages.map((image, index) => (
-            <div key={`${image}-${index}`} className="w-full shrink-0 snap-center">
+            <div key={index} className="w-full shrink-0 snap-center">
               <SafeImage
                 src={image}
                 alt={`${title} photo ${index + 1}`}
@@ -74,7 +74,7 @@ export function ImageGallery({ images, title, videoCount = 0 }: Props) {
         <div className="grid grid-cols-6 gap-2">
           {normalizedImages.map((image, index) => (
             <button
-              key={`${image}-${index}`}
+              key={index}
               onClick={() => setActive(index)}
               className={`overflow-hidden rounded-xl border ${active === index ? "border-slate-900" : "border-slate-200"}`}
             >
