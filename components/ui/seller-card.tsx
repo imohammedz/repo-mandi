@@ -2,6 +2,7 @@
 
 import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 import { formatEnumLabel } from "@/lib/formatting";
+import { CircleCheck } from "lucide-react";
 
 type Props = {
   name: string;
@@ -53,7 +54,8 @@ export function SellerCard({
               key={badge}
               className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
             >
-              ✓ {badge}
+              <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{badge}</span>
             </span>
           ))}
         </div>
