@@ -737,13 +737,14 @@ export async function POST(request: Request) {
       })
       .returning();
 
-    const mediaRows: Array<{
+    type MediaRow = {
       type: typeof vehicleMedia.type._.data;
       category: typeof vehicleMedia.category._.data;
       url: string;
       mimeType?: string;
       sizeBytes?: number | null;
-    }> = [
+    };
+    const mediaRows: MediaRow[] = [
       { type: "PHOTO", category: "FRONT", url: frontPhoto },
       { type: "PHOTO", category: "BACK", url: backPhoto },
       { type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto },
@@ -751,33 +752,33 @@ export async function POST(request: Request) {
       { type: "PHOTO", category: "SIDE", url: sidePhoto },
       { type: "PHOTO", category: "INTERIOR", url: interiorPhoto },
       ...videoItems.map((video) => ({
-        type: "VIDEO",
+        type: "VIDEO" as const,
         category: ["WALKAROUND", "ENGINE_STARTUP", "DAMAGE", "OTHER"].includes(video.category)
-          ? video.category
+          ? (video.category as MediaRow["category"])
           : "OTHER",
         url: video.url,
         mimeType: video.mimeType,
         sizeBytes: video.sizeBytes,
       })),
       ...(toSafeString(body.inspectionReport)
-        ? [{ type: "DOCUMENT", category: "INSPECTION_REPORT", url: toSafeString(body.inspectionReport) }]
+        ? [{ type: "DOCUMENT" as const, category: "INSPECTION_REPORT" as const, url: toSafeString(body.inspectionReport) }]
         : []),
       ...(toSafeString(body.rcDocument)
-        ? [{ type: "DOCUMENT", category: "RC", url: toSafeString(body.rcDocument) }]
+        ? [{ type: "DOCUMENT" as const, category: "RC" as const, url: toSafeString(body.rcDocument) }]
         : []),
       ...(toSafeString(body.insuranceDocument)
-        ? [{ type: "DOCUMENT", category: "INSURANCE", url: toSafeString(body.insuranceDocument) }]
+        ? [{ type: "DOCUMENT" as const, category: "INSURANCE" as const, url: toSafeString(body.insuranceDocument) }]
         : []),
       ...(toSafeString(body.fitnessDocument)
-        ? [{ type: "DOCUMENT", category: "FITNESS", url: toSafeString(body.fitnessDocument) }]
+        ? [{ type: "DOCUMENT" as const, category: "FITNESS" as const, url: toSafeString(body.fitnessDocument) }]
         : []),
       ...(toSafeString(body.permitDocument)
-        ? [{ type: "DOCUMENT", category: "PERMIT", url: toSafeString(body.permitDocument) }]
+        ? [{ type: "DOCUMENT" as const, category: "PERMIT" as const, url: toSafeString(body.permitDocument) }]
         : []),
       ...additionalPhotoItems.map((p) => {
         const rawCat = p.category ? p.category.toUpperCase() : "";
         const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCat) ? rawCat : "OTHER";
-        return { type: "PHOTO", category, url: p.url };
+        return { type: "PHOTO" as const, category: category as MediaRow["category"], url: p.url };
       }),
     ].filter((item) => Boolean(item.url));
 
