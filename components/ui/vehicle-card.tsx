@@ -35,14 +35,18 @@ const ASSET_CATEGORY_META_LABELS: Record<string, string> = {
   "Material Handling / Special Equipment": "Material Handling",
 };
 
-const asNormalizedToken = (value: string | null | undefined) =>
+const TIPPER_PATTERN = /tipper/i;
+const PRIME_MOVER_PATTERN = /prime mover/i;
+const SUSPENSION_PATTERN = /suspension/i;
+
+const toNormalizedToken = (value: string | null | undefined) =>
   value
     ?.toString()
     .trim()
-    .replace(/[\s-]+/g, "_")
+    .replace(/[\s\-]+/g, "_")
     .toUpperCase() ?? "";
 
-const asReadable = (value: string | null | undefined) => {
+const toReadableLabel = (value: string | null | undefined) => {
   if (!value) return "";
   const formatted = formatEnumLabel(value);
   return formatted || value;
@@ -89,23 +93,23 @@ const buildListingTitle = (vehicle: Vehicle) => {
     detachableType: vehicle.detachableType,
     assetConfiguration: vehicle.assetConfiguration,
   });
-  const bodyApplicationType = asReadable(vehicle.bodyApplicationType || vehicle.vehicleSubType);
-  const trailerLength = asReadable(vehicle.trailerLength || vehicle.bodyLength);
-  const isTipper = /tipper/i.test(bodyApplicationType || "") || /tipper/i.test(vehicle.type || "");
+  const bodyApplicationType = toReadableLabel(vehicle.bodyApplicationType || vehicle.vehicleSubType);
+  const trailerLength = toReadableLabel(vehicle.trailerLength || vehicle.bodyLength);
+  const isTipper = TIPPER_PATTERN.test(`${bodyApplicationType} ${vehicle.type || ""}`);
 
   if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER") {
     const trailerTitle = composeTrailerMetaValue(bodyApplicationType, trailerLength);
-    return trailerTitle || asReadable(vehicle.title);
+    return trailerTitle || toReadableLabel(vehicle.title);
   }
 
   if (classification.assetStructure === "EQUIPMENT") {
     return (
       dedupeSegments([
         String(vehicle.year || ""),
-        asReadable(vehicle.brand),
-        asReadable(vehicle.model),
+        toReadableLabel(vehicle.brand),
+        toReadableLabel(vehicle.model),
         bodyApplicationType,
-      ]) || asReadable(vehicle.title)
+      ]) || toReadableLabel(vehicle.title)
     );
   }
 
@@ -113,20 +117,20 @@ const buildListingTitle = (vehicle: Vehicle) => {
     return (
       dedupeSegments([
         String(vehicle.year || ""),
-        asReadable(vehicle.brand),
-        asReadable(vehicle.model),
+        toReadableLabel(vehicle.brand),
+        toReadableLabel(vehicle.model),
         "Tipper",
-      ]) || asReadable(vehicle.title)
+      ]) || toReadableLabel(vehicle.title)
     );
   }
 
   return (
     dedupeSegments([
       String(vehicle.year || ""),
-      asReadable(vehicle.brand),
-      asReadable(vehicle.model),
+      toReadableLabel(vehicle.brand),
+      toReadableLabel(vehicle.model),
       bodyApplicationType,
-    ]) || asReadable(vehicle.title)
+    ]) || toReadableLabel(vehicle.title)
   );
 };
 
@@ -136,12 +140,12 @@ const buildMetaLine = (vehicle: Vehicle) => {
     detachableType: vehicle.detachableType,
     assetConfiguration: vehicle.assetConfiguration,
   });
-  const bodyApplicationType = asReadable(vehicle.bodyApplicationType || vehicle.vehicleSubType);
-  const trailerLength = asReadable(vehicle.trailerLength || vehicle.bodyLength);
-  const axleConfig = asReadable(vehicle.axleConfiguration || vehicle.axleType);
+  const bodyApplicationType = toReadableLabel(vehicle.bodyApplicationType || vehicle.vehicleSubType);
+  const trailerLength = toReadableLabel(vehicle.trailerLength || vehicle.bodyLength);
+  const axleConfig = toReadableLabel(vehicle.axleConfiguration || vehicle.axleType);
   const categoryLabel =
     ASSET_CATEGORY_META_LABELS[vehicle.assetCategory || ""] ||
-    asReadable(vehicle.assetCategory || vehicle.type);
+    toReadableLabel(vehicle.assetCategory || vehicle.type);
 
   if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER") {
     return combineMetaParts(["Trailer", composeTrailerMetaValue(bodyApplicationType, trailerLength)]);
@@ -149,15 +153,14 @@ const buildMetaLine = (vehicle: Vehicle) => {
 
   const isPrimeMoverContext =
     classification.detachableType === "PRIME_MOVER" ||
-    /prime mover/i.test(vehicle.assetCategory || "") ||
-    /prime mover/i.test(bodyApplicationType || "");
+    PRIME_MOVER_PATTERN.test(`${vehicle.assetCategory || ""} ${bodyApplicationType || ""}`);
 
   if (isPrimeMoverContext) {
     return combineMetaParts(["Prime Mover", axleConfig || bodyApplicationType]);
   }
 
   if (classification.assetStructure === "EQUIPMENT") {
-    return combineMetaParts([categoryLabel || "Construction Equipment", bodyApplicationType || asReadable(vehicle.type)]);
+    return combineMetaParts([categoryLabel || "Equipment", bodyApplicationType || toReadableLabel(vehicle.type)]);
   }
 
   return combineMetaParts([categoryLabel, bodyApplicationType]);
@@ -165,23 +168,23 @@ const buildMetaLine = (vehicle: Vehicle) => {
 
 const buildConditionChips = (vehicle: Vehicle, showsRunning: boolean) => {
   const chips: string[] = [];
-  const runningToken = asNormalizedToken(vehicle.runningCondition || vehicle.condition);
-  const yesNoToken = (value: string | null | undefined) => asNormalizedToken(value);
+  const runningToken = toNormalizedToken(vehicle.runningCondition || vehicle.condition);
+  const yesNoToken = (value: string | null | undefined) => toNormalizedToken(value);
 
   if (showsRunning && runningToken) {
     if (runningToken === "RUNNING") chips.push("Running");
     else if (runningToken === "NOT_RUNNING" || runningToken === "NON_RUNNING") chips.push("Not Running");
-    else chips.push("Condition Unknown");
+    else if (runningToken === "UNKNOWN") chips.push("Condition Unknown");
   }
 
-  if (vehicle.bsNorm) chips.push(asReadable(vehicle.bsNorm));
+  if (vehicle.bsNorm) chips.push(toReadableLabel(vehicle.bsNorm));
   if (yesNoToken(vehicle.acCabin) === "YES") chips.push("AC Cabin");
   if (typeof vehicle.numberOfAxles === "number" && vehicle.numberOfAxles > 0) {
     chips.push(`${vehicle.numberOfAxles} ${vehicle.numberOfAxles === 1 ? "Axle" : "Axles"}`);
   }
   if (vehicle.suspensionType) {
-    const suspension = asReadable(vehicle.suspensionType);
-    chips.push(/suspension/i.test(suspension) ? suspension : `${suspension} Suspension`);
+    const suspension = toReadableLabel(vehicle.suspensionType);
+    chips.push(SUSPENSION_PATTERN.test(suspension) ? suspension : `${suspension} Suspension`);
   }
   if (yesNoToken(vehicle.tyresIncluded) === "YES") chips.push("Tyres Included");
   else if (yesNoToken(vehicle.tyresIncluded) === "UNKNOWN") chips.push("Tyres Unknown");
@@ -189,22 +192,26 @@ const buildConditionChips = (vehicle: Vehicle, showsRunning: boolean) => {
   else if (yesNoToken(vehicle.rimsDiscsIncluded) === "UNKNOWN") chips.push("Rims Unknown");
   if (yesNoToken(vehicle.documentsAvailable) === "YES") chips.push("RC Available");
   if (yesNoToken(vehicle.keyAvailable) === "YES") chips.push("Keys Available");
-  if (vehicle.listingType === "REPO" && vehicle.repoStatus) chips.push(asReadable(vehicle.repoStatus));
+  if (vehicle.listingType === "REPO" && vehicle.repoStatus) chips.push(toReadableLabel(vehicle.repoStatus));
 
   return chips.slice(0, 8);
 };
 
 const buildVerificationBadges = (vehicle: Vehicle) => {
   const badges: string[] = [];
-  if (vehicle.photosVerified) badges.push("Photos Verified");
-  if (vehicle.rcVerified) badges.push("RC Verified");
-  if (vehicle.sellerVerified) badges.push("Verified Seller");
-  if (vehicle.yardVerified) badges.push("Yard Verified");
+  const seen = new Set<string>();
+  const addBadge = (value: string) => {
+    const normalized = value.toLowerCase();
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    badges.push(value);
+  };
+  if (vehicle.photosVerified) addBadge("Photos Verified");
+  if (vehicle.rcVerified) addBadge("RC Verified");
+  if (vehicle.sellerVerified) addBadge("Verified Seller");
+  if (vehicle.yardVerified) addBadge("Yard Verified");
   for (const badge of vehicle.verifiedBadges || []) {
-    const readableBadge = asReadable(badge);
-    if (!badges.find((entry) => entry.toLowerCase() === readableBadge.toLowerCase())) {
-      badges.push(readableBadge);
-    }
+    addBadge(toReadableLabel(badge));
   }
   return badges.slice(0, 3);
 };
@@ -226,11 +233,17 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const metaLine = buildMetaLine(vehicle);
   const conditionChips = buildConditionChips(vehicle, showsRunning);
   const verificationBadges = buildVerificationBadges(vehicle);
-  const sellerDisplayName = vehicle.businessName || vehicle.sellerName;
-  const sellerRoleLabel = asReadable(vehicle.sellerRole);
+  const sellerDisplayName = vehicle.businessName || vehicle.sellerName || "Seller information unavailable";
+  const sellerRoleLabel = toReadableLabel(vehicle.sellerRole);
   const preferredImage = resolveImageSrcForRender(vehicle.image || vehicle.gallery[0]);
+  const listingTypeTagLabel =
+    vehicle.listingType === "REPO"
+      ? "Repo"
+      : vehicle.listingType === "REGULAR"
+        ? "Regular"
+        : toReadableLabel(vehicle.listingType);
   const topTags = [
-    vehicle.listingType === "REPO" ? "Repo" : "Regular",
+    listingTypeTagLabel,
     getListingModeLabel(vehicle.listingMode),
     ASSET_STRUCTURE_TAG_LABELS[classification.assetStructure] || "Standalone",
   ].filter(Boolean);
