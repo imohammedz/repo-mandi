@@ -1384,7 +1384,6 @@ export default function AddVehiclePage() {
           )}
           <TextAreaField label="Condition Notes" value={form.conditionNotes} onChange={(value) => update("conditionNotes", value)} required placeholder="Example: Engine running. Cabin work needed. Tyres missing." />
           <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
-          <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
         </section>
       ) : null}
 
