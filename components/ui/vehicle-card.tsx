@@ -12,7 +12,6 @@ import { SafeImage } from "@/components/ui/safe-image";
 import { formatEnumLabel } from "@/lib/formatting";
 import {
   getListingModeLabel,
-  hasEngineOrPowertrain,
   normalizeClassification,
 } from "@/lib/vehicle-classification";
 
@@ -178,7 +177,7 @@ const buildConditionChips = (vehicle: Vehicle, showsRunning: boolean) => {
   if (vehicle.bsNorm) chips.push(asReadable(vehicle.bsNorm));
   if (yesNoToken(vehicle.acCabin) === "YES") chips.push("AC Cabin");
   if (typeof vehicle.numberOfAxles === "number" && vehicle.numberOfAxles > 0) {
-    chips.push(`${vehicle.numberOfAxles} Axle`);
+    chips.push(`${vehicle.numberOfAxles} ${vehicle.numberOfAxles === 1 ? "Axle" : "Axles"}`);
   }
   if (vehicle.suspensionType) {
     const suspension = asReadable(vehicle.suspensionType);
@@ -214,16 +213,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const displayLocation =
     vehicle.vehicleOrYardLocation ||
     [vehicle.city, vehicle.state].filter(Boolean).join(", ");
-  const showsRunning = hasEngineOrPowertrain({
-    assetStructure: vehicle.assetStructure,
-    detachableType: vehicle.detachableType,
-    assetConfiguration: vehicle.assetConfiguration,
-  });
   const classification = normalizeClassification({
     assetStructure: vehicle.assetStructure,
     detachableType: vehicle.detachableType,
     assetConfiguration: vehicle.assetConfiguration,
   });
+  const showsRunning =
+    classification.assetStructure === "STANDALONE" ||
+    classification.assetStructure === "EQUIPMENT" ||
+    classification.detachableType === "PRIME_MOVER";
   const title = buildListingTitle(vehicle);
   const metaLine = buildMetaLine(vehicle);
   const conditionChips = buildConditionChips(vehicle, showsRunning);
@@ -234,7 +232,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const topTags = [
     vehicle.listingType === "REPO" ? "Repo" : "Regular",
     getListingModeLabel(vehicle.listingMode),
-    ASSET_STRUCTURE_TAG_LABELS[classification.assetStructure],
+    ASSET_STRUCTURE_TAG_LABELS[classification.assetStructure] || "Standalone",
   ].filter(Boolean);
 
   return (
