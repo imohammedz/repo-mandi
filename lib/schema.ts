@@ -26,6 +26,7 @@ export const vehicleTypeEnum = pgEnum("vehicle_type", [
   "Bus",
   "Trailer",
   "Tractor",
+  "Equipment",
 ]);
 
 export const fuelTypeEnum = pgEnum("fuel_type", ["Diesel", "CNG"]);
@@ -114,6 +115,22 @@ export const listingTypeEnum = pgEnum("listing_type", [
   "REPO",
 ]);
 
+export const listingModeEnum = pgEnum("listing_mode", [
+  "NORMAL",
+  "BULK",
+]);
+
+export const assetStructureEnum = pgEnum("asset_structure", [
+  "STANDALONE",
+  "DETACHABLE",
+  "EQUIPMENT",
+]);
+
+export const detachableTypeEnum = pgEnum("detachable_type", [
+  "PRIME_MOVER",
+  "TRAILER",
+]);
+
 export const kmMeterStatusEnum = pgEnum("km_meter_status", [
   "WORKING",
   "NOT_WORKING",
@@ -166,6 +183,8 @@ export const mediaCategoryEnum = pgEnum("vehicle_media_category", [
   "FRONT",
   "BACK",
   "SIDE",
+  "LEFT_SIDE",
+  "RIGHT_SIDE",
   "INTERIOR",
   "WALKAROUND",
   "ENGINE_STARTUP",
@@ -231,23 +250,39 @@ export const vehicles = pgTable("vehicles", {
   sellerId: integer("seller_id"),
   createdByUserId: integer("created_by_user_id"),
   listingType: listingTypeEnum("listing_type").notNull().default("REPO"),
+  listingMode: listingModeEnum("listing_mode").notNull().default("NORMAL"),
   assetConfiguration: text("asset_configuration").notNull().default("Complete Vehicle"),
+  assetStructure: assetStructureEnum("asset_structure"),
+  detachableType: detachableTypeEnum("detachable_type"),
   status: varchar("status", { length: 50 }).notNull().default("PENDING"),
   title: text("title").notNull(),
   type: vehicleTypeEnum("type").notNull(),
+  assetCategory: text("asset_category"),
   vehicleSubType: text("vehicle_sub_type"),
+  bodyApplicationType: text("body_application_type"),
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   year: integer("year").notNull(),
+  isRegistered: boolean("is_registered"),
   vehicleRegistrationNumber: text("vehicle_registration_number").notNull().default(""),
   kmDriven: integer("km_driven"),
   kmMeterStatus: kmMeterStatusEnum("km_meter_status").notNull().default("UNKNOWN"),
   runningCondition: runningConditionEnum("running_condition").notNull().default("UNKNOWN"),
   fuelType: fuelTypeEnum("fuel_type").notNull().default("Diesel"),
+  bsNorm: text("bs_norm"),
+  transmission: text("transmission"),
+  axleConfiguration: text("axle_configuration"),
+  horsepower: integer("horsepower"),
+  odometerReading: integer("odometer_reading"),
+  hourMeterReading: integer("hour_meter_reading"),
   axleType: text("axle_type").notNull().default(""),
   numberOfAxles: integer("number_of_axles"),
   bodyType: text("body_type"),
+  bodyLength: text("body_length"),
   bodyDimensions: text("body_dimensions"),
+  payloadCapacity: text("payload_capacity"),
+  bodyAttached: yesNoUnknownEnum("body_attached"),
+  bodyCondition: text("body_condition"),
   trailerType: text("trailer_type"),
   trailerLength: text("trailer_length"),
   trailerManufacturer: text("trailer_manufacturer"),
@@ -266,6 +301,8 @@ export const vehicles = pgTable("vehicles", {
   frontPhoto: text("front_photo").notNull().default(""),
   backPhoto: text("back_photo").notNull().default(""),
   sidePhoto: text("side_photo").notNull().default(""),
+  leftSidePhoto: text("left_side_photo").notNull().default(""),
+  rightSidePhoto: text("right_side_photo").notNull().default(""),
   interiorPhoto: text("interior_photo").notNull().default(""),
   walkaroundVideo: text("walkaround_video"),
   engineStartUpVideo: text("engine_startup_video"),
@@ -281,6 +318,7 @@ export const vehicles = pgTable("vehicles", {
   sellerRole: text("seller_role").notNull().default(""),
   sellerPhone: text("seller_phone").notNull().default(""),
   alternateContactNumber: text("alternate_contact_number").notNull().default(""),
+  alternateContactNumberVerified: boolean("alternate_contact_number_verified").notNull().default(false),
   businessName: text("business_name").notNull().default(""),
   gstin: text("gstin").notNull().default(""),
   condition: conditionEnum("condition").notNull().default("Running"),
@@ -299,12 +337,23 @@ export const vehicles = pgTable("vehicles", {
   fitnessExpiry: text("fitness_expiry").notNull().default(""),
   permitExpiry: text("permit_expiry").notNull().default(""),
   nocStatus: nocStatusEnum("noc_status"),
+  machineSerialNumber: text("machine_serial_number"),
   engineNumber: text("engine_number").notNull().default(""),
   chassisNumber: text("chassis_number").notNull().default(""),
   trailerNumber: text("trailer_number").notNull().default(""),
   gvwTonnes: text("gvw_tonnes").notNull().default(""),
   gpsInstalled: yesNoUnknownEnum("gps_installed"),
   abs: yesNoUnknownEnum("abs"),
+  batteryAvailable: yesNoUnknownEnum("battery_available"),
+  keyAvailable: yesNoUnknownEnum("key_available"),
+  acCabin: yesNoUnknownEnum("ac_cabin"),
+  tyresIncluded: yesNoUnknownEnum("tyres_included"),
+  rimsDiscsIncluded: yesNoUnknownEnum("rims_discs_included"),
+  batteryIncluded: yesNoUnknownEnum("battery_included"),
+  cabinAvailable: yesNoUnknownEnum("cabin_available"),
+  engineAvailable: yesNoUnknownEnum("engine_available"),
+  documentsAvailable: yesNoUnknownEnum("documents_available"),
+  remarks: text("remarks"),
   fleetManagementSoftwareAvailable: availabilityStatusEnum("fleet_management_software_available"),
   verifiedBadges: text("verified_badges").array().notNull().default([]),
   inspectionNotes: text("inspection_notes").array().notNull().default([]),
@@ -325,6 +374,7 @@ export const vehicles = pgTable("vehicles", {
   verifiedBy: integer("verified_by"),
   verifiedAt: timestamp("verified_at"),
   soldAt: timestamp("sold_at"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -337,8 +387,28 @@ export const vehicleMedia = pgTable("vehicle_media", {
   customName: text("custom_name"),
   url: text("url").notNull(),
   mimeType: text("mime_type").notNull().default(""),
+  sizeBytes: integer("size_bytes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const sellerVerifiedPhones = pgTable(
+  "seller_verified_phones",
+  {
+    id: serial("id").primaryKey(),
+    sellerId: integer("seller_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    verifiedAt: timestamp("verified_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    sellerPhoneUnique: uniqueIndex("seller_verified_phones_seller_phone_unique").on(
+      table.sellerId,
+      table.phone
+    ),
+  })
+);
 
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
@@ -409,6 +479,8 @@ export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
 export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
 export type DbVehicleMediaInsert = typeof vehicleMedia.$inferInsert;
+export type DbSellerVerifiedPhone = typeof sellerVerifiedPhones.$inferSelect;
+export type DbSellerVerifiedPhoneInsert = typeof sellerVerifiedPhones.$inferInsert;
 export type DbSavedListing = typeof savedListings.$inferSelect;
 export type DbSavedListingInsert = typeof savedListings.$inferInsert;
 export type DbPlatformSetting = typeof platformSettings.$inferSelect;

@@ -1,12 +1,15 @@
 export type VerificationFlag = "RC Verified" | "Yard Verified" | "Photos Verified";
 
 export type ListingType = "REGULAR" | "REPO";
+export type ListingMode = "NORMAL" | "BULK";
 export type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
 export type RunningCondition = "RUNNING" | "NOT_RUNNING" | "UNKNOWN";
 export type EngineCondition = "GOOD" | "AVERAGE" | "NEEDS_WORK" | "NOT_CHECKED" | "UNKNOWN";
 export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 export type TyreCondition = "NEW" | "GOOD" | "FAIR" | "AROUND_50" | "POOR" | "MIXED" | "UNKNOWN";
 export type AvailabilityStatus = "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN";
+export type AssetStructure = "STANDALONE" | "DETACHABLE" | "EQUIPMENT";
+export type DetachableType = "PRIME_MOVER" | "TRAILER";
 export type AssetConfiguration =
   | "Complete Vehicle"
   | "Power / Horse / Tractor / Prime Mover Only"
@@ -19,7 +22,10 @@ export type Vehicle = {
   sellerId?: number | null;
   createdByUserId?: number | null;
   listingType: ListingType;
+  listingMode?: ListingMode;
   assetConfiguration?: AssetConfiguration;
+  assetStructure?: AssetStructure | null;
+  detachableType?: DetachableType | null;
   status?: string;
   title: string;
   type:
@@ -34,20 +40,34 @@ export type Vehicle = {
     | "Tipper"
     | "Bus"
     | "Truck"
-    | "Tractor";
+    | "Tractor"
+    | "Equipment";
+  assetCategory?: string | null;
   vehicleSubType?: string | null;
+  bodyApplicationType?: string | null;
   brand: string;
   model: string;
   year: number;
+  isRegistered?: boolean | null;
   vehicleRegistrationNumber?: string;
   kmDriven: number | null;
   kmMeterStatus?: KmMeterStatus;
   runningCondition?: RunningCondition;
   fuelType: "Diesel" | "CNG";
+  bsNorm?: string | null;
+  transmission?: string | null;
+  axleConfiguration?: string | null;
+  horsepower?: number | null;
+  odometerReading?: number | null;
+  hourMeterReading?: number | null;
   axleType: string;
   numberOfAxles?: number | null;
   bodyType?: string | null;
+  bodyLength?: string | null;
   bodyDimensions?: string | null;
+  payloadCapacity?: string | null;
+  bodyAttached?: YesNoUnknown | null;
+  bodyCondition?: string | null;
   trailerType?: string | null;
   trailerLength?: string | null;
   trailerManufacturer?: string | null;
@@ -66,6 +86,8 @@ export type Vehicle = {
   frontPhoto?: string;
   backPhoto?: string;
   sidePhoto?: string;
+  leftSidePhoto?: string;
+  rightSidePhoto?: string;
   interiorPhoto?: string;
   walkaroundVideo?: string | null;
   engineStartUpVideo?: string | null;
@@ -81,6 +103,7 @@ export type Vehicle = {
   sellerRole: string;
   sellerPhone: string;
   alternateContactNumber?: string;
+  alternateContactNumberVerified?: boolean;
   businessName?: string;
   gstin?: string;
   condition: "Running" | "Non-running" | "Unknown";
@@ -99,12 +122,23 @@ export type Vehicle = {
   fitnessExpiry?: string;
   permitExpiry?: string;
   nocStatus?: "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN" | null;
+  machineSerialNumber?: string | null;
   engineNumber?: string;
   chassisNumber?: string;
   trailerNumber?: string;
   gvwTonnes?: string;
   gpsInstalled?: YesNoUnknown | null;
   abs?: YesNoUnknown | null;
+  batteryAvailable?: YesNoUnknown | null;
+  keyAvailable?: YesNoUnknown | null;
+  acCabin?: YesNoUnknown | null;
+  tyresIncluded?: YesNoUnknown | null;
+  rimsDiscsIncluded?: YesNoUnknown | null;
+  batteryIncluded?: YesNoUnknown | null;
+  cabinAvailable?: YesNoUnknown | null;
+  engineAvailable?: YesNoUnknown | null;
+  documentsAvailable?: YesNoUnknown | null;
+  remarks?: string | null;
   fleetManagementSoftwareAvailable?: AvailabilityStatus | null;
   verifiedBadges: VerificationFlag[];
   rcVerified?: boolean;
@@ -117,6 +151,7 @@ export type Vehicle = {
   verifiedBy?: number | null;
   verifiedAt?: string | null;
   soldAt?: string | null;
+  deletedAt?: string | null;
   missingPhotos?: boolean;
   priceTooLow?: boolean;
   duplicateRegistration?: boolean;

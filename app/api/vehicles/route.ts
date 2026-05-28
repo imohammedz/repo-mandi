@@ -1,9 +1,23 @@
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles, platformSettings } from "@/lib/schema";
-import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
+import { vehicleMedia, vehicles, platformSettings, sellerVerifiedPhones } from "@/lib/schema";
+import { eq, ilike, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
+import {
+  ASSET_STRUCTURE_VALUES,
+  LEGACY_ASSET_CONFIGURATION_VALUES,
+  LISTING_MODE_VALUES,
+  getAssetCategoryOptions,
+  getBodyApplicationOptions,
+  hasEngineOrPowertrain,
+  normalizeClassification,
+  normalizeListingMode,
+  toLegacyAssetConfiguration,
+  toLegacyVehicleType,
+  type AssetStructure,
+  type ListingMode,
+} from "@/lib/vehicle-classification";
 
 export const runtime = "nodejs";
 
@@ -27,13 +41,8 @@ type VehicleType = (typeof VALID_TYPES)[number];
 const VALID_LISTING_TYPES = ["REGULAR", "REPO"] as const;
 type ListingType = (typeof VALID_LISTING_TYPES)[number];
 
-const VALID_ASSET_CONFIGURATIONS = [
-  "Complete Vehicle",
-  "Power / Horse / Tractor / Prime Mover Only",
-  "Trailer Only",
-  "Prime Mover + Trailer",
-  "Other",
-] as const;
+const VALID_LISTING_MODES = LISTING_MODE_VALUES;
+const VALID_ASSET_CONFIGURATIONS = LEGACY_ASSET_CONFIGURATION_VALUES;
 type AssetConfiguration = (typeof VALID_ASSET_CONFIGURATIONS)[number];
 
 const VALID_KM_METER_STATUS = ["WORKING", "NOT_WORKING", "UNKNOWN"] as const;
@@ -113,6 +122,23 @@ function parseRunningCondition(value: unknown): RunningCondition {
   return LEGACY_RUNNING_MAP[normalized] ?? "UNKNOWN";
 }
 
+function parseBoolean(value: unknown) {
+  // Accept boolean payloads as well as YES/NO strings from form submissions.
+  if (typeof value === "boolean") return value;
+  const normalized = toSafeString(value).toUpperCase();
+  if (["YES", "TRUE", "1"].includes(normalized)) return true;
+  if (["NO", "FALSE", "0"].includes(normalized)) return false;
+  return null;
+}
+
+function parseYesNoUnknown(value: unknown) {
+  const normalized = toSafeString(value).toUpperCase();
+  if (["YES", "NO", "UNKNOWN"].includes(normalized)) {
+    return normalized as "YES" | "NO" | "UNKNOWN";
+  }
+  return null;
+}
+
 // ── GET /api/vehicles?type=&state=&q= ─────────────────────────────────────────
 export async function GET(request: Request) {
   try {
@@ -125,6 +151,8 @@ export async function GET(request: Request) {
     const brand = url.searchParams.get("brand");
     const financeCompany = url.searchParams.get("financeCompany");
     const listingType = url.searchParams.get("listingType");
+    const listingMode = url.searchParams.get("listingMode");
+    const assetStructure = url.searchParams.get("assetStructure");
     const assetConfiguration = url.searchParams.get("assetConfiguration");
     const mine = url.searchParams.get("mine") === "1";
     const includeAll = url.searchParams.get("includeAll") === "1";
@@ -146,6 +174,20 @@ export async function GET(request: Request) {
       );
     }
 
+    if (listingMode && !VALID_LISTING_MODES.includes(listingMode as ListingMode)) {
+      return Response.json(
+        { message: `listingMode must be one of: ${VALID_LISTING_MODES.join(", ")}.` },
+        { status: 400 }
+      );
+    }
+
+    if (assetStructure && !ASSET_STRUCTURE_VALUES.includes(assetStructure as AssetStructure)) {
+      return Response.json(
+        { message: `assetStructure must be one of: ${ASSET_STRUCTURE_VALUES.join(", ")}.` },
+        { status: 400 }
+      );
+    }
+
     if (assetConfiguration && !VALID_ASSET_CONFIGURATIONS.includes(assetConfiguration as AssetConfiguration)) {
       return Response.json(
         { message: `assetConfiguration must be one of: ${VALID_ASSET_CONFIGURATIONS.join(", ")}.` },
@@ -162,6 +204,7 @@ export async function GET(request: Request) {
       conditions.push(eq(vehicles.isPublished, true));
       conditions.push(eq(vehicles.listingStatus, "VERIFIED"));
     }
+    conditions.push(isNull(vehicles.deletedAt));
 
     if (mine) {
       if (!currentUser || !["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) {
@@ -172,6 +215,8 @@ export async function GET(request: Request) {
 
     if (type) conditions.push(eq(vehicles.type, type));
     if (listingType) conditions.push(eq(vehicles.listingType, listingType as ListingType));
+    if (listingMode) conditions.push(eq(vehicles.listingMode, listingMode as ListingMode));
+    if (assetStructure) conditions.push(eq(vehicles.assetStructure, assetStructure as AssetStructure));
     if (assetConfiguration) conditions.push(eq(vehicles.assetConfiguration, assetConfiguration as AssetConfiguration));
     if (state) conditions.push(eq(vehicles.state, state));
     if (city) conditions.push(ilike(vehicles.city, `%${city}%`));
@@ -204,6 +249,8 @@ export async function GET(request: Request) {
       frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto),
       backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto),
       sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto),
+      leftSidePhoto: sanitizeSupabaseMediaUrl(row.leftSidePhoto),
+      rightSidePhoto: sanitizeSupabaseMediaUrl(row.rightSidePhoto),
       interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto),
       walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
       engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
@@ -247,6 +294,17 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid listing type." }, { status: 400 });
     }
 
+    const listingMode = normalizeListingMode(toSafeString(body.listingMode));
+    if (!VALID_LISTING_MODES.includes(listingMode)) {
+      return Response.json({ message: "Invalid listing mode." }, { status: 400 });
+    }
+    if (listingMode === "BULK") {
+      return Response.json(
+        { message: "Bulk lot listings are coming soon. Contact RepoMandi to list multiple vehicles." },
+        { status: 400 }
+      );
+    }
+
     const sellerRole = currentUser.sellerRole ?? "";
     const canCreateRepo =
       currentUser.accountType === "BANK_PARTNER" ||
@@ -263,16 +321,50 @@ export async function POST(request: Request) {
       return Response.json({ message: "Your role can only create repo listings." }, { status: 403 });
     }
 
-    const assetConfigurationRaw = toSafeString(body.assetConfiguration);
-    const assetConfiguration = (assetConfigurationRaw || "Complete Vehicle") as AssetConfiguration;
-    if (!VALID_ASSET_CONFIGURATIONS.includes(assetConfiguration)) {
+    const legacyAssetConfigurationInput = toSafeString(body.assetConfiguration);
+    if (
+      legacyAssetConfigurationInput &&
+      !VALID_ASSET_CONFIGURATIONS.includes(legacyAssetConfigurationInput as AssetConfiguration)
+    ) {
       return Response.json({ message: "Invalid assetConfiguration." }, { status: 400 });
     }
 
-    const vehicleType = toSafeString(body.vehicleType || body.type) as VehicleType;
+    const classification = normalizeClassification({
+      assetStructure: toSafeString(body.assetStructure),
+      detachableType: toSafeString(body.detachableType),
+      assetConfiguration: legacyAssetConfigurationInput,
+    });
+    const assetStructure = classification.assetStructure;
+    const detachableType = classification.detachableType;
+    const assetConfiguration = toLegacyAssetConfiguration(assetStructure, detachableType);
+    const poweredAsset = hasEngineOrPowertrain({
+      assetStructure,
+      detachableType,
+    });
+    const isTrailerAsset = assetStructure === "DETACHABLE" && detachableType === "TRAILER";
+
+    const assetCategory = toSafeString(body.assetCategory || body.vehicleType || body.type);
+    const bodyApplicationType = toSafeString(
+      body.bodyApplicationType || body.vehicleSubType || body.bodyType
+    );
+    if (!assetCategory) {
+      return Response.json({ message: "assetCategory is required." }, { status: 400 });
+    }
+    if (!getAssetCategoryOptions(assetStructure, detachableType).includes(assetCategory)) {
+      return Response.json({ message: "Invalid assetCategory." }, { status: 400 });
+    }
+    if (
+      bodyApplicationType &&
+      !getBodyApplicationOptions(assetStructure, detachableType, assetCategory).includes(bodyApplicationType)
+    ) {
+      return Response.json({ message: "Invalid bodyApplicationType." }, { status: 400 });
+    }
+
+    const vehicleType = toLegacyVehicleType(assetCategory, assetStructure, detachableType) as VehicleType;
     const brand = toSafeString(body.brand);
     const model = toSafeString(body.model);
     const registrationState = toSafeString(body.registrationState);
+    const isRegistered = parseBoolean(body.isRegistered);
     // Step 4 only captures a single free-form location in MVP1.
     // Keep legacy state/city columns populated for backward compatibility with
     // existing schema consumers and filters while UI uses vehicleOrYardLocation.
@@ -283,11 +375,12 @@ export async function POST(request: Request) {
     const conditionNotes = toSafeString(body.conditionNotes);
     const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto);
     const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto);
-    const sidePhoto = sanitizeSupabaseMediaUrl(body.sidePhoto);
+    const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? body.sidePhoto);
+    const rightSidePhoto = sanitizeSupabaseMediaUrl(body.rightSidePhoto);
+    const sidePhoto = leftSidePhoto;
     const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto);
     const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : [];
-    const walkaroundVideo = sanitizeSupabaseMediaUrl(body.walkaroundVideo);
-    const engineStartUpVideo = sanitizeSupabaseMediaUrl(body.engineStartUpVideo ?? body.engineStartupVideo);
+    const videosRaw = Array.isArray(body.videos) ? (body.videos as unknown[]) : [];
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
@@ -296,6 +389,9 @@ export async function POST(request: Request) {
     const kmMeterStatus = (toSafeString(body.kmMeterStatus) || "UNKNOWN") as KmMeterStatus;
     const runningCondition = parseRunningCondition(body.runningCondition ?? body.condition);
     const kmDriven = toNumberOrNull(body.kmDriven);
+    // Keep odometer aligned with KM Driven when only the Step 3 field is supplied.
+    const odometerReading = toNumberOrNull(body.odometerReading ?? body.kmDriven);
+    const hourMeterReading = toNumberOrNull(body.hourMeterReading);
     const trailerType = toSafeString(body.trailerType);
     const trailerLength = toSafeString(body.trailerLength);
     const numberOfAxles = toNumberOrNull(body.numberOfAxles);
@@ -303,39 +399,39 @@ export async function POST(request: Request) {
     const suspensionType = toSafeString(body.suspensionType);
     const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
     const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
-    const isTrailerOnly = assetConfiguration === "Trailer Only";
-    const requiresPoweredFields = !isTrailerOnly;
-    // MVP1: Trailer specs are required only for Trailer Only listings.
-    const requiresTrailerFieldsForValidation = isTrailerOnly;
-    const requiresInteriorPhoto = !isTrailerOnly;
-    const normalizedInteriorPhoto = isTrailerOnly ? "" : interiorPhoto;
+    const normalizedInteriorPhoto = interiorPhoto;
 
     const financeCompany = toSafeString(body.financeCompany);
     const repoStatus = toSafeString(body.repoStatus || "Ready For Sale");
     const yardName = toSafeString(body.yardName);
+    const yardContact = toSafeString(body.yardContact);
+    const machineSerialNumber = toSafeString(body.machineSerialNumber);
+    const alternateContactNumber = toSafeString(body.alternateContactNumber).replace(/\D/g, "").slice(0, 10);
+    const alternateContactNumberVerified = body.alternateContactNumberVerified === true;
 
     const alwaysRequiredMissing: string[] = [];
-    if (!assetConfiguration) alwaysRequiredMissing.push("assetConfiguration");
-    if (!vehicleType) alwaysRequiredMissing.push("vehicleType");
-    if (requiresPoweredFields && !brand) alwaysRequiredMissing.push("brand");
-    if (requiresPoweredFields && !model) alwaysRequiredMissing.push("model");
-    if (requiresPoweredFields && !year) alwaysRequiredMissing.push("year");
-    if (requiresPoweredFields && !registrationState) alwaysRequiredMissing.push("registrationState");
-    if (requiresPoweredFields && !registrationNumber) alwaysRequiredMissing.push("vehicleRegistrationNumber");
-    if (requiresPoweredFields && !kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
-    if (requiresPoweredFields && !runningCondition) alwaysRequiredMissing.push("runningCondition");
-    if (requiresTrailerFieldsForValidation && !trailerType) alwaysRequiredMissing.push("trailerType");
-    if (requiresTrailerFieldsForValidation && !trailerLength) alwaysRequiredMissing.push("trailerLength");
-    if (requiresTrailerFieldsForValidation && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
-    if (requiresTrailerFieldsForValidation && !bodyDimensions) alwaysRequiredMissing.push("bodyDimensions");
+    if (!listingMode) alwaysRequiredMissing.push("listingMode");
+    if (!assetStructure) alwaysRequiredMissing.push("assetStructure");
+    if (assetStructure === "DETACHABLE" && !detachableType) alwaysRequiredMissing.push("detachableType");
+    if (!assetCategory) alwaysRequiredMissing.push("assetCategory");
+    if ((assetStructure === "STANDALONE" || detachableType === "PRIME_MOVER" || assetStructure === "EQUIPMENT") && !brand) {
+      alwaysRequiredMissing.push("brand");
+    }
+    if ((assetStructure === "STANDALONE" || detachableType === "PRIME_MOVER" || assetStructure === "EQUIPMENT") && !model) {
+      alwaysRequiredMissing.push("model");
+    }
+    if (!year) alwaysRequiredMissing.push("year");
+    if (poweredAsset && !registrationState) {
+      alwaysRequiredMissing.push("registrationState");
+    }
+    if (poweredAsset && !runningCondition) alwaysRequiredMissing.push("runningCondition");
+    if (isTrailerAsset && !trailerType) alwaysRequiredMissing.push("trailerType");
+    if (isTrailerAsset && !trailerLength) alwaysRequiredMissing.push("trailerLength");
+    if (isTrailerAsset && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
     if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
-    if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");
-    if (!backPhoto) alwaysRequiredMissing.push("backPhoto");
-    if (!sidePhoto) alwaysRequiredMissing.push("sidePhoto");
-    if (requiresInteriorPhoto && !normalizedInteriorPhoto) alwaysRequiredMissing.push("interiorPhoto");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(
@@ -356,13 +452,31 @@ export async function POST(request: Request) {
       .filter((item) => Boolean(item.url))
       .slice(0, MAX_PHOTOS);
 
-    const requiredPhotoCount = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto].filter(Boolean).length;
+    const videoItems = videosRaw
+      .map((item) => {
+        const it = item as Record<string, unknown>;
+        return {
+          url: sanitizeSupabaseMediaUrl(it?.url),
+          category: toSafeString(it?.category).toUpperCase() || "OTHER",
+          mimeType: toSafeString(it?.mimeType),
+          sizeBytes: toNumberOrNull(it?.sizeBytes),
+        };
+      })
+      .filter((item) => Boolean(item.url))
+      .slice(0, 3);
+
+    const requiredPhotoCount = [
+      frontPhoto,
+      backPhoto,
+      leftSidePhoto,
+      rightSidePhoto,
+      normalizedInteriorPhoto,
+    ].filter(Boolean).length;
     if (requiredPhotoCount + additionalPhotoItems.length > MAX_PHOTOS) {
       return Response.json({ message: `Maximum ${MAX_PHOTOS} photos allowed.` }, { status: 400 });
     }
-
-    if (isTrailerOnly && interiorPhoto) {
-      return Response.json({ message: "interiorPhoto is not allowed for Trailer Only assets." }, { status: 400 });
+    if (videoItems.length > 3) {
+      return Response.json({ message: "Maximum 3 videos allowed." }, { status: 400 });
     }
 
     if (!VALID_TYPES.includes(vehicleType)) {
@@ -377,7 +491,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid runningCondition." }, { status: 400 });
     }
 
-    if (requiresPoweredFields && !regNumberLooksValid(registrationNumber)) {
+    if (registrationNumber && !regNumberLooksValid(registrationNumber)) {
       return Response.json(
         { message: "Invalid vehicleRegistrationNumber format. Example: MH-12-AB-1234." },
         { status: 400 }
@@ -385,7 +499,7 @@ export async function POST(request: Request) {
     }
 
     const currentYear = new Date().getFullYear();
-    if (requiresPoweredFields && (year === null || year < MIN_VEHICLE_YEAR || year > currentYear)) {
+    if (year === null || year < MIN_VEHICLE_YEAR || year > currentYear) {
       return Response.json({ message: `Year must be between ${MIN_VEHICLE_YEAR} and current year.` }, { status: 400 });
     }
     const normalizedYear = year ?? currentYear;
@@ -394,32 +508,56 @@ export async function POST(request: Request) {
       return Response.json({ message: "expectedPrice must be a positive number." }, { status: 400 });
     }
 
-    if (requiresPoweredFields && kmMeterStatus === "WORKING" && (kmDriven === null || kmDriven < 0)) {
-      return Response.json({ message: "kmDriven is required when km meter is working." }, { status: 400 });
+    if (kmDriven !== null && kmDriven < 0) {
+      return Response.json({ message: "kmDriven cannot be negative." }, { status: 400 });
     }
 
     if (tyreInspectionReport && !VALID_AVAILABILITY_STATUS.includes(tyreInspectionReport as (typeof VALID_AVAILABILITY_STATUS)[number])) {
       return Response.json({ message: "Invalid tyreInspectionReport." }, { status: 400 });
     }
 
+    let normalizedAlternateContactNumber = "";
+    let normalizedAlternateContactNumberVerified = false;
+    if (alternateContactNumber) {
+      const [verifiedPhone] = await db
+        .select()
+        .from(sellerVerifiedPhones)
+        .where(
+          and(
+            eq(sellerVerifiedPhones.sellerId, currentUser.id),
+            eq(sellerVerifiedPhones.phone, alternateContactNumber)
+          )
+        );
+
+      if (verifiedPhone && alternateContactNumberVerified) {
+        normalizedAlternateContactNumber = alternateContactNumber;
+        normalizedAlternateContactNumberVerified = true;
+      }
+    }
+
     if (listingType === "REPO") {
-      if (!financeCompany || !repoStatus || !yardName) {
-        return Response.json({ message: "financeCompany, repoStatus, and yardName are required for repo listings." }, { status: 400 });
+      if (!financeCompany || !repoStatus || !yardName || !yardContact) {
+        return Response.json({ message: "financeCompany, repoStatus, yardName, and yardContact are required for repo listings." }, { status: 400 });
       }
       if (!VALID_REPO_STATUS.includes(repoStatus as (typeof VALID_REPO_STATUS)[number])) {
         return Response.json({ message: "Invalid repoStatus." }, { status: 400 });
       }
     }
 
-    const title = [vehicleType, toSafeString(body.vehicleSubType), brand, model, normalizedYear]
+    const title = [assetCategory, bodyApplicationType, brand, model, normalizedYear]
       .filter(Boolean)
       .join(" ");
     const id = nanoid(title, brand, model, normalizedYear);
+    const walkaroundVideo =
+      videoItems.find((item) => item.category === "WALKAROUND")?.url ?? null;
+    const engineStartUpVideo =
+      videoItems.find((item) => item.category === "ENGINE_STARTUP")?.url ?? null;
 
     const gallery = sanitizeSupabaseMediaArray([
       frontPhoto,
       backPhoto,
-      sidePhoto,
+      leftSidePhoto,
+      rightSidePhoto,
       normalizedInteriorPhoto,
       ...additionalPhotoItems.map((p) => p.url),
     ]);
@@ -439,23 +577,39 @@ export async function POST(request: Request) {
         sellerId: currentUser.id,
         createdByUserId: currentUser.id,
         listingType,
+        listingMode,
         assetConfiguration,
+        assetStructure,
+        detachableType,
         status: autoApprove ? "VERIFIED" : "PENDING",
         title,
         type: vehicleType,
-        vehicleSubType: toSafeString(body.vehicleSubType) || null,
+        assetCategory,
+        vehicleSubType: bodyApplicationType || null,
+        bodyApplicationType: bodyApplicationType || null,
         brand,
         model,
         year: normalizedYear,
+        isRegistered,
         vehicleRegistrationNumber: registrationNumber,
         registrationState,
         kmMeterStatus,
-        kmDriven: requiresPoweredFields && kmMeterStatus === "WORKING" ? kmDriven : null,
-        runningCondition: requiresPoweredFields ? runningCondition : "UNKNOWN",
+        kmDriven,
+        runningCondition: poweredAsset ? runningCondition : "UNKNOWN",
         fuelType: "Diesel",
+        bsNorm: toSafeString(body.bsNorm) || null,
+        transmission: toSafeString(body.transmission) || null,
+        axleConfiguration: toSafeString(body.axleConfiguration) || null,
+        horsepower: toNumberOrNull(body.horsepower),
+        odometerReading,
+        hourMeterReading,
         numberOfAxles,
         bodyType: toSafeString(body.bodyType) || null,
+        bodyLength: toSafeString(body.bodyLength) || null,
         bodyDimensions: bodyDimensions || null,
+        payloadCapacity: toSafeString(body.payloadCapacity) || null,
+        bodyAttached: parseYesNoUnknown(body.bodyAttached),
+        bodyCondition: toSafeString(body.bodyCondition) || null,
         trailerType: trailerType || null,
         trailerLength: trailerLength || null,
         trailerManufacturer: toSafeString(body.trailerManufacturer) || null,
@@ -479,11 +633,13 @@ export async function POST(request: Request) {
         city,
         state,
         vehicleOrYardLocation: location,
-        image: frontPhoto,
+        image: frontPhoto || backPhoto || leftSidePhoto || rightSidePhoto || normalizedInteriorPhoto || "",
         gallery,
         frontPhoto,
         backPhoto,
         sidePhoto,
+        leftSidePhoto,
+        rightSidePhoto,
         interiorPhoto: normalizedInteriorPhoto,
         walkaroundVideo: walkaroundVideo || null,
         engineStartUpVideo: engineStartUpVideo || null,
@@ -505,7 +661,8 @@ export async function POST(request: Request) {
         sellerName: currentUser.fullName,
         sellerRole: currentUser.sellerRole || currentUser.bankRole || "",
         sellerPhone: currentUser.phone,
-        alternateContactNumber: toSafeString(body.alternateContactNumber),
+        alternateContactNumber: normalizedAlternateContactNumber,
+        alternateContactNumberVerified: normalizedAlternateContactNumberVerified,
         businessName: currentUser.businessName,
         gstin: toSafeString(body.gstin),
         condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
@@ -526,7 +683,7 @@ export async function POST(request: Request) {
         accidentNotes: toSafeString(body.accidentNotes),
         auctionDate: toSafeString(body.auctionDate),
         yardName: listingType === "REPO" ? yardName : "",
-        yardContact: toSafeString(body.yardContact),
+        yardContact,
         yardLocation: location,
         taxDue: toSafeString(body.taxDue),
         challans: toSafeString(body.challans),
@@ -538,12 +695,23 @@ export async function POST(request: Request) {
           | "NOT_AVAILABLE"
           | "UNKNOWN"
           | null,
+        machineSerialNumber: machineSerialNumber || null,
         engineNumber: toSafeString(body.engineNumber),
         chassisNumber: toSafeString(body.chassisNumber),
         trailerNumber: toSafeString(body.trailerNumber),
         gvwTonnes: toSafeString(body.gvwTonnes),
         gpsInstalled: (toSafeString(body.gpsInstalled).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
         abs: (abs || null) as "YES" | "NO" | "UNKNOWN" | null,
+        batteryAvailable: parseYesNoUnknown(body.batteryAvailable),
+        keyAvailable: parseYesNoUnknown(body.keyAvailable),
+        acCabin: parseYesNoUnknown(body.acCabin),
+        tyresIncluded: parseYesNoUnknown(body.tyresIncluded),
+        rimsDiscsIncluded: parseYesNoUnknown(body.rimsDiscsIncluded),
+        batteryIncluded: parseYesNoUnknown(body.batteryIncluded),
+        cabinAvailable: parseYesNoUnknown(body.cabinAvailable),
+        engineAvailable: parseYesNoUnknown(body.engineAvailable),
+        documentsAvailable: parseYesNoUnknown(body.documentsAvailable),
+        remarks: toSafeString(body.remarks) || null,
         fleetManagementSoftwareAvailable: (toSafeString(body.fleetManagementSoftwareAvailable).toUpperCase().replace(/\s+/g, "_") || null) as
           | "AVAILABLE"
           | "NOT_AVAILABLE"
@@ -558,7 +726,7 @@ export async function POST(request: Request) {
         photosVerified: false,
         yardVerified: false,
         sellerVerified: currentUser.isVerified,
-        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || (requiresInteriorPhoto && !normalizedInteriorPhoto),
+        missingPhotos: !frontPhoto || !backPhoto || !leftSidePhoto || !rightSidePhoto,
         priceTooLow: expectedPrice < MIN_REASONABLE_PRICE,
         duplicateRegistration: false,
         newSeller: !currentUser.isVerified,
@@ -569,47 +737,70 @@ export async function POST(request: Request) {
       })
       .returning();
 
-    const mediaRows = [
-      { type: "PHOTO", category: "FRONT", url: frontPhoto },
-      { type: "PHOTO", category: "BACK", url: backPhoto },
-      { type: "PHOTO", category: "SIDE", url: sidePhoto },
-      { type: "PHOTO", category: "INTERIOR", url: interiorPhoto },
-      ...(walkaroundVideo
-        ? [{ type: "VIDEO", category: "WALKAROUND", url: walkaroundVideo }]
-        : []),
-      ...(engineStartUpVideo
-        ? [{ type: "VIDEO", category: "ENGINE_STARTUP", url: engineStartUpVideo }]
-        : []),
-      ...(toSafeString(body.inspectionReport)
-        ? [{ type: "DOCUMENT", category: "INSPECTION_REPORT", url: toSafeString(body.inspectionReport) }]
-        : []),
-      ...(toSafeString(body.rcDocument)
-        ? [{ type: "DOCUMENT", category: "RC", url: toSafeString(body.rcDocument) }]
-        : []),
-      ...(toSafeString(body.insuranceDocument)
-        ? [{ type: "DOCUMENT", category: "INSURANCE", url: toSafeString(body.insuranceDocument) }]
-        : []),
-      ...(toSafeString(body.fitnessDocument)
-        ? [{ type: "DOCUMENT", category: "FITNESS", url: toSafeString(body.fitnessDocument) }]
-        : []),
-      ...(toSafeString(body.permitDocument)
-        ? [{ type: "DOCUMENT", category: "PERMIT", url: toSafeString(body.permitDocument) }]
-        : []),
-      ...additionalPhotoItems.map((p) => {
-        const rawCat = p.category ? p.category.toUpperCase() : "";
-        const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCat) ? rawCat : "OTHER";
-        return { type: "PHOTO", category, url: p.url };
-      }),
-    ].filter((item) => Boolean(item.url));
+    type MediaRow = {
+      type: typeof vehicleMedia.type._.data;
+      category: typeof vehicleMedia.category._.data;
+      url: string;
+      mimeType?: string;
+      sizeBytes?: number | null;
+    };
+    const mediaRows: MediaRow[] = [];
+    if (frontPhoto) mediaRows.push({ type: "PHOTO", category: "FRONT", url: frontPhoto });
+    if (backPhoto) mediaRows.push({ type: "PHOTO", category: "BACK", url: backPhoto });
+    if (leftSidePhoto) mediaRows.push({ type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto });
+    if (rightSidePhoto) mediaRows.push({ type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto });
+    if (sidePhoto) mediaRows.push({ type: "PHOTO", category: "SIDE", url: sidePhoto });
+    if (interiorPhoto) mediaRows.push({ type: "PHOTO", category: "INTERIOR", url: interiorPhoto });
+
+    for (const video of videoItems) {
+      mediaRows.push({
+        type: "VIDEO",
+        category: ["WALKAROUND", "ENGINE_STARTUP", "DAMAGE", "OTHER"].includes(video.category)
+          ? (video.category as MediaRow["category"])
+          : "OTHER",
+        url: video.url,
+        mimeType: video.mimeType,
+        sizeBytes: video.sizeBytes,
+      });
+    }
+
+    const documentRows: Array<{ value: string; category: MediaRow["category"] }> = [
+      { value: toSafeString(body.inspectionReport), category: "INSPECTION_REPORT" },
+      { value: toSafeString(body.rcDocument), category: "RC" },
+      { value: toSafeString(body.insuranceDocument), category: "INSURANCE" },
+      { value: toSafeString(body.fitnessDocument), category: "FITNESS" },
+      { value: toSafeString(body.permitDocument), category: "PERMIT" },
+    ];
+    for (const documentRow of documentRows) {
+      if (!documentRow.value) continue;
+      mediaRows.push({
+        type: "DOCUMENT",
+        category: documentRow.category,
+        url: documentRow.value,
+      });
+    }
+
+    for (const photo of additionalPhotoItems) {
+      const rawCat = photo.category ? photo.category.toUpperCase() : "";
+      const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCat)
+        ? (rawCat as MediaRow["category"])
+        : "OTHER";
+      mediaRows.push({
+        type: "PHOTO",
+        category,
+        url: photo.url,
+      });
+    }
 
     if (mediaRows.length > 0) {
       await db.insert(vehicleMedia).values(
         mediaRows.map((item) => ({
           vehicleId: inserted.id,
-          type: item.type as typeof vehicleMedia.type._.data,
-          category: item.category as typeof vehicleMedia.category._.data,
+          type: item.type,
+          category: item.category,
           url: item.url,
-          mimeType: "",
+          mimeType: item.mimeType || "",
+          sizeBytes: item.sizeBytes ?? null,
           customName: null,
         }))
       );
@@ -622,6 +813,8 @@ export async function POST(request: Request) {
         frontPhoto: inserted.frontPhoto,
         backPhoto: inserted.backPhoto,
         sidePhoto: inserted.sidePhoto,
+        leftSidePhoto: inserted.leftSidePhoto,
+        rightSidePhoto: inserted.rightSidePhoto,
         interiorPhoto: inserted.interiorPhoto,
         walkaroundVideo: inserted.walkaroundVideo,
         engineStartUpVideo: inserted.engineStartUpVideo,

@@ -6,7 +6,7 @@ import { featuredVehicles, vehicleCategories } from "@/data/vehicles";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Vehicle } from "@/types/vehicle";
 
 const trustItems = [
@@ -27,7 +27,13 @@ export default async function HomePage() {
       const recentListingsRows = await db
         .select()
         .from(vehiclesTable)
-        .where(and(eq(vehiclesTable.isPublished, true), eq(vehiclesTable.listingStatus, "VERIFIED")))
+        .where(
+          and(
+            eq(vehiclesTable.isPublished, true),
+            eq(vehiclesTable.listingStatus, "VERIFIED"),
+            isNull(vehiclesTable.deletedAt)
+          )
+        )
         .orderBy(desc(vehiclesTable.createdAt))
         .limit(3);
       recentVehicles = recentListingsRows.map(dbToVehicle);

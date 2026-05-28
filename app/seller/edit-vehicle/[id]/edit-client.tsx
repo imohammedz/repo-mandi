@@ -22,6 +22,7 @@ export default function EditVehicleClient({ vehicle }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
 
   const set = (key: keyof typeof form) => (val: string) =>
@@ -31,19 +32,21 @@ export default function EditVehicleClient({ vehicle }: Props) {
     setSaving(true);
     setError("");
     try {
-      const response = await fetch(`/api/vehicles/${vehicle.id}`, {
-        method: "PUT",
+      const response = await fetch(`/api/seller/vehicles/${vehicle.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, price: form.price }),
+        body: JSON.stringify({ ...form, expectedPrice: form.price, vehicleOrYardLocation: form.yardLocation }),
       });
       if (!response.ok) {
         const data = (await response.json()) as { message?: string };
         setError(data.message ?? "Failed to save changes.");
         return;
       }
+      const data = (await response.json()) as { message?: string };
+      setSuccessMessage(data.message ?? "Changes saved.");
       setSaved(true);
       setTimeout(() => {
-        router.push("/seller/dashboard");
+        router.push("/seller/listings");
       }, 1200);
     } catch {
       setError("Unable to save right now. Please try again.");
@@ -53,11 +56,11 @@ export default function EditVehicleClient({ vehicle }: Props) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Delete this vehicle listing? This cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to delete this listing?")) return;
     setDeleting(true);
     setError("");
     try {
-      const response = await fetch(`/api/vehicles/${vehicle.id}`, {
+      const response = await fetch(`/api/seller/vehicles/${vehicle.id}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -65,7 +68,7 @@ export default function EditVehicleClient({ vehicle }: Props) {
         setError(data.message ?? "Failed to delete vehicle.");
         return;
       }
-      router.push("/seller/dashboard");
+      router.push("/seller/listings");
     } catch {
       setError("Unable to delete right now. Please try again.");
     } finally {
@@ -78,7 +81,7 @@ export default function EditVehicleClient({ vehicle }: Props) {
       <main className="flex min-h-[calc(100dvh-80px)] flex-col items-center justify-center px-4 py-10 text-center">
         <CheckCircle2 className="h-16 w-16 text-emerald-500" />
         <h1 className="mt-4 text-xl font-semibold text-slate-900">Changes Saved!</h1>
-        <p className="mt-2 text-sm text-slate-500">Redirecting to your dashboard…</p>
+        <p className="mt-2 text-sm text-slate-500">{successMessage || "Redirecting to your listings…"}</p>
       </main>
     );
   }
