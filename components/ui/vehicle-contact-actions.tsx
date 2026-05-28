@@ -11,6 +11,7 @@ type Props = {
   vehicleTitle: string;
   className?: string;
   showRequestDetails?: boolean;
+  layout?: "stacked" | "inline";
 };
 
 const otpPattern = /^\d{6}$/;
@@ -30,6 +31,7 @@ export function VehicleContactActions({
   vehicleTitle,
   className = "",
   showRequestDetails = true,
+  layout = "stacked",
 }: Props) {
   const [action, setAction] = useState<ContactSource | null>(null);
   const [buyerName, setBuyerName] = useState("");
@@ -209,7 +211,7 @@ export function VehicleContactActions({
   return (
     <>
       <div className={className}>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${layout === "inline" && showRequestDetails ? "grid-cols-3" : "grid-cols-2"}`}>
           <button
             onClick={() => openActionSheet("CALL")}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
@@ -224,9 +226,17 @@ export function VehicleContactActions({
             <MessageCircle className="h-4 w-4" />
             WhatsApp
           </button>
+          {showRequestDetails && layout === "inline" ? (
+            <button
+              onClick={() => openActionSheet("REQUEST_DETAILS")}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
+            >
+              Request
+            </button>
+          ) : null}
         </div>
 
-        {showRequestDetails ? (
+        {showRequestDetails && layout === "stacked" ? (
           <button
             onClick={() => openActionSheet("REQUEST_DETAILS")}
             className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
