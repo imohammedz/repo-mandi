@@ -8,6 +8,7 @@ import { SafeImage } from "@/components/ui/safe-image";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   ASSET_STRUCTURE_LABELS,
+  DETACHABLE_TYPE_HELPER_TEXT,
   DETACHABLE_TYPE_LABELS,
   getAssetCategoryOptions,
   getBodyApplicationOptions,
@@ -16,10 +17,29 @@ import {
   type AssetStructure,
   type DetachableType,
 } from "@/lib/vehicle-classification";
+import { formatEnumLabel } from "@/lib/formatting";
 
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
 type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
+type Msg91InitConfig = {
+  widgetId: string;
+  tokenAuth: string;
+  identifier: string;
+  exposeMethods?: boolean;
+  captchaRenderId?: string;
+  success?: (payload: unknown) => void;
+  failure?: (payload: unknown) => void;
+};
+
+declare global {
+  interface Window {
+    initSendOTP?: (config: Msg91InitConfig) => void;
+  }
+}
+
+const MSG91_WIDGET_ID = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ?? "";
+const MSG91_WIDGET_TOKEN = process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN ?? "";
 
 type SessionUser = {
   id: number;
@@ -34,9 +54,105 @@ type SessionUser = {
   isProfileComplete: boolean;
 };
 
-type UploadCategory = "frontPhoto" | "backPhoto" | "sidePhoto" | "interiorPhoto";
+type UploadCategory =
+  | "frontPhoto"
+  | "backPhoto"
+  | "leftSidePhoto"
+  | "rightSidePhoto"
+  | "interiorPhoto";
 
 type AdditionalPhoto = { url: string; category: string };
+type UploadedVideo = { url: string; category: string; mimeType: string; sizeBytes: number };
+
+function getString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function getObject(value: unknown) {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function looksLikeMsg91Token(value: string) {
+  return value.length >= 20 && !/\s/.test(value);
+}
+
+function extractMsg91Token(payload: unknown) {
+  const roots = [getObject(payload), getObject(getObject(payload)?.data)];
+  for (const root of roots) {
+    if (!root) continue;
+    for (const key of ["access-token", "accessToken", "token"]) {
+      const candidate = getString(root[key]);
+      if (candidate) return candidate;
+    }
+    const messageToken = getString(root.message);
+    if (messageToken && looksLikeMsg91Token(messageToken)) {
+      return messageToken;
+    }
+  }
+  return null;
+}
+
+function extractErrorMessage(payload: unknown) {
+  const roots = [getObject(payload), getObject(getObject(payload)?.error), getObject(getObject(payload)?.data)];
+  for (const root of roots) {
+    if (!root) continue;
+    for (const key of ["message", "error", "details", "type"]) {
+      const candidate = getString(root[key]);
+      if (candidate) return candidate;
+    }
+  }
+  return null;
+}
+
+async function waitForMsg91Widget(timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (typeof window !== "undefined" && typeof window.initSendOTP === "function") {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("OTP service is unavailable right now. Please try again.");
+}
+
+let msg91ScriptLoadPromise: Promise<void> | null = null;
+
+function loadMsg91ScriptWithFallback() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("OTP service is unavailable right now. Please try again."));
+  }
+  if (typeof window.initSendOTP === "function") {
+    return Promise.resolve();
+  }
+  if (msg91ScriptLoadPromise) {
+    return msg91ScriptLoadPromise;
+  }
+
+  const urls = ["https://verify.msg91.com/otp-provider.js", "https://verify.phone91.com/otp-provider.js"];
+  msg91ScriptLoadPromise = new Promise<void>((resolve, reject) => {
+    const attempt = (index: number) => {
+      if (index >= urls.length) {
+        reject(new Error("Unable to load OTP widget. Please check your network and try again."));
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = urls[index];
+      script.async = true;
+      script.onload = () => {
+        waitForMsg91Widget(6000).then(resolve).catch(() => attempt(index + 1));
+      };
+      script.onerror = () => attempt(index + 1);
+      document.head.appendChild(script);
+    };
+
+    attempt(0);
+  }).catch((error: unknown) => {
+    msg91ScriptLoadPromise = null;
+    throw error instanceof Error ? error : new Error("Unable to load OTP widget right now.");
+  });
+
+  return msg91ScriptLoadPromise;
+}
 
 type FormData = {
   listingType: ListingType | "";
@@ -72,12 +188,12 @@ type FormData = {
   hourMeterReading: string;
   batteryAvailable: string;
   keyAvailable: string;
+  acCabin: string;
   frontPhoto: string;
   backPhoto: string;
-  sidePhoto: string;
+  leftSidePhoto: string;
+  rightSidePhoto: string;
   interiorPhoto: string;
-  walkaroundVideo: string;
-  engineStartUpVideo: string;
   financeCompany: string;
   repoStatus: string;
   yardName: string;
@@ -126,6 +242,7 @@ type FormData = {
   fitnessDocument: string;
   permitDocument: string;
   alternateContactNumber: string;
+  alternateContactNumberVerified: boolean;
   gstin: string;
 };
 
@@ -172,15 +289,20 @@ const fuelTypeOptions = ["Diesel", "CNG"];
 const bsNormOptions = ["BS3", "BS4", "BS6", "UNKNOWN"];
 const transmissionOptions = ["Manual", "Automatic", "Semi-Automatic", "Unknown"];
 const yesNoUnknownOptions = ["YES", "NO", "UNKNOWN"] as const;
-const yesNoOptions = ["YES", "NO"] as const;
 const runningConditionOptions = ["RUNNING", "NOT_RUNNING", "UNKNOWN"];
-const kmMeterStatusOptions = ["WORKING", "NOT_WORKING", "UNKNOWN"];
 const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"];
 const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Other"];
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
 const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
+const videoCategoryOptions = [
+  { value: "WALKAROUND", label: "Walkaround Video" },
+  { value: "ENGINE_STARTUP", label: "Engine Start Video" },
+  { value: "DAMAGE", label: "Damage Video" },
+  { value: "OTHER", label: "Other Video" },
+] as const;
 
 const MAX_PHOTOS = 20;
+const MAX_VIDEOS = 3;
 
 const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
   { value: "TYRES", label: "Tyres" },
@@ -284,12 +406,12 @@ const emptyForm: FormData = {
   hourMeterReading: "",
   batteryAvailable: "",
   keyAvailable: "",
+  acCabin: "",
   frontPhoto: "",
   backPhoto: "",
-  sidePhoto: "",
+  leftSidePhoto: "",
+  rightSidePhoto: "",
   interiorPhoto: "",
-  walkaroundVideo: "",
-  engineStartUpVideo: "",
   financeCompany: "",
   repoStatus: "",
   yardName: "",
@@ -338,6 +460,7 @@ const emptyForm: FormData = {
   fitnessDocument: "",
   permitDocument: "",
   alternateContactNumber: "",
+  alternateContactNumberVerified: false,
   gstin: "",
 };
 
@@ -373,7 +496,7 @@ function SelectField({
         <option value="">Select</option>
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {formatEnumLabel(option)}
           </option>
         ))}
       </select>
@@ -471,34 +594,45 @@ export default function AddVehiclePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [additionalPhotos, setAdditionalPhotos] = useState<AdditionalPhoto[]>([]);
+  const [videos, setVideos] = useState<UploadedVideo[]>([]);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [pendingAdditionalAction, setPendingAdditionalAction] = useState<"new" | number>("new");
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [pendingVideoAction, setPendingVideoAction] = useState<"new" | number>("new");
+  const [verifyingAlternatePhone, setVerifyingAlternatePhone] = useState(false);
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
-    sidePhoto: useRef<HTMLInputElement>(null),
+    leftSidePhoto: useRef<HTMLInputElement>(null),
+    rightSidePhoto: useRef<HTMLInputElement>(null),
     interiorPhoto: useRef<HTMLInputElement>(null),
   };
   const additionalFileRef = useRef<HTMLInputElement>(null);
+  const videoFileRef = useRef<HTMLInputElement>(null);
 
   const update = <T extends keyof FormData>(key: T, value: FormData[T]) => {
     setForm((previous) => {
       const next = { ...previous, [key]: value };
 
       if (key === "assetStructure") {
-        next.assetCategory = "";
-        next.bodyApplicationType = "";
-        if (value !== "DETACHABLE") next.detachableType = "";
-        if (value === "EQUIPMENT") next.isRegistered = "NO";
+       next.assetCategory = "";
+       next.bodyApplicationType = "";
+       if (value !== "DETACHABLE") next.detachableType = "";
       }
 
       if (key === "detachableType") {
-        next.assetCategory = "";
-        next.bodyApplicationType = "";
+       next.assetCategory = "";
+       next.bodyApplicationType = "";
       }
 
-      if (key === "isRegistered" && value !== "YES") {
-        next.vehicleRegistrationNumber = "";
+      if (key === "assetCategory") {
+       next.bodyApplicationType = "";
+      }
+
+      if (key === "alternateContactNumber") {
+       const sanitized = String(value).replace(/\D/g, "").slice(0, 10);
+       next.alternateContactNumber = sanitized;
+       next.alternateContactNumberVerified = false;
       }
 
       return next;
@@ -563,18 +697,30 @@ export default function AddVehiclePage() {
     assetStructure: form.assetStructure || undefined,
     detachableType: form.detachableType || undefined,
   });
-  const registrationNumberRequired = isPrimeMover || (isStandalone && form.isRegistered === "YES");
   const assetCategoryOptions =
     form.assetStructure && (!isDetachable || form.detachableType)
       ? getAssetCategoryOptions(form.assetStructure, form.detachableType || undefined)
       : [];
   const bodyApplicationOptions =
     form.assetStructure && (!isDetachable || form.detachableType)
-      ? getBodyApplicationOptions(form.assetStructure, form.detachableType || undefined)
+      ? getBodyApplicationOptions(
+          form.assetStructure,
+          form.detachableType || undefined,
+          form.assetCategory || undefined
+        )
       : [];
-  const uploadedRequiredPhotoCount = [form.frontPhoto, form.backPhoto, form.sidePhoto].filter(Boolean).length;
+  const uploadedRequiredPhotoCount = [
+    form.frontPhoto,
+    form.backPhoto,
+    form.leftSidePhoto,
+    form.rightSidePhoto,
+  ].filter(Boolean).length;
   const totalPhotosCount = uploadedRequiredPhotoCount + (form.interiorPhoto ? 1 : 0) + additionalPhotos.length;
   const canAddMorePhotos = totalPhotosCount < MAX_PHOTOS;
+  const canAddMoreVideos = videos.length < MAX_VIDEOS;
+  const standaloneShowsSuspension =
+    isStandalone &&
+    (!form.bodyApplicationType || form.bodyApplicationType === "Prime Mover + Trailer" || form.assetCategory === "HCV");
 
   const validateStep = (targetStep: number) => {
     if (targetStep === STEP_LISTING) {
@@ -589,17 +735,14 @@ export default function AddVehiclePage() {
       if (!form.year) return "Year is required.";
       if ((isStandalone || isPrimeMover || isEquipment) && !form.brand) return "Brand / make is required.";
       if ((isStandalone || isPrimeMover || isEquipment) && !form.model) return "Model is required.";
-      if (isStandalone && !form.isRegistered) return "Select whether the vehicle is registered.";
-      if ((isStandalone || isPrimeMover) && !form.registrationState) return "Registration state is required.";
-      if (registrationNumberRequired && !form.vehicleRegistrationNumber.trim()) {
-        return "Registration number is required.";
+      if (poweredAsset && !form.registrationState.trim()) {
+        return "Registered state / RTO is required.";
       }
     }
 
     if (targetStep === STEP_CONDITION) {
       if (poweredAsset) {
-        if (!form.kmMeterStatus || !form.runningCondition) return "KM meter status and running condition are required.";
-        if (form.kmMeterStatus === "WORKING" && !form.kmDriven.trim()) return "KM driven is required when the meter is working.";
+        if (!form.runningCondition) return "Running condition is required.";
       }
       if (!form.conditionNotes.trim()) return "Condition notes are required.";
     }
@@ -618,12 +761,6 @@ export default function AddVehiclePage() {
     if (targetStep === STEP_TECHNICAL && isTrailerAsset) {
       if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim()) {
         return "Trailer type, trailer length, and number of axles are required for trailer listings.";
-      }
-    }
-
-    if (targetStep === STEP_PHOTOS) {
-      if (!form.frontPhoto || !form.backPhoto || !form.sidePhoto) {
-        return "Front, back, and side photos are required.";
       }
     }
 
@@ -680,7 +817,13 @@ export default function AddVehiclePage() {
     setUploadingAdditional(true);
     setError("");
     const baseAdditionalCount = additionalPhotos.length;
-    const baseRequiredCount = [form.frontPhoto, form.backPhoto, form.sidePhoto, form.interiorPhoto].filter(Boolean).length;
+    const baseRequiredCount = [
+      form.frontPhoto,
+      form.backPhoto,
+      form.leftSidePhoto,
+      form.rightSidePhoto,
+      form.interiorPhoto,
+    ].filter(Boolean).length;
     const results: AdditionalPhoto[] = [];
 
     for (const file of files) {
@@ -747,6 +890,171 @@ export default function AddVehiclePage() {
     if (additionalFileRef.current) additionalFileRef.current.value = "";
   };
 
+  const uploadVideos = async (files: File[]) => {
+    if (!files.length) return;
+    setUploadingVideo(true);
+    setError("");
+    const results: UploadedVideo[] = [];
+
+    for (const file of files) {
+      if (videos.length + results.length >= MAX_VIDEOS) {
+        setError(`Maximum ${MAX_VIDEOS} videos allowed.`);
+        break;
+      }
+
+      try {
+        const payload = new FormData();
+        payload.append("files", file);
+        payload.append("mediaType", "video");
+        const response = await fetch("/api/uploads", { method: "POST", body: payload });
+        const data = (await response.json()) as {
+          files?: Array<{ url: string; mimeType: string; sizeBytes: number }>;
+          message?: string;
+        };
+        const uploaded = data.files?.[0];
+        if (!response.ok || !uploaded?.url) {
+          setError(data.message ?? "Failed to upload video.");
+          break;
+        }
+        results.push({
+          url: uploaded.url,
+          category: "WALKAROUND",
+          mimeType: uploaded.mimeType,
+          sizeBytes: uploaded.sizeBytes,
+        });
+      } catch {
+        setError("Failed to upload video.");
+        break;
+      }
+    }
+
+    if (results.length) {
+      setVideos((previous) => [...previous, ...results]);
+    }
+    setUploadingVideo(false);
+    if (videoFileRef.current) videoFileRef.current.value = "";
+  };
+
+  const replaceVideo = async (index: number, file: File) => {
+    setUploadingVideo(true);
+    setError("");
+    try {
+      const payload = new FormData();
+      payload.append("files", file);
+      payload.append("mediaType", "video");
+      const response = await fetch("/api/uploads", { method: "POST", body: payload });
+      const data = (await response.json()) as {
+        files?: Array<{ url: string; mimeType: string; sizeBytes: number }>;
+        message?: string;
+      };
+      const uploaded = data.files?.[0];
+      if (!response.ok || !uploaded?.url) {
+        setError(data.message ?? "Failed to upload video.");
+        return;
+      }
+      setVideos((previous) =>
+        previous.map((video, i) =>
+          i === index
+            ? {
+                ...video,
+                url: uploaded.url,
+                mimeType: uploaded.mimeType,
+                sizeBytes: uploaded.sizeBytes,
+              }
+            : video
+        )
+      );
+    } catch {
+      setError("Failed to upload video.");
+    } finally {
+      setUploadingVideo(false);
+      if (videoFileRef.current) videoFileRef.current.value = "";
+    }
+  };
+
+  const handleVideoFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    if (pendingVideoAction === "new") {
+      await uploadVideos(Array.from(files));
+    } else {
+      await replaceVideo(pendingVideoAction, files[0]);
+    }
+  };
+
+  const handleVerifyAlternatePhone = async () => {
+    const phone = form.alternateContactNumber.replace(/\D/g, "").slice(0, 10);
+    if (phone.length !== 10) {
+      setError("Enter a valid 10-digit alternate contact number.");
+      return;
+    }
+    if (!MSG91_WIDGET_ID || !MSG91_WIDGET_TOKEN) {
+      setError("OTP service is not configured. Contact support.");
+      return;
+    }
+
+    setVerifyingAlternatePhone(true);
+    setError("");
+
+    try {
+      const existingResponse = await fetch("/api/seller/verified-phones/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const existingData = (await existingResponse.json()) as { alreadyVerified?: boolean; message?: string };
+      if (!existingResponse.ok) {
+        setError(existingData.message ?? "Unable to verify alternate number.");
+        return;
+      }
+      if (existingData.alreadyVerified) {
+        setForm((previous) => ({ ...previous, alternateContactNumberVerified: true }));
+        return;
+      }
+
+      await loadMsg91ScriptWithFallback();
+      await new Promise<void>((resolve, reject) => {
+        window.initSendOTP?.({
+          widgetId: MSG91_WIDGET_ID,
+          tokenAuth: MSG91_WIDGET_TOKEN,
+          identifier: `91${phone}`,
+          exposeMethods: false,
+          captchaRenderId: "",
+          success: (payload) => {
+            const verifiedToken = extractMsg91Token(payload);
+            if (!verifiedToken) {
+              reject(new Error("Failed to read verification token from MSG91."));
+              return;
+            }
+            void (async () => {
+              const response = await fetch("/api/seller/verified-phones/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone, accessToken: verifiedToken }),
+              });
+              const data = (await response.json()) as { verified?: boolean; message?: string };
+              if (!response.ok || !data.verified) {
+                reject(new Error(data.message ?? "Failed to verify alternate number."));
+                return;
+              }
+              setForm((previous) => ({ ...previous, alternateContactNumberVerified: true }));
+              resolve();
+            })().catch(reject);
+          },
+          failure: (payload) => reject(new Error(extractErrorMessage(payload) ?? "OTP verification failed.")),
+        });
+      });
+    } catch (verificationError) {
+      setError(
+        verificationError instanceof Error
+          ? verificationError.message
+          : "Unable to verify alternate number right now."
+      );
+    } finally {
+      setVerifyingAlternatePhone(false);
+    }
+  };
+
   const handleSubmit = async () => {
     const stepError =
       validateStep(STEP_LISTING) ||
@@ -777,9 +1085,17 @@ export default function AddVehiclePage() {
           ),
           vehicleType: form.assetCategory,
           vehicleSubType: form.bodyApplicationType,
-          isRegistered:
-            form.isRegistered === "YES" ? true : form.isRegistered === "NO" ? false : null,
+          isRegistered: null,
+          leftSidePhoto: form.leftSidePhoto,
+          rightSidePhoto: form.rightSidePhoto,
+          sidePhoto: form.leftSidePhoto,
           additionalPhotos: additionalPhotos.map((photo) => ({ url: photo.url, category: photo.category || null })),
+          videos: videos.map((video) => ({
+            url: video.url,
+            category: video.category,
+            mimeType: video.mimeType,
+            sizeBytes: video.sizeBytes,
+          })),
           expectedPrice: form.expectedPrice.replace(/\D/g, ""),
           reservePrice: form.reservePrice.replace(/\D/g, ""),
           kmDriven: form.kmDriven.replace(/\D/g, ""),
@@ -790,6 +1106,8 @@ export default function AddVehiclePage() {
           numberOfAxles: form.numberOfAxles.replace(/\D/g, ""),
           horsepower: form.horsepower.replace(/\D/g, ""),
           vehicleRegistrationNumber: form.vehicleRegistrationNumber.toUpperCase(),
+          alternateContactNumber: form.alternateContactNumberVerified ? form.alternateContactNumber : "",
+          alternateContactNumberVerified: form.alternateContactNumberVerified,
         }),
       });
 
@@ -833,6 +1151,7 @@ export default function AddVehiclePage() {
               setSubmitted(false);
               setStep(1);
               setAdditionalPhotos([]);
+              setVideos([]);
               setForm({
                 ...emptyForm,
                 listingType: form.listingType,
@@ -952,6 +1271,9 @@ export default function AddVehiclePage() {
                   </button>
                 ))}
               </div>
+              {form.detachableType && DETACHABLE_TYPE_HELPER_TEXT[form.detachableType] ? (
+                <p className="text-xs text-slate-500">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -988,43 +1310,52 @@ export default function AddVehiclePage() {
 
           <SelectField label="Year" value={form.year} options={years} onChange={(value) => update("year", value)} required />
 
-          {isStandalone ? (
+          {(isStandalone || isPrimeMover || isEquipment) ? (
             <>
-              <SelectField label="Is Registered" value={form.isRegistered} options={[...yesNoOptions]} onChange={(value) => update("isRegistered", value as FormData["isRegistered"])} required />
-              <SelectField label="Registration State" value={form.registrationState} options={indiaStates} onChange={(value) => update("registrationState", value)} required />
-              {form.isRegistered === "YES" ? (
-                <TextField
-                  label="Registration Number"
-                  value={form.vehicleRegistrationNumber}
-                  onChange={(value) => update("vehicleRegistrationNumber", value.toUpperCase())}
-                  required
-                  placeholder="MH-12-AB-1234"
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">
+                  Registered State / RTO <span className="text-rose-500">*</span>
+                </span>
+                <input
+                  list="registered-state-rto-options"
+                  value={form.registrationState}
+                  onChange={(event) => update("registrationState", event.target.value.toUpperCase())}
+                  placeholder="e.g. HR, HR67, TS07, Maharashtra"
+                  className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800"
                 />
-              ) : (
-                <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Registration number is optional when the standalone vehicle is not registered.
-                </p>
-              )}
-            </>
-          ) : null}
-
-          {isPrimeMover ? (
-            <>
-              <SelectField label="Registration State" value={form.registrationState} options={indiaStates} onChange={(value) => update("registrationState", value)} required />
+                <datalist id="registered-state-rto-options">
+                  {indiaStates.map((stateOption) => (
+                    <option key={stateOption} value={stateOption} />
+                  ))}
+                </datalist>
+              </label>
               <TextField
                 label="Registration Number"
                 value={form.vehicleRegistrationNumber}
                 onChange={(value) => update("vehicleRegistrationNumber", value.toUpperCase())}
-                required
-                placeholder="MH-12-AB-1234"
+                placeholder="Optional"
               />
             </>
           ) : null}
 
           {isTrailerAsset ? (
-            <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Manufacturer, trailer number, and registration details are optional for trailer-only listings.
-            </p>
+            <>
+              <TextField
+                label="Registration Number"
+                value={form.vehicleRegistrationNumber}
+                onChange={(value) => update("vehicleRegistrationNumber", value.toUpperCase())}
+                placeholder="Optional"
+              />
+              <TextField
+                label="Registered State / RTO"
+                value={form.registrationState}
+                onChange={(value) => update("registrationState", value.toUpperCase())}
+                placeholder="e.g. HR67"
+              />
+              <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Manufacturer, trailer number, and registration details are optional for trailer-only listings.
+              </p>
+            </>
           ) : null}
 
           {isEquipment ? (
@@ -1043,17 +1374,6 @@ export default function AddVehiclePage() {
           <h1 className="text-xl font-semibold text-slate-900">Step 3: Condition &amp; Usage</h1>
           {poweredAsset ? (
             <>
-              <SelectField label="KM Meter Status" value={form.kmMeterStatus} options={kmMeterStatusOptions} onChange={(value) => update("kmMeterStatus", value as KmMeterStatus)} required />
-              {form.kmMeterStatus === "WORKING" ? (
-                <TextField
-                  label="KM Driven"
-                  value={form.kmDriven}
-                  onChange={(value) => update("kmDriven", value.replace(/\D/g, ""))}
-                  required
-                  placeholder="1,23,456"
-                  type="tel"
-                />
-              ) : null}
               <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
               <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
             </>
@@ -1062,10 +1382,9 @@ export default function AddVehiclePage() {
               Engine, running, and KM fields are hidden for trailer-only listings.
             </p>
           )}
-
           <TextAreaField label="Condition Notes" value={form.conditionNotes} onChange={(value) => update("conditionNotes", value)} required placeholder="Example: Engine running. Cabin work needed. Tyres missing." />
           <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
-          <SelectField label="Road Safe Status" value={form.roadSafeStatus} options={["ROAD_SAFE", "NOT_ROAD_SAFE", "UNKNOWN"]} onChange={(value) => update("roadSafeStatus", value)} />
+          <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
         </section>
       ) : null}
 
@@ -1109,11 +1428,10 @@ export default function AddVehiclePage() {
                 <SelectField label="BS Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
                 <SelectField label="Transmission" value={form.transmission} options={transmissionOptions} onChange={(value) => update("transmission", value)} />
                 <SelectField label="Axle Configuration" value={form.axleConfiguration} options={axleConfigurationOptions} onChange={(value) => update("axleConfiguration", value)} />
+                <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
                 <TextField label="Horsepower" value={form.horsepower} onChange={(value) => update("horsepower", value.replace(/\D/g, ""))} type="tel" />
                 <TextField label="Odometer Reading" value={form.odometerReading} onChange={(value) => update("odometerReading", value.replace(/\D/g, ""))} type="tel" />
                 <TextField label="Hour Meter Reading" value={form.hourMeterReading} onChange={(value) => update("hourMeterReading", value.replace(/\D/g, ""))} type="tel" />
-                <SelectField label="Battery Available" value={form.batteryAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("batteryAvailable", value)} />
-                <SelectField label="Key Available" value={form.keyAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("keyAvailable", value)} />
               </div>
             </details>
           ) : null}
@@ -1144,6 +1462,9 @@ export default function AddVehiclePage() {
                 <TextField label="Body Length" value={form.bodyLength} onChange={(value) => update("bodyLength", value)} placeholder="e.g. 20 ft" />
                 <TextField label="Payload Capacity" value={form.payloadCapacity} onChange={(value) => update("payloadCapacity", value)} placeholder="e.g. 16 tonnes" />
                 <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
+                {standaloneShowsSuspension ? (
+                  <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
+                ) : null}
                 <SelectField label="Body Attached" value={form.bodyAttached} options={[...yesNoUnknownOptions]} onChange={(value) => update("bodyAttached", value)} />
                 <SelectField label="Body Condition" value={form.bodyCondition} options={bodyConditionOptions} onChange={(value) => update("bodyCondition", value)} />
               </div>
@@ -1156,6 +1477,7 @@ export default function AddVehiclePage() {
               <SelectField label="Tyres Included" value={form.tyresIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("tyresIncluded", value)} />
               <SelectField label="Rims / Discs Included" value={form.rimsDiscsIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("rimsDiscsIncluded", value)} />
               <SelectField label="Battery Included" value={form.batteryIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("batteryIncluded", value)} />
+              <SelectField label="Key Available" value={form.keyAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("keyAvailable", value)} />
               <SelectField label="Cabin Available" value={form.cabinAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("cabinAvailable", value)} />
               <SelectField label="Engine Available" value={form.engineAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("engineAvailable", value)} />
               <SelectField label="Documents Available" value={form.documentsAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("documentsAvailable", value)} />
@@ -1185,7 +1507,7 @@ export default function AddVehiclePage() {
       {step === 7 ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 7: Photos &amp; Documents</h1>
-          <p className="text-sm text-slate-500">Front, back, and side photos are required. Interior photo is optional. Additional photos are optional up to 20 total.</p>
+          <p className="text-sm text-slate-500">Photos are optional for now. Listings with photos get more buyer trust and leads.</p>
 
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
             <span className="text-sm text-slate-600">Photos uploaded</span>
@@ -1196,9 +1518,10 @@ export default function AddVehiclePage() {
 
           {(
             [
-              { key: "frontPhoto", label: "Front Photo", required: true },
-              { key: "backPhoto", label: "Back Photo", required: true },
-              { key: "sidePhoto", label: "Side Photo", required: true },
+              { key: "frontPhoto", label: "Front Photo", required: false },
+              { key: "backPhoto", label: "Rear Photo", required: false },
+              { key: "leftSidePhoto", label: "Left Side Photo", required: false },
+              { key: "rightSidePhoto", label: "Right Side Photo", required: false },
               { key: "interiorPhoto", label: "Interior Photo", required: false },
             ] as { key: UploadCategory; label: string; required: boolean }[]
           ).map((item) => {
@@ -1295,8 +1618,81 @@ export default function AddVehiclePage() {
             <input ref={additionalFileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAdditionalFileChange} />
           </div>
 
-          <TextField label="Walkaround Video URL" value={form.walkaroundVideo} onChange={(value) => update("walkaroundVideo", value)} placeholder="Optional" />
-          <TextField label="Engine Start-up Video URL" value={form.engineStartUpVideo} onChange={(value) => update("engineStartUpVideo", value)} placeholder="Optional" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+              <span className="text-sm text-slate-600">Videos uploaded</span>
+              <span className={`text-sm font-semibold ${videos.length >= MAX_VIDEOS ? "text-rose-600" : "text-slate-900"}`}>
+                {videos.length} / {MAX_VIDEOS}
+              </span>
+            </div>
+
+            {videos.map((video, index) => (
+              <div key={`${video.url}-${index}`} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={video.category}
+                    onChange={(event) =>
+                      setVideos((previous) =>
+                        previous.map((item, i) => (i === index ? { ...item, category: event.target.value } : item))
+                      )
+                    }
+                    className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                  >
+                    {videoCategoryOptions.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingVideoAction(index);
+                      if (videoFileRef.current) {
+                        videoFileRef.current.multiple = false;
+                        videoFileRef.current.click();
+                      }
+                    }}
+                    disabled={uploadingVideo}
+                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVideos((previous) => previous.filter((_, i) => i !== index))}
+                    aria-label="Remove video"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <video src={video.url} controls className="w-full rounded-lg bg-black" />
+                <p className="text-xs text-slate-500">
+                  {(video.sizeBytes / (1024 * 1024)).toFixed(1)} MB • {video.mimeType || "video"}
+                </p>
+              </div>
+            ))}
+
+            {canAddMoreVideos ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingVideoAction("new");
+                  if (videoFileRef.current) {
+                    videoFileRef.current.multiple = true;
+                    videoFileRef.current.click();
+                  }
+                }}
+                disabled={uploadingVideo}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-sm font-medium text-slate-600 disabled:opacity-50"
+              >
+                {uploadingVideo && pendingVideoAction === "new" ? "Uploading..." : "+ Add Video"}
+              </button>
+            ) : null}
+
+            <input ref={videoFileRef} type="file" accept="video/*" multiple className="hidden" onChange={handleVideoFileChange} />
+          </div>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4">
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documents (optional URLs)</summary>
@@ -1321,7 +1717,31 @@ export default function AddVehiclePage() {
           <TextField label="City" value={user?.city ?? ""} onChange={() => {}} readOnly />
           <TextField label="State" value={user?.state ?? ""} onChange={() => {}} readOnly />
           <TextField label="Business Name" value={user?.businessName ?? ""} onChange={() => {}} readOnly />
-          <TextField label="Alternate Contact Number" value={form.alternateContactNumber} onChange={(value) => update("alternateContactNumber", value)} />
+          <div className="space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">Alternate Contact Number</span>
+            <div className="flex gap-2">
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.alternateContactNumber}
+                onChange={(event) => update("alternateContactNumber", event.target.value.replace(/\D/g, "") as FormData["alternateContactNumber"])}
+                className="min-h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800"
+                placeholder="Optional"
+              />
+              <button
+                type="button"
+                onClick={handleVerifyAlternatePhone}
+                disabled={!form.alternateContactNumber || form.alternateContactNumber.length !== 10 || verifyingAlternatePhone}
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              >
+                {form.alternateContactNumberVerified ? "Verified" : verifyingAlternatePhone ? "Verifying..." : "Verify"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              If provided, verify this number before it can be used publicly on the listing.
+            </p>
+          </div>
           <TextField label="GSTIN" value={form.gstin} onChange={(value) => update("gstin", value)} />
         </section>
       ) : null}
@@ -1341,7 +1761,7 @@ export default function AddVehiclePage() {
         <button
           type="button"
           onClick={canSubmit ? handleSubmit : next}
-          disabled={submitting || uploadingField !== "" || uploadingAdditional}
+          disabled={submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || verifyingAlternatePhone}
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
           {step === TOTAL_STEPS ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}

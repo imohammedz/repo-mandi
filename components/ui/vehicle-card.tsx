@@ -10,6 +10,7 @@ import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { resolveImageSrcForRender } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
+import { formatEnumLabel } from "@/lib/formatting";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
@@ -92,14 +93,14 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             <p className="text-xs text-slate-500">KM: {vehicle.kmDriven.toLocaleString("en-IN")}</p>
           ) : null}
           {showsRunning ? (
-            <p className="text-xs text-slate-500">Running: {vehicle.runningCondition ?? vehicle.condition}</p>
+            <p className="text-xs text-slate-500">Running: {formatEnumLabel(vehicle.runningCondition ?? vehicle.condition)}</p>
           ) : null}
-          {vehicle.tyresIncluded ? <p className="text-xs text-slate-500">Tyres: {vehicle.tyresIncluded}</p> : null}
-          {vehicle.rimsDiscsIncluded ? <p className="text-xs text-slate-500">Rims/Discs: {vehicle.rimsDiscsIncluded}</p> : null}
+          {vehicle.tyresIncluded ? <p className="text-xs text-slate-500">Tyres: {formatEnumLabel(vehicle.tyresIncluded)}</p> : null}
+          {vehicle.rimsDiscsIncluded ? <p className="text-xs text-slate-500">Rims/Discs: {formatEnumLabel(vehicle.rimsDiscsIncluded)}</p> : null}
           {vehicle.listingType === "REPO" ? (
             <>
               <p className="text-xs text-slate-500">Finance: {vehicle.financeCompany}</p>
-              <p className="text-xs text-slate-500">Repo Status: {vehicle.repoStatus}</p>
+              <p className="text-xs text-slate-500">Repo Status: {formatEnumLabel(vehicle.repoStatus)}</p>
             </>
           ) : null}
           <p className="text-xs text-slate-500">Seller: {vehicle.businessName || vehicle.sellerName} • {vehicle.sellerRole}</p>

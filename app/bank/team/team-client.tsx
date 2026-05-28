@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatEnumLabel } from "@/lib/formatting";
 
 type TeamUser = {
   id: number;
@@ -98,7 +99,7 @@ export default function BankTeamClient() {
             <p className="font-medium text-slate-900">{member.fullName}</p>
             <p>{member.bankRole} • {member.phone}</p>
             <p>{member.email ?? "-"}</p>
-            <p>Status: {member.verificationStatus}</p>
+            <p>Status: {formatEnumLabel(member.verificationStatus)}</p>
           </article>
         ))}
       </section>

@@ -183,6 +183,8 @@ export const mediaCategoryEnum = pgEnum("vehicle_media_category", [
   "FRONT",
   "BACK",
   "SIDE",
+  "LEFT_SIDE",
+  "RIGHT_SIDE",
   "INTERIOR",
   "WALKAROUND",
   "ENGINE_STARTUP",
@@ -299,6 +301,8 @@ export const vehicles = pgTable("vehicles", {
   frontPhoto: text("front_photo").notNull().default(""),
   backPhoto: text("back_photo").notNull().default(""),
   sidePhoto: text("side_photo").notNull().default(""),
+  leftSidePhoto: text("left_side_photo").notNull().default(""),
+  rightSidePhoto: text("right_side_photo").notNull().default(""),
   interiorPhoto: text("interior_photo").notNull().default(""),
   walkaroundVideo: text("walkaround_video"),
   engineStartUpVideo: text("engine_startup_video"),
@@ -314,6 +318,7 @@ export const vehicles = pgTable("vehicles", {
   sellerRole: text("seller_role").notNull().default(""),
   sellerPhone: text("seller_phone").notNull().default(""),
   alternateContactNumber: text("alternate_contact_number").notNull().default(""),
+  alternateContactNumberVerified: boolean("alternate_contact_number_verified").notNull().default(false),
   businessName: text("business_name").notNull().default(""),
   gstin: text("gstin").notNull().default(""),
   condition: conditionEnum("condition").notNull().default("Running"),
@@ -341,6 +346,7 @@ export const vehicles = pgTable("vehicles", {
   abs: yesNoUnknownEnum("abs"),
   batteryAvailable: yesNoUnknownEnum("battery_available"),
   keyAvailable: yesNoUnknownEnum("key_available"),
+  acCabin: yesNoUnknownEnum("ac_cabin"),
   tyresIncluded: yesNoUnknownEnum("tyres_included"),
   rimsDiscsIncluded: yesNoUnknownEnum("rims_discs_included"),
   batteryIncluded: yesNoUnknownEnum("battery_included"),
@@ -368,6 +374,7 @@ export const vehicles = pgTable("vehicles", {
   verifiedBy: integer("verified_by"),
   verifiedAt: timestamp("verified_at"),
   soldAt: timestamp("sold_at"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -380,8 +387,28 @@ export const vehicleMedia = pgTable("vehicle_media", {
   customName: text("custom_name"),
   url: text("url").notNull(),
   mimeType: text("mime_type").notNull().default(""),
+  sizeBytes: integer("size_bytes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const sellerVerifiedPhones = pgTable(
+  "seller_verified_phones",
+  {
+    id: serial("id").primaryKey(),
+    sellerId: integer("seller_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    verifiedAt: timestamp("verified_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    sellerPhoneUnique: uniqueIndex("seller_verified_phones_seller_phone_unique").on(
+      table.sellerId,
+      table.phone
+    ),
+  })
+);
 
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
@@ -452,6 +479,8 @@ export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
 export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
 export type DbVehicleMediaInsert = typeof vehicleMedia.$inferInsert;
+export type DbSellerVerifiedPhone = typeof sellerVerifiedPhones.$inferSelect;
+export type DbSellerVerifiedPhoneInsert = typeof sellerVerifiedPhones.$inferInsert;
 export type DbSavedListing = typeof savedListings.$inferSelect;
 export type DbSavedListingInsert = typeof savedListings.$inferInsert;
 export type DbPlatformSetting = typeof platformSettings.$inferSelect;

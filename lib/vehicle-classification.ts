@@ -28,8 +28,13 @@ export const ASSET_STRUCTURE_LABELS: Record<AssetStructure, string> = {
 };
 
 export const DETACHABLE_TYPE_LABELS: Record<DetachableType, string> = {
-  PRIME_MOVER: "Prime Mover / Horse / Tractor Head",
+  PRIME_MOVER: "Prime Mover",
   TRAILER: "Trailer",
+};
+
+export const DETACHABLE_TYPE_HELPER_TEXT: Partial<Record<DetachableType, string>> = {
+  PRIME_MOVER:
+    "Prime mover refers to the powered truck head also commonly called horse, tractor head, or puller.",
 };
 
 export const STANDALONE_ASSET_CATEGORIES = [
@@ -56,6 +61,8 @@ export const STANDALONE_BODY_APPLICATION_OPTIONS = [
   "Recovery Body",
   "Other",
 ] as const;
+
+const HCV_EXTRA_BODY_APPLICATION_OPTIONS = ["Prime Mover + Trailer"] as const;
 
 export const PRIME_MOVER_ASSET_CATEGORIES = ["Prime Mover", "Heavy Puller"] as const;
 
@@ -181,9 +188,14 @@ export function getAssetCategoryOptions(
 
 export function getBodyApplicationOptions(
   assetStructure: AssetStructure,
-  detachableType?: DetachableType | null
+  detachableType?: DetachableType | null,
+  assetCategory?: string | null
 ): string[] {
-  if (assetStructure === "STANDALONE") return [...STANDALONE_BODY_APPLICATION_OPTIONS];
+  if (assetStructure === "STANDALONE") {
+    return assetCategory === "HCV"
+      ? [...STANDALONE_BODY_APPLICATION_OPTIONS, ...HCV_EXTRA_BODY_APPLICATION_OPTIONS]
+      : [...STANDALONE_BODY_APPLICATION_OPTIONS];
+  }
   if (assetStructure === "DETACHABLE" && detachableType === "PRIME_MOVER") {
     return [...PRIME_MOVER_BODY_APPLICATION_OPTIONS];
   }
@@ -204,9 +216,10 @@ export function isValidAssetCategory(
 export function isValidBodyApplicationType(
   bodyApplicationType: string,
   assetStructure: AssetStructure,
-  detachableType?: DetachableType | null
+  detachableType?: DetachableType | null,
+  assetCategory?: string | null
 ) {
-  const options = getBodyApplicationOptions(assetStructure, detachableType);
+  const options = getBodyApplicationOptions(assetStructure, detachableType, assetCategory);
   return options.length === 0 || options.includes(bodyApplicationType);
 }
 

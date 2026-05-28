@@ -5,10 +5,11 @@ import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { MarkSoldButton } from "../listings/mark-sold-button";
+import { DeleteListingButton } from "../listings/delete-listing-button";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function SellerDashboardPage() {
   const rows = await db
     .select()
     .from(vehiclesTable)
-    .where(eq(vehiclesTable.sellerId, currentUser.id))
+    .where(and(eq(vehiclesTable.sellerId, currentUser.id), isNull(vehiclesTable.deletedAt)))
     .orderBy(desc(vehiclesTable.createdAt));
   const vehicleList = rows.map(dbToVehicle);
 
@@ -74,14 +75,13 @@ export default async function SellerDashboardPage() {
                 >
                   View
                 </Link>
-                {vehicle.listingStatus === "PENDING" || vehicle.listingStatus === "REJECTED" ? (
-                  <Link
-                    href={`/seller/edit-vehicle/${vehicle.id}`}
-                    className="min-h-10 rounded-lg border border-slate-200 px-3 font-medium text-slate-700 inline-flex items-center"
-                  >
-                    Edit
-                  </Link>
-                ) : null}
+                <Link
+                  href={`/seller/edit-vehicle/${vehicle.id}`}
+                  className="min-h-10 rounded-lg border border-slate-200 px-3 font-medium text-slate-700 inline-flex items-center"
+                >
+                  Edit
+                </Link>
+                <DeleteListingButton vehicleId={vehicle.id} />
                 {vehicle.listingStatus === "VERIFIED" || vehicle.listingStatus === "PENDING" ? (
                   <MarkSoldButton vehicleId={vehicle.id} />
                 ) : null}

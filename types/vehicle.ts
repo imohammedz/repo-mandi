@@ -86,6 +86,8 @@ export type Vehicle = {
   frontPhoto?: string;
   backPhoto?: string;
   sidePhoto?: string;
+  leftSidePhoto?: string;
+  rightSidePhoto?: string;
   interiorPhoto?: string;
   walkaroundVideo?: string | null;
   engineStartUpVideo?: string | null;
@@ -101,6 +103,7 @@ export type Vehicle = {
   sellerRole: string;
   sellerPhone: string;
   alternateContactNumber?: string;
+  alternateContactNumberVerified?: boolean;
   businessName?: string;
   gstin?: string;
   condition: "Running" | "Non-running" | "Unknown";
@@ -128,6 +131,7 @@ export type Vehicle = {
   abs?: YesNoUnknown | null;
   batteryAvailable?: YesNoUnknown | null;
   keyAvailable?: YesNoUnknown | null;
+  acCabin?: YesNoUnknown | null;
   tyresIncluded?: YesNoUnknown | null;
   rimsDiscsIncluded?: YesNoUnknown | null;
   batteryIncluded?: YesNoUnknown | null;
@@ -147,6 +151,7 @@ export type Vehicle = {
   verifiedBy?: number | null;
   verifiedAt?: string | null;
   soldAt?: string | null;
+  deletedAt?: string | null;
   missingPhotos?: boolean;
   priceTooLow?: boolean;
   duplicateRegistration?: boolean;

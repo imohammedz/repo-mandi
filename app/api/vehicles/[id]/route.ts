@@ -20,7 +20,7 @@ export async function GET(
     const currentUser = await getCurrentUser();
     const { id } = await params;
     const [row] = await db.select().from(vehicles).where(eq(vehicles.id, id));
-    if (!row) {
+    if (!row || row.deletedAt) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
     }
     const canViewPrivate =
@@ -36,6 +36,8 @@ export async function GET(
       frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto),
       backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto),
       sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto),
+      leftSidePhoto: sanitizeSupabaseMediaUrl(row.leftSidePhoto),
+      rightSidePhoto: sanitizeSupabaseMediaUrl(row.rightSidePhoto),
       interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto),
       walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
       engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
@@ -62,7 +64,7 @@ export async function PUT(
     const body = (await request.json()) as Record<string, unknown>;
 
     const [existing] = await db.select().from(vehicles).where(eq(vehicles.id, id));
-    if (!existing) {
+    if (!existing || existing.deletedAt) {
       return Response.json({ message: "Vehicle not found." }, { status: 404 });
     }
 

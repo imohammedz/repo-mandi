@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { vehicles } from "@/lib/schema";
@@ -17,7 +17,12 @@ export default async function AdminPendingListingsPage() {
   const rows = await db
     .select()
     .from(vehicles)
-    .where(or(eq(vehicles.listingStatus, "PENDING"), eq(vehicles.listingStatus, "BANK_PENDING_REVIEW")))
+    .where(
+      and(
+        or(eq(vehicles.listingStatus, "PENDING"), eq(vehicles.listingStatus, "BANK_PENDING_REVIEW")),
+        isNull(vehicles.deletedAt)
+      )
+    )
     .orderBy(desc(vehicles.createdAt));
   const pending = rows.map(dbToVehicle);
 
@@ -42,6 +47,11 @@ export default async function AdminPendingListingsPage() {
                       {getDetachableTypeLabel(vehicle.detachableType)}
                     </span>
                   ) : null}
+                </div>
+                <div className="mt-2 space-y-1 text-xs text-slate-600">
+                  <p>Alternate number verified: {vehicle.alternateContactNumberVerified ? "Yes" : "No"}</p>
+                  <p>Missing photos warning: {vehicle.missingPhotos ? "Yes" : "No"}</p>
+                  <p>Videos uploaded: {vehicle.walkaroundVideo || vehicle.engineStartUpVideo ? "Yes" : "No"}</p>
                 </div>
               </div>
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}

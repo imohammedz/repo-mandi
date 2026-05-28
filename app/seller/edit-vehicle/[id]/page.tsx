@@ -19,7 +19,7 @@ export default async function EditVehiclePage({
 
   const { id } = await params;
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
-  if (!row) notFound();
+  if (!row || row.deletedAt) notFound();
   if (currentUser.accountType !== "ADMIN" && row.sellerId !== currentUser.id) {
     redirect("/seller/listings");
   }

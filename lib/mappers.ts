@@ -80,6 +80,11 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto) || undefined,
     backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto) || undefined,
     sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto) || undefined,
+    leftSidePhoto:
+      sanitizeSupabaseMediaUrl(row.leftSidePhoto) ||
+      sanitizeSupabaseMediaUrl(row.sidePhoto) ||
+      undefined,
+    rightSidePhoto: sanitizeSupabaseMediaUrl(row.rightSidePhoto) || undefined,
     interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto) || undefined,
     walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
     engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
@@ -95,6 +100,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     sellerRole: row.sellerRole,
     sellerPhone: row.sellerPhone,
     alternateContactNumber: row.alternateContactNumber,
+    alternateContactNumberVerified: row.alternateContactNumberVerified,
     businessName: row.businessName,
     gstin: row.gstin,
     condition: row.condition as Vehicle["condition"],
@@ -122,6 +128,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     abs: row.abs,
     batteryAvailable: row.batteryAvailable,
     keyAvailable: row.keyAvailable,
+    acCabin: row.acCabin,
     tyresIncluded: row.tyresIncluded,
     rimsDiscsIncluded: row.rimsDiscsIncluded,
     batteryIncluded: row.batteryIncluded,
@@ -141,6 +148,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     verifiedBy: row.verifiedBy,
     verifiedAt: row.verifiedAt ? row.verifiedAt.toISOString() : null,
     soldAt: row.soldAt ? row.soldAt.toISOString() : null,
+    deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
     missingPhotos: row.missingPhotos,
     priceTooLow: row.priceTooLow,
     duplicateRegistration: row.duplicateRegistration,

@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
-import { vehicles as vehiclesTable } from "@/lib/schema";
+import { vehicleMedia, vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { eq, ne, desc, and } from "drizzle-orm";
+import { eq, ne, desc, and, isNull } from "drizzle-orm";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
@@ -19,6 +19,7 @@ import {
   getListingModeLabel,
   hasEngineOrPowertrain,
 } from "@/lib/vehicle-classification";
+import { formatEnumLabel } from "@/lib/formatting";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,24 @@ export default async function VehicleDetailPage({
   const currentUser = await getCurrentUser();
 
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
-  if (!row) notFound();
+  if (!row || row.deletedAt) notFound();
   const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
   const canViewPrivate =
     currentUser?.accountType === "ADMIN" || (currentUser?.id && row.sellerId === currentUser.id);
   if (!isPublicLive && !canViewPrivate) notFound();
   const vehicle = dbToVehicle(row);
+  const orderedImages = Array.from(
+    new Set(
+      [
+        vehicle.frontPhoto,
+        vehicle.backPhoto,
+        vehicle.leftSidePhoto || vehicle.sidePhoto,
+        vehicle.rightSidePhoto,
+        vehicle.interiorPhoto,
+        ...vehicle.gallery,
+      ].filter(Boolean)
+    )
+  ) as string[];
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const showsRunning = hasEngineOrPowertrain({
@@ -55,12 +68,18 @@ export default async function VehicleDetailPage({
       and(
         ne(vehiclesTable.id, id),
         eq(vehiclesTable.isPublished, true),
-        eq(vehiclesTable.listingStatus, "VERIFIED")
+        eq(vehiclesTable.listingStatus, "VERIFIED"),
+        isNull(vehiclesTable.deletedAt)
       )
     )
     .orderBy(desc(vehiclesTable.createdAt))
     .limit(3);
   const similar = similarRows.map(dbToVehicle);
+  const videoRows = await db
+    .select()
+    .from(vehicleMedia)
+    .where(and(eq(vehicleMedia.vehicleId, vehicle.id), eq(vehicleMedia.type, "VIDEO")))
+    .orderBy(desc(vehicleMedia.createdAt));
 
   return (
     <main className="space-y-5 px-4 pb-28 pt-4">
@@ -69,7 +88,7 @@ export default async function VehicleDetailPage({
       </Link>
 
       <div className="relative">
-        <ImageGallery images={vehicle.gallery} title={vehicle.title} />
+        <ImageGallery images={orderedImages} title={vehicle.title} />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
@@ -92,13 +111,27 @@ export default async function VehicleDetailPage({
         <p className="text-xl font-semibold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
         <div className="grid grid-cols-2 gap-2 text-sm text-slate-600">
           <p>Type: {[vehicle.assetCategory || vehicle.type, vehicle.bodyApplicationType || vehicle.vehicleSubType].filter(Boolean).join(" • ")}</p>
-          {showsRunning ? <p>Running: {vehicle.runningCondition ?? vehicle.condition}</p> : null}
+          {showsRunning ? <p>Running: {formatEnumLabel(vehicle.runningCondition ?? vehicle.condition)}</p> : null}
           {vehicle.listingType === "REPO" ? <p>Finance: {vehicle.financeCompany}</p> : null}
-          {vehicle.listingType === "REPO" ? <p>Repo Status: {vehicle.repoStatus}</p> : null}
+          {vehicle.listingType === "REPO" ? <p>Repo Status: {formatEnumLabel(vehicle.repoStatus)}</p> : null}
           <p>{displayLocation || "Location unavailable"}</p>
           <p>Seller: {vehicle.businessName || vehicle.sellerName}</p>
         </div>
       </section>
+
+      {videoRows.length ? (
+        <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Videos</h2>
+          <div className="mt-3 space-y-3">
+            {videoRows.map((video) => (
+              <div key={video.id} className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">{formatEnumLabel(video.category)}</p>
+                <video src={video.url} controls className="w-full rounded-xl bg-black" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {isTrailerOnly ? (
         <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -144,10 +177,11 @@ export default async function VehicleDetailPage({
             <div><dt className="text-slate-500">KM Driven</dt><dd className="font-medium text-slate-900">{typeof vehicle.kmDriven === "number" ? vehicle.kmDriven.toLocaleString("en-IN") : "Unknown"}</dd></div>
             <div><dt className="text-slate-500">Fuel</dt><dd className="font-medium text-slate-900">{vehicle.fuelType}</dd></div>
             <div><dt className="text-slate-500">Axle</dt><dd className="font-medium text-slate-900">{vehicle.axleConfiguration || vehicle.axleType || "N/A"}</dd></div>
-            <div><dt className="text-slate-500">Registration</dt><dd className="font-medium text-slate-900">{vehicle.registrationState}</dd></div>
-            <div><dt className="text-slate-500">Condition</dt><dd className="font-medium text-slate-900">{vehicle.condition}</dd></div>
-            {vehicle.tyresIncluded ? <div><dt className="text-slate-500">Tyres Included</dt><dd className="font-medium text-slate-900">{vehicle.tyresIncluded}</dd></div> : null}
-            {vehicle.rimsDiscsIncluded ? <div><dt className="text-slate-500">Rims / Discs</dt><dd className="font-medium text-slate-900">{vehicle.rimsDiscsIncluded}</dd></div> : null}
+            {vehicle.registrationState ? <div><dt className="text-slate-500">Registered State / RTO</dt><dd className="font-medium text-slate-900">{vehicle.registrationState}</dd></div> : null}
+            {vehicle.vehicleRegistrationNumber ? <div><dt className="text-slate-500">Registration Number</dt><dd className="font-medium text-slate-900">{vehicle.vehicleRegistrationNumber}</dd></div> : null}
+            <div><dt className="text-slate-500">Condition</dt><dd className="font-medium text-slate-900">{formatEnumLabel(vehicle.condition)}</dd></div>
+            {vehicle.tyresIncluded ? <div><dt className="text-slate-500">Tyres Included</dt><dd className="font-medium text-slate-900">{formatEnumLabel(vehicle.tyresIncluded)}</dd></div> : null}
+            {vehicle.rimsDiscsIncluded ? <div><dt className="text-slate-500">Rims / Discs</dt><dd className="font-medium text-slate-900">{formatEnumLabel(vehicle.rimsDiscsIncluded)}</dd></div> : null}
           </dl>
         </section>
       ) : null}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { vehicles } from "@/lib/schema";
@@ -8,6 +8,7 @@ import { dbToVehicle } from "@/lib/mappers";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/data/vehicles";
 import { MarkSoldButton } from "./mark-sold-button";
+import { DeleteListingButton } from "./delete-listing-button";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function SellerListingsPage() {
   const rows = await db
     .select()
     .from(vehicles)
-    .where(eq(vehicles.sellerId, currentUser.id))
+    .where(and(eq(vehicles.sellerId, currentUser.id), isNull(vehicles.deletedAt)))
     .orderBy(desc(vehicles.createdAt));
   const listingRows = rows.map(dbToVehicle);
 
@@ -52,11 +53,10 @@ export default async function SellerListingsPage() {
               <Link href={`/vehicles/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
                 View
               </Link>
-              {(item.listingStatus === "PENDING" || item.listingStatus === "REJECTED") && (
-                <Link href={`/seller/edit-vehicle/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
-                  Edit
-                </Link>
-              )}
+              <Link href={`/seller/edit-vehicle/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
+                Edit
+              </Link>
+              <DeleteListingButton vehicleId={item.id} />
               {(item.listingStatus === "VERIFIED" || item.listingStatus === "PENDING") && (
                 <MarkSoldButton vehicleId={item.id} />
               )}

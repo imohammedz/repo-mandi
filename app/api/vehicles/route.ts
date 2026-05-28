@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles, platformSettings } from "@/lib/schema";
-import { eq, ilike, and, or, desc, gte, lte } from "drizzle-orm";
+import { vehicleMedia, vehicles, platformSettings, sellerVerifiedPhones } from "@/lib/schema";
+import { eq, ilike, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
@@ -204,6 +204,7 @@ export async function GET(request: Request) {
       conditions.push(eq(vehicles.isPublished, true));
       conditions.push(eq(vehicles.listingStatus, "VERIFIED"));
     }
+    conditions.push(isNull(vehicles.deletedAt));
 
     if (mine) {
       if (!currentUser || !["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) {
@@ -248,6 +249,8 @@ export async function GET(request: Request) {
       frontPhoto: sanitizeSupabaseMediaUrl(row.frontPhoto),
       backPhoto: sanitizeSupabaseMediaUrl(row.backPhoto),
       sidePhoto: sanitizeSupabaseMediaUrl(row.sidePhoto),
+      leftSidePhoto: sanitizeSupabaseMediaUrl(row.leftSidePhoto),
+      rightSidePhoto: sanitizeSupabaseMediaUrl(row.rightSidePhoto),
       interiorPhoto: sanitizeSupabaseMediaUrl(row.interiorPhoto),
       walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
       engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
@@ -352,7 +355,7 @@ export async function POST(request: Request) {
     }
     if (
       bodyApplicationType &&
-      !getBodyApplicationOptions(assetStructure, detachableType).includes(bodyApplicationType)
+      !getBodyApplicationOptions(assetStructure, detachableType, assetCategory).includes(bodyApplicationType)
     ) {
       return Response.json({ message: "Invalid bodyApplicationType." }, { status: 400 });
     }
@@ -372,11 +375,12 @@ export async function POST(request: Request) {
     const conditionNotes = toSafeString(body.conditionNotes);
     const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto);
     const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto);
-    const sidePhoto = sanitizeSupabaseMediaUrl(body.sidePhoto);
+    const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? body.sidePhoto);
+    const rightSidePhoto = sanitizeSupabaseMediaUrl(body.rightSidePhoto);
+    const sidePhoto = leftSidePhoto;
     const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto);
     const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : [];
-    const walkaroundVideo = sanitizeSupabaseMediaUrl(body.walkaroundVideo);
-    const engineStartUpVideo = sanitizeSupabaseMediaUrl(body.engineStartUpVideo ?? body.engineStartupVideo);
+    const videosRaw = Array.isArray(body.videos) ? (body.videos as unknown[]) : [];
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
@@ -403,6 +407,8 @@ export async function POST(request: Request) {
     const yardName = toSafeString(body.yardName);
     const yardContact = toSafeString(body.yardContact);
     const machineSerialNumber = toSafeString(body.machineSerialNumber);
+    const alternateContactNumber = toSafeString(body.alternateContactNumber).replace(/\D/g, "").slice(0, 10);
+    const alternateContactNumberVerified = body.alternateContactNumberVerified === true;
 
     const alwaysRequiredMissing: string[] = [];
     if (!listingMode) alwaysRequiredMissing.push("listingMode");
@@ -416,17 +422,9 @@ export async function POST(request: Request) {
       alwaysRequiredMissing.push("model");
     }
     if (!year) alwaysRequiredMissing.push("year");
-    if (assetStructure === "STANDALONE" && isRegistered === null) alwaysRequiredMissing.push("isRegistered");
-    if ((assetStructure === "STANDALONE" || detachableType === "PRIME_MOVER") && !registrationState) {
+    if (poweredAsset && !registrationState) {
       alwaysRequiredMissing.push("registrationState");
     }
-    if (detachableType === "PRIME_MOVER" && !registrationNumber) {
-      alwaysRequiredMissing.push("vehicleRegistrationNumber");
-    }
-    if (assetStructure === "STANDALONE" && isRegistered && !registrationNumber) {
-      alwaysRequiredMissing.push("vehicleRegistrationNumber");
-    }
-    if (poweredAsset && !kmMeterStatus) alwaysRequiredMissing.push("kmMeterStatus");
     if (poweredAsset && !runningCondition) alwaysRequiredMissing.push("runningCondition");
     if (isTrailerAsset && !trailerType) alwaysRequiredMissing.push("trailerType");
     if (isTrailerAsset && !trailerLength) alwaysRequiredMissing.push("trailerLength");
@@ -435,10 +433,6 @@ export async function POST(request: Request) {
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
     if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
-    if (!frontPhoto) alwaysRequiredMissing.push("frontPhoto");
-    if (!backPhoto) alwaysRequiredMissing.push("backPhoto");
-    if (!sidePhoto) alwaysRequiredMissing.push("sidePhoto");
-    if (requiresInteriorPhoto && !normalizedInteriorPhoto) alwaysRequiredMissing.push("interiorPhoto");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(
@@ -459,9 +453,31 @@ export async function POST(request: Request) {
       .filter((item) => Boolean(item.url))
       .slice(0, MAX_PHOTOS);
 
-    const requiredPhotoCount = [frontPhoto, backPhoto, sidePhoto, normalizedInteriorPhoto].filter(Boolean).length;
+    const videoItems = videosRaw
+      .map((item) => {
+        const it = item as Record<string, unknown>;
+        return {
+          url: sanitizeSupabaseMediaUrl(it?.url),
+          category: toSafeString(it?.category).toUpperCase() || "OTHER",
+          mimeType: toSafeString(it?.mimeType),
+          sizeBytes: toNumberOrNull(it?.sizeBytes),
+        };
+      })
+      .filter((item) => Boolean(item.url))
+      .slice(0, 3);
+
+    const requiredPhotoCount = [
+      frontPhoto,
+      backPhoto,
+      leftSidePhoto,
+      rightSidePhoto,
+      normalizedInteriorPhoto,
+    ].filter(Boolean).length;
     if (requiredPhotoCount + additionalPhotoItems.length > MAX_PHOTOS) {
       return Response.json({ message: `Maximum ${MAX_PHOTOS} photos allowed.` }, { status: 400 });
+    }
+    if (videoItems.length > 3) {
+      return Response.json({ message: "Maximum 3 videos allowed." }, { status: 400 });
     }
 
     if (!VALID_TYPES.includes(vehicleType)) {
@@ -476,7 +492,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid runningCondition." }, { status: 400 });
     }
 
-    if ((detachableType === "PRIME_MOVER" || (assetStructure === "STANDALONE" && isRegistered)) && !regNumberLooksValid(registrationNumber)) {
+    if (registrationNumber && !regNumberLooksValid(registrationNumber)) {
       return Response.json(
         { message: "Invalid vehicleRegistrationNumber format. Example: MH-12-AB-1234." },
         { status: 400 }
@@ -493,12 +509,31 @@ export async function POST(request: Request) {
       return Response.json({ message: "expectedPrice must be a positive number." }, { status: 400 });
     }
 
-    if (poweredAsset && kmMeterStatus === "WORKING" && (kmDriven === null || kmDriven < 0)) {
-      return Response.json({ message: "kmDriven is required when km meter is working." }, { status: 400 });
+    if (kmDriven !== null && kmDriven < 0) {
+      return Response.json({ message: "kmDriven cannot be negative." }, { status: 400 });
     }
 
     if (tyreInspectionReport && !VALID_AVAILABILITY_STATUS.includes(tyreInspectionReport as (typeof VALID_AVAILABILITY_STATUS)[number])) {
       return Response.json({ message: "Invalid tyreInspectionReport." }, { status: 400 });
+    }
+
+    let normalizedAlternateContactNumber = "";
+    let normalizedAlternateContactNumberVerified = false;
+    if (alternateContactNumber) {
+      const [verifiedPhone] = await db
+        .select()
+        .from(sellerVerifiedPhones)
+        .where(
+          and(
+            eq(sellerVerifiedPhones.sellerId, currentUser.id),
+            eq(sellerVerifiedPhones.phone, alternateContactNumber)
+          )
+        );
+
+      if (verifiedPhone && alternateContactNumberVerified) {
+        normalizedAlternateContactNumber = alternateContactNumber;
+        normalizedAlternateContactNumberVerified = true;
+      }
     }
 
     if (listingType === "REPO") {
@@ -514,11 +549,16 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(" ");
     const id = nanoid(title, brand, model, normalizedYear);
+    const walkaroundVideo =
+      videoItems.find((item) => item.category === "WALKAROUND")?.url ?? null;
+    const engineStartUpVideo =
+      videoItems.find((item) => item.category === "ENGINE_STARTUP")?.url ?? null;
 
     const gallery = sanitizeSupabaseMediaArray([
       frontPhoto,
       backPhoto,
-      sidePhoto,
+      leftSidePhoto,
+      rightSidePhoto,
       normalizedInteriorPhoto,
       ...additionalPhotoItems.map((p) => p.url),
     ]);
@@ -555,7 +595,7 @@ export async function POST(request: Request) {
         vehicleRegistrationNumber: registrationNumber,
         registrationState,
         kmMeterStatus,
-        kmDriven: poweredAsset && kmMeterStatus === "WORKING" ? kmDriven : null,
+        kmDriven,
         runningCondition: poweredAsset ? runningCondition : "UNKNOWN",
         fuelType: "Diesel",
         bsNorm: toSafeString(body.bsNorm) || null,
@@ -594,11 +634,13 @@ export async function POST(request: Request) {
         city,
         state,
         vehicleOrYardLocation: location,
-        image: frontPhoto,
+        image: frontPhoto || backPhoto || leftSidePhoto || rightSidePhoto || normalizedInteriorPhoto || "",
         gallery,
         frontPhoto,
         backPhoto,
         sidePhoto,
+        leftSidePhoto,
+        rightSidePhoto,
         interiorPhoto: normalizedInteriorPhoto,
         walkaroundVideo: walkaroundVideo || null,
         engineStartUpVideo: engineStartUpVideo || null,
@@ -620,7 +662,8 @@ export async function POST(request: Request) {
         sellerName: currentUser.fullName,
         sellerRole: currentUser.sellerRole || currentUser.bankRole || "",
         sellerPhone: currentUser.phone,
-        alternateContactNumber: toSafeString(body.alternateContactNumber),
+        alternateContactNumber: normalizedAlternateContactNumber,
+        alternateContactNumberVerified: normalizedAlternateContactNumberVerified,
         businessName: currentUser.businessName,
         gstin: toSafeString(body.gstin),
         condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
@@ -662,6 +705,7 @@ export async function POST(request: Request) {
         abs: (abs || null) as "YES" | "NO" | "UNKNOWN" | null,
         batteryAvailable: parseYesNoUnknown(body.batteryAvailable),
         keyAvailable: parseYesNoUnknown(body.keyAvailable),
+        acCabin: parseYesNoUnknown(body.acCabin),
         tyresIncluded: parseYesNoUnknown(body.tyresIncluded),
         rimsDiscsIncluded: parseYesNoUnknown(body.rimsDiscsIncluded),
         batteryIncluded: parseYesNoUnknown(body.batteryIncluded),
@@ -683,7 +727,7 @@ export async function POST(request: Request) {
         photosVerified: false,
         yardVerified: false,
         sellerVerified: currentUser.isVerified,
-        missingPhotos: !frontPhoto || !backPhoto || !sidePhoto || (requiresInteriorPhoto && !normalizedInteriorPhoto),
+        missingPhotos: !frontPhoto || !backPhoto || !leftSidePhoto || !rightSidePhoto,
         priceTooLow: expectedPrice < MIN_REASONABLE_PRICE,
         duplicateRegistration: false,
         newSeller: !currentUser.isVerified,
@@ -697,14 +741,19 @@ export async function POST(request: Request) {
     const mediaRows = [
       { type: "PHOTO", category: "FRONT", url: frontPhoto },
       { type: "PHOTO", category: "BACK", url: backPhoto },
+      { type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto },
+      { type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto },
       { type: "PHOTO", category: "SIDE", url: sidePhoto },
       { type: "PHOTO", category: "INTERIOR", url: interiorPhoto },
-      ...(walkaroundVideo
-        ? [{ type: "VIDEO", category: "WALKAROUND", url: walkaroundVideo }]
-        : []),
-      ...(engineStartUpVideo
-        ? [{ type: "VIDEO", category: "ENGINE_STARTUP", url: engineStartUpVideo }]
-        : []),
+      ...videoItems.map((video) => ({
+        type: "VIDEO",
+        category: ["WALKAROUND", "ENGINE_STARTUP", "DAMAGE", "OTHER"].includes(video.category)
+          ? video.category
+          : "OTHER",
+        url: video.url,
+        mimeType: video.mimeType,
+        sizeBytes: video.sizeBytes,
+      })),
       ...(toSafeString(body.inspectionReport)
         ? [{ type: "DOCUMENT", category: "INSPECTION_REPORT", url: toSafeString(body.inspectionReport) }]
         : []),
@@ -734,7 +783,8 @@ export async function POST(request: Request) {
           type: item.type as typeof vehicleMedia.type._.data,
           category: item.category as typeof vehicleMedia.category._.data,
           url: item.url,
-          mimeType: "",
+          mimeType: "mimeType" in item ? item.mimeType || "" : "",
+          sizeBytes: "sizeBytes" in item ? item.sizeBytes ?? null : null,
           customName: null,
         }))
       );
@@ -747,6 +797,8 @@ export async function POST(request: Request) {
         frontPhoto: inserted.frontPhoto,
         backPhoto: inserted.backPhoto,
         sidePhoto: inserted.sidePhoto,
+        leftSidePhoto: inserted.leftSidePhoto,
+        rightSidePhoto: inserted.rightSidePhoto,
         interiorPhoto: inserted.interiorPhoto,
         walkaroundVideo: inserted.walkaroundVideo,
         engineStartUpVideo: inserted.engineStartUpVideo,
