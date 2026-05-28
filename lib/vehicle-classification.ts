@@ -38,72 +38,81 @@ export const DETACHABLE_TYPE_HELPER_TEXT: Partial<Record<DetachableType, string>
 };
 
 export const STANDALONE_ASSET_CATEGORIES = [
-  "Pickup",
-  "Mini Truck",
-  "LCV",
-  "HCV",
-  "Tipper",
-  "Tanker",
-  "Bus",
-  "Crane Truck",
-  "Recovery Truck",
+  "SCV / LCV",
+  "Rigid Trucks",
+  "Prime Mover + Trailer",
+  "Bus / Passenger Commercial",
 ] as const;
 
-export const STANDALONE_BODY_APPLICATION_OPTIONS = [
-  "Open Body",
-  "Container Body",
-  "Closed Body",
-  "Refrigerated",
-  "Tanker",
-  "Tipper",
-  "Garbage Body",
-  "Crane Mounted",
-  "Recovery Body",
-  "Other",
-] as const;
+const STANDALONE_BODY_APPLICATION_MAP: Record<string, readonly string[]> = {
+  "SCV / LCV": ["Pickup", "Mini Truck", "Van"],
+  "Rigid Trucks": [
+    "Open Body",
+    "Container Body",
+    "Tipper",
+    "Tanker",
+    "Reefer",
+    "Garbage Truck",
+    "Crane-Mounted Truck",
+  ],
+  "Prime Mover + Trailer": [
+    "4x2 Prime Mover + Trailer",
+    "6x2 Prime Mover + Trailer",
+    "6x4 Prime Mover + Trailer",
+    "Heavy Haulage Puller + Trailer",
+  ],
+  "Bus / Passenger Commercial": ["School Bus", "Staff Bus", "Tourist Bus", "Mini Bus"],
+};
 
-const HCV_EXTRA_BODY_APPLICATION_OPTIONS = ["Prime Mover + Trailer"] as const;
-
-export const PRIME_MOVER_ASSET_CATEGORIES = ["Prime Mover", "Heavy Puller"] as const;
+export const PRIME_MOVER_ASSET_CATEGORIES = ["Prime Mover"] as const;
 
 export const PRIME_MOVER_BODY_APPLICATION_OPTIONS = [
-  "4x2",
-  "6x2",
-  "6x4",
-  "Multi Axle",
-  "Heavy Haulage",
-  "Other",
+  "4x2 Prime Mover",
+  "6x2 Prime Mover",
+  "6x4 Prime Mover",
+  "Heavy Haulage Puller",
 ] as const;
 
 export const TRAILER_ASSET_CATEGORIES = ["Trailer"] as const;
 
 export const TRAILER_BODY_APPLICATION_OPTIONS = [
-  "Flatbed",
+  "Flatbed 20ft",
+  "Flatbed 40ft",
   "Low Bed",
   "Semi Low Bed",
-  "Skeletal Trailer",
+  "Side Wall",
+  "Skeletal / Container Trailer",
   "Tanker Trailer",
   "Tip Trailer",
-  "Car Carrier",
-  "Container Trailer",
-  "Side Wall Trailer",
-  "Bulker Trailer",
-  "Other",
+  "Car Carrier Trailer",
 ] as const;
 
 export const EQUIPMENT_ASSET_CATEGORIES = [
-  "Excavator",
-  "Backhoe Loader",
-  "Hydra Crane",
-  "Forklift",
-  "Wheel Loader",
-  "Road Roller",
-  "Transit Mixer",
-  "Concrete Pump",
-  "Paver",
-  "Motor Grader",
-  "Other",
+  "Construction Equipment",
+  "Material Handling / Special Equipment",
 ] as const;
+
+const EQUIPMENT_BODY_APPLICATION_MAP: Record<string, readonly string[]> = {
+  "Construction Equipment": [
+    "Excavator",
+    "Backhoe Loader",
+    "Wheel Loader",
+    "Motor Grader",
+    "Road Roller",
+    "Paver",
+    "Transit Mixer",
+    "Concrete Pump",
+  ],
+  "Material Handling / Special Equipment": [
+    "Crane",
+    "Forklift",
+    "Hydra",
+    "Boom Lift",
+    "Recovery Vehicle",
+    "Fire Truck",
+    "Ambulance",
+  ],
+};
 
 const LEGACY_CLASSIFICATION_MAP: Record<
   string,
@@ -192,9 +201,14 @@ export function getBodyApplicationOptions(
   assetCategory?: string | null
 ): string[] {
   if (assetStructure === "STANDALONE") {
-    return assetCategory === "HCV"
-      ? [...STANDALONE_BODY_APPLICATION_OPTIONS, ...HCV_EXTRA_BODY_APPLICATION_OPTIONS]
-      : [...STANDALONE_BODY_APPLICATION_OPTIONS];
+    return assetCategory && STANDALONE_BODY_APPLICATION_MAP[assetCategory]
+      ? [...STANDALONE_BODY_APPLICATION_MAP[assetCategory]]
+      : [];
+  }
+  if (assetStructure === "EQUIPMENT") {
+    return assetCategory && EQUIPMENT_BODY_APPLICATION_MAP[assetCategory]
+      ? [...EQUIPMENT_BODY_APPLICATION_MAP[assetCategory]]
+      : [];
   }
   if (assetStructure === "DETACHABLE" && detachableType === "PRIME_MOVER") {
     return [...PRIME_MOVER_BODY_APPLICATION_OPTIONS];
@@ -233,21 +247,13 @@ export function toLegacyVehicleType(
   if (assetStructure === "DETACHABLE" && detachableType === "PRIME_MOVER") return "Tractor";
 
   switch (assetCategory) {
-    case "Pickup":
-      return "Pickup";
-    case "Mini Truck":
-      return "Mini Truck";
-    case "LCV":
+    case "SCV / LCV":
       return "LCV (Light Commercial Vehicle)";
-    case "HCV":
-    case "Crane Truck":
-    case "Recovery Truck":
+    case "Rigid Trucks":
       return "HCV (Heavy Commercial Vehicle)";
-    case "Tipper":
-      return "Tipper";
-    case "Tanker":
-      return "Tanker";
-    case "Bus":
+    case "Prime Mover + Trailer":
+      return "Tractor";
+    case "Bus / Passenger Commercial":
       return "Bus";
     default:
       return "Truck";

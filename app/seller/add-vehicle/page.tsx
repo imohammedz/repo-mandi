@@ -262,6 +262,17 @@ const brands = [
   "Others",
 ];
 
+const ATTACHED_TRAILER_TYPE_OPTIONS = [
+  "Flatbed",
+  "Low Bed",
+  "Semi Low Bed",
+  "Side Wall",
+  "Skeletal / Container Trailer",
+  "Tanker Trailer",
+  "Tip Trailer",
+  "Car Carrier Trailer",
+];
+
 const trailerTypeOptions = [
   "Flatbed",
   "Low Bed",
@@ -720,7 +731,9 @@ export default function AddVehiclePage() {
   const canAddMoreVideos = videos.length < MAX_VIDEOS;
   const standaloneShowsSuspension =
     isStandalone &&
-    (!form.bodyApplicationType || form.bodyApplicationType === "Prime Mover + Trailer" || form.assetCategory === "HCV");
+    (!form.bodyApplicationType ||
+      form.assetCategory === "Prime Mover + Trailer" ||
+      form.assetCategory === "Rigid Trucks");
 
   const validateStep = (targetStep: number) => {
     if (targetStep === STEP_LISTING) {
@@ -731,7 +744,15 @@ export default function AddVehiclePage() {
     }
 
     if (targetStep === STEP_BASICS) {
-      if (!form.assetCategory) return "Asset category is required.";
+      if (!form.assetCategory) return "Vehicle class is required.";
+      const availableBodyOptions = form.assetStructure
+        ? getBodyApplicationOptions(
+            form.assetStructure as AssetStructure,
+            (form.detachableType || null) as DetachableType | null,
+            form.assetCategory || null
+          )
+        : [];
+      if (availableBodyOptions.length > 0 && !form.bodyApplicationType) return "Body type is required.";
       if (!form.year) return "Year is required.";
       if ((isStandalone || isPrimeMover || isEquipment) && !form.brand) return "Brand / make is required.";
       if ((isStandalone || isPrimeMover || isEquipment) && !form.model) return "Model is required.";
@@ -1283,7 +1304,7 @@ export default function AddVehiclePage() {
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 2: Asset Basics</h1>
           <SelectField
-            label="Asset Category"
+            label="Vehicle Class"
             value={form.assetCategory}
             options={assetCategoryOptions}
             onChange={(value) => update("assetCategory", value)}
@@ -1292,10 +1313,21 @@ export default function AddVehiclePage() {
           />
           {bodyApplicationOptions.length > 0 ? (
             <SelectField
-              label="Body / Application Type"
+              label="Body Type"
               value={form.bodyApplicationType}
               options={bodyApplicationOptions}
               onChange={(value) => update("bodyApplicationType", value)}
+              required
+            />
+          ) : null}
+
+          {isStandalone && form.assetCategory === "Prime Mover + Trailer" ? (
+            <SelectField
+              label="Attached Trailer Type"
+              value={form.trailerType}
+              options={ATTACHED_TRAILER_TYPE_OPTIONS}
+              onChange={(value) => update("trailerType", value)}
+              helperText="Optional — select the type of trailer attached to this combination."
             />
           ) : null}
 
