@@ -399,7 +399,6 @@ export async function POST(request: Request) {
     const suspensionType = toSafeString(body.suspensionType);
     const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
     const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
-    const requiresInteriorPhoto = false;
     const normalizedInteriorPhoto = interiorPhoto;
 
     const financeCompany = toSafeString(body.financeCompany);
@@ -738,7 +737,13 @@ export async function POST(request: Request) {
       })
       .returning();
 
-    const mediaRows = [
+    const mediaRows: Array<{
+      type: typeof vehicleMedia.type._.data;
+      category: typeof vehicleMedia.category._.data;
+      url: string;
+      mimeType?: string;
+      sizeBytes?: number | null;
+    }> = [
       { type: "PHOTO", category: "FRONT", url: frontPhoto },
       { type: "PHOTO", category: "BACK", url: backPhoto },
       { type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto },
@@ -780,11 +785,11 @@ export async function POST(request: Request) {
       await db.insert(vehicleMedia).values(
         mediaRows.map((item) => ({
           vehicleId: inserted.id,
-          type: item.type as typeof vehicleMedia.type._.data,
-          category: item.category as typeof vehicleMedia.category._.data,
+          type: item.type,
+          category: item.category,
           url: item.url,
-          mimeType: "mimeType" in item ? item.mimeType || "" : "",
-          sizeBytes: "sizeBytes" in item ? item.sizeBytes ?? null : null,
+          mimeType: item.mimeType || "",
+          sizeBytes: item.sizeBytes ?? null,
           customName: null,
         }))
       );
