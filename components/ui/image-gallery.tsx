@@ -11,6 +11,7 @@ export type GalleryMediaItem = {
   mediumUrl?: string;
   fullUrl?: string;
   url?: string;
+  imageUrl?: string;
   category?: string;
 };
 
@@ -34,7 +35,7 @@ export function ImageGallery({ media, title }: Props) {
 
     for (const item of media) {
       if (item.kind === "video") {
-        const base = item.url || item.mediumUrl || item.fullUrl || item.thumbnailUrl;
+        const base = item.mediumUrl || item.fullUrl || item.thumbnailUrl || item.url || item.imageUrl;
         if (!base) continue;
         const key = `video:${base}`;
         if (seen.has(key)) continue;
@@ -49,9 +50,11 @@ export function ImageGallery({ media, title }: Props) {
         continue;
       }
 
-      const thumbnailUrl = resolveImageSrcForRender(item.thumbnailUrl || item.url || item.mediumUrl || item.fullUrl);
-      const mediumUrl = resolveImageSrcForRender(item.mediumUrl || item.url || item.fullUrl, thumbnailUrl);
-      const fullUrl = resolveImageSrcForRender(item.fullUrl || item.url || item.mediumUrl, mediumUrl);
+      const thumbnailUrl = resolveImageSrcForRender(
+        item.thumbnailUrl || item.mediumUrl || item.fullUrl || item.url || item.imageUrl
+      );
+      const mediumUrl = resolveImageSrcForRender(item.mediumUrl || item.fullUrl || item.thumbnailUrl || item.url || item.imageUrl, thumbnailUrl);
+      const fullUrl = resolveImageSrcForRender(item.fullUrl || item.mediumUrl || item.thumbnailUrl || item.url || item.imageUrl, mediumUrl);
       if (!mediumUrl) continue;
       const key = `image:${fullUrl || mediumUrl}`;
       if (seen.has(key)) continue;
@@ -125,7 +128,7 @@ export function ImageGallery({ media, title }: Props) {
           src={item.mediumUrl}
           controls
           preload="metadata"
-          className="h-full w-full object-cover"
+          className="h-full w-full bg-black object-contain object-center"
           aria-label={videoLabel}
         />
       );
@@ -135,9 +138,8 @@ export function ImageGallery({ media, title }: Props) {
       <SafeImage
         src={item.mediumUrl}
         alt={title}
-        width={1200}
-        height={750}
-        className="h-full w-full object-cover"
+        fill
+        className="object-contain object-center"
         priority={isPriority}
         sizes="(max-width: 768px) 100vw, 768px"
         logContext={{ component: "ImageGallery", imageType: "active", index: active }}
@@ -181,7 +183,7 @@ export function ImageGallery({ media, title }: Props) {
           <video
             src={item.thumbnailUrl}
             preload="metadata"
-            className="h-full w-full object-cover opacity-80"
+            className="h-full w-full object-contain object-center opacity-80"
             aria-label={`${title} video thumbnail ${index + 1}`}
           />
           <span className="absolute inset-0 flex items-center justify-center">
@@ -192,23 +194,24 @@ export function ImageGallery({ media, title }: Props) {
     }
 
     return (
-      <SafeImage
-        src={item.thumbnailUrl}
-        alt={`${title} thumbnail ${index + 1}`}
-        width={200}
-        height={120}
-        className="h-16 w-full rounded-lg object-cover"
-        sizes="96px"
-        loading="lazy"
-        logContext={{ component: "ImageGallery", imageType: "thumbnail", index }}
-      />
+      <div className="relative h-16 w-full overflow-hidden rounded-lg bg-black">
+        <SafeImage
+          src={item.thumbnailUrl}
+          alt={`${title} thumbnail ${index + 1}`}
+          fill
+          className="object-contain object-center"
+          sizes="96px"
+          loading="lazy"
+          logContext={{ component: "ImageGallery", imageType: "thumbnail", index }}
+        />
+      </div>
     );
   };
 
   return (
     <>
       <div className="space-y-3">
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-black">
           <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap gap-2">
             <span className="rounded-full bg-black/65 px-2 py-1 text-[11px] font-medium text-white">
               {photoCount} Photos
@@ -225,7 +228,7 @@ export function ImageGallery({ media, title }: Props) {
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
-            className="relative block aspect-[4/3] w-full"
+            className="relative block aspect-[4/3] w-full bg-black"
             aria-label="Open gallery fullscreen"
           >
             {activeMedia ? renderMainMedia(activeMedia, active === 0) : null}
@@ -258,7 +261,7 @@ export function ImageGallery({ media, title }: Props) {
               key={`${item.kind}-${index}`}
               type="button"
               onClick={() => setActive(index)}
-              className={`w-24 shrink-0 rounded-xl border p-0.5 ${active === index ? "border-slate-900" : "border-slate-200"}`}
+              className={`w-24 shrink-0 rounded-xl border bg-black p-0.5 ${active === index ? "border-slate-900 ring-1 ring-slate-900/25" : "border-slate-200"}`}
               aria-label={`Select media ${index + 1}`}
             >
               {renderThumbnail(item, index)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 
 type Props = {
@@ -14,56 +14,48 @@ const STICKY_OFFSET = "calc(4.5rem + env(safe-area-inset-bottom, 0px))";
 
 export function VehicleStickyContactCta({ sellerCardId, vehicleId, sellerPhone, vehicleTitle }: Props) {
   const [showStickyCta, setShowStickyCta] = useState(false);
+  const sellerCardRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let observer: IntersectionObserver | null = null;
-    let retryTimer: number | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let mounted = true;
     let attempts = 0;
-    let resizeHandler: (() => void) | null = null;
 
     const setupObserver = () => {
       if (!mounted) return;
-      const element = document.getElementById(sellerCardId);
-      if (!element) {
-        attempts += 1;
-        if (attempts > 10) {
-          retryTimer = window.setTimeout(() => mounted && setShowStickyCta(true), 0);
-          return;
-        }
-        retryTimer = window.setTimeout(setupObserver, 100);
-        return;
+      if (!sellerCardRef.current) {
+        sellerCardRef.current = document.getElementById(sellerCardId);
       }
 
-      resizeHandler = () => {
-        const rect = element.getBoundingClientRect();
-        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-        setShowStickyCta(!isVisible);
-      };
+      if (!sellerCardRef.current) {
+        attempts += 1;
+        if (attempts > 10) {
+          setShowStickyCta(true);
+          return;
+        }
+        retryTimer = setTimeout(setupObserver, 100);
+        return;
+      }
 
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          setShowStickyCta(!entry.isIntersecting);
+          const sellerCardVisible = entry.isIntersecting && entry.intersectionRatio > 0;
+          setShowStickyCta(!sellerCardVisible);
         },
-        { threshold: 0.05 }
+        { threshold: [0, 0.01, 0.05] }
       );
 
-      observer.observe(element);
-      window.addEventListener("resize", resizeHandler);
-      window.setTimeout(() => {
-        if (!mounted) return;
-        if (resizeHandler) resizeHandler();
-      }, 0);
+      observer.observe(sellerCardRef.current);
     };
 
     setupObserver();
 
     return () => {
       mounted = false;
-      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      if (retryTimer !== null) clearTimeout(retryTimer);
       observer?.disconnect();
-      if (resizeHandler) window.removeEventListener("resize", resizeHandler);
     };
   }, [sellerCardId]);
 
