@@ -53,7 +53,7 @@ export default async function SellerListingsPage() {
               <Link href={`/vehicles/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
                 View
               </Link>
-              <Link href={`/seller/edit-vehicle/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
+              <Link href={`/seller/listings/${item.id}/edit`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
                 Edit
               </Link>
               <DeleteListingButton vehicleId={item.id} />

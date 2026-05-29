@@ -10,7 +10,12 @@ export function DeleteListingButton({ vehicleId }: { vehicleId: string }) {
 
   const handleDelete = async () => {
     if (loading) return;
-    if (!window.confirm("Are you sure you want to delete this listing?")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this listing? This action will remove it from public listings."
+      )
+    )
+      return;
 
     setLoading(true);
     setError("");
