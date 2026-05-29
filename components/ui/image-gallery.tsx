@@ -135,8 +135,9 @@ export function ImageGallery({ media, title }: Props) {
       <SafeImage
         src={item.mediumUrl}
         alt={title}
-        fill
-        className="object-contain"
+        width={1200}
+        height={750}
+        className="h-full w-full object-cover"
         priority={isPriority}
         sizes="(max-width: 768px) 100vw, 768px"
         logContext={{ component: "ImageGallery", imageType: "active", index: active }}

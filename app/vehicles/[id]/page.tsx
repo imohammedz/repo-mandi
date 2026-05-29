@@ -557,19 +557,12 @@ export default async function VehicleDetailPage({
             </section>
           ) : null}
 
-          <section className="space-y-3 pb-4">
+          <section className="space-y-3">
             <h2 className="text-base font-semibold text-slate-900">Similar Vehicles</h2>
             <div className="space-y-4">
-              {similar.length > 0 ? (
-                similar.map((item) => (
-                  <VehicleCard key={item.id} vehicle={item} compact />
-                ))
-              ) : (
-                <div role="status" className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-                  <p className="font-medium text-slate-700">No similar vehicles found</p>
-                  <p className="mt-1 text-sm text-slate-500">Check back later for more listings like this.</p>
-                </div>
-              )}
+              {similar.map((item) => (
+                <VehicleCard key={item.id} vehicle={item} compact />
+              ))}
             </div>
           </section>
         </div>
