@@ -11,7 +11,6 @@ export type GalleryMediaItem = {
   mediumUrl?: string;
   fullUrl?: string;
   url?: string;
-  imageUrl?: string;
   category?: string;
 };
 
@@ -35,7 +34,7 @@ export function ImageGallery({ media, title }: Props) {
 
     for (const item of media) {
       if (item.kind === "video") {
-        const base = item.fullUrl || item.mediumUrl || item.thumbnailUrl || item.url || item.imageUrl;
+        const base = item.url || item.mediumUrl || item.fullUrl || item.thumbnailUrl;
         if (!base) continue;
         const key = `video:${base}`;
         if (seen.has(key)) continue;
@@ -50,17 +49,9 @@ export function ImageGallery({ media, title }: Props) {
         continue;
       }
 
-      const thumbnailUrl = resolveImageSrcForRender(
-        item.thumbnailUrl || item.fullUrl || item.mediumUrl || item.url || item.imageUrl
-      );
-      const mediumUrl = resolveImageSrcForRender(
-        item.fullUrl || item.mediumUrl || item.thumbnailUrl || item.url || item.imageUrl,
-        thumbnailUrl
-      );
-      const fullUrl = resolveImageSrcForRender(
-        item.fullUrl || item.mediumUrl || item.thumbnailUrl || item.url || item.imageUrl,
-        mediumUrl
-      );
+      const thumbnailUrl = resolveImageSrcForRender(item.thumbnailUrl || item.url || item.mediumUrl || item.fullUrl);
+      const mediumUrl = resolveImageSrcForRender(item.mediumUrl || item.url || item.fullUrl, thumbnailUrl);
+      const fullUrl = resolveImageSrcForRender(item.fullUrl || item.url || item.mediumUrl, mediumUrl);
       if (!mediumUrl) continue;
       const key = `image:${fullUrl || mediumUrl}`;
       if (seen.has(key)) continue;
@@ -81,7 +72,7 @@ export function ImageGallery({ media, title }: Props) {
   const videoCount = resolvedMedia.filter((item) => item.kind === "video").length;
   const [active, setActive] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const selectedMedia = resolvedMedia[active] ?? resolvedMedia[0] ?? null;
+  const activeMedia = resolvedMedia[active] ?? null;
   const hasMedia = resolvedMedia.length > 0;
 
   const changeActive = useCallback(
@@ -230,16 +221,14 @@ export function ImageGallery({ media, title }: Props) {
               {active + 1}/{resolvedMedia.length}
             </span>
           </div>
-          <div className="relative w-full aspect-[4/3] max-h-[520px] overflow-hidden rounded-2xl bg-slate-100">
-            <button
-              type="button"
-              onClick={() => setLightboxOpen(true)}
-              className="absolute inset-0 block h-full w-full cursor-zoom-in p-0"
-              aria-label="Open gallery fullscreen"
-            >
-              {selectedMedia ? renderMainMedia(selectedMedia, active === 0) : null}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="relative block aspect-[4/3] w-full"
+            aria-label="Open gallery fullscreen"
+          >
+            {activeMedia ? renderMainMedia(activeMedia, active === 0) : null}
+          </button>
           {resolvedMedia.length > 1 ? (
             <>
               <button
@@ -268,7 +257,7 @@ export function ImageGallery({ media, title }: Props) {
               key={`${item.kind}-${index}`}
               type="button"
               onClick={() => setActive(index)}
-              className={`h-16 w-24 shrink-0 overflow-hidden rounded-xl border bg-slate-100 p-0.5 ${active === index ? "border-slate-900 ring-1 ring-slate-900" : "border-slate-200"}`}
+              className={`w-24 shrink-0 rounded-xl border p-0.5 ${active === index ? "border-slate-900" : "border-slate-200"}`}
               aria-label={`Select media ${index + 1}`}
             >
               {renderThumbnail(item, index)}
@@ -277,7 +266,7 @@ export function ImageGallery({ media, title }: Props) {
         </div>
       </div>
 
-      {lightboxOpen && selectedMedia ? (
+      {lightboxOpen && activeMedia ? (
         <div
           className="fixed inset-0 z-50 bg-black/90 p-4"
           role="dialog"
@@ -301,7 +290,7 @@ export function ImageGallery({ media, title }: Props) {
             {active + 1} / {resolvedMedia.length}
           </div>
           <div className="mx-auto flex h-full w-full max-w-5xl items-center justify-center">
-            {renderLightboxMedia(selectedMedia)}
+            {renderLightboxMedia(activeMedia)}
           </div>
           {resolvedMedia.length > 1 ? (
             <>
