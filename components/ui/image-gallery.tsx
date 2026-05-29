@@ -73,6 +73,7 @@ export function ImageGallery({ media, title }: Props) {
 
   const photoCount = resolvedMedia.filter((item) => item.kind === "image").length;
   const videoCount = resolvedMedia.filter((item) => item.kind === "video").length;
+  const firstImageIndex = resolvedMedia.findIndex((item) => item.kind === "image");
   const [active, setActive] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const activeMedia = resolvedMedia[active] ?? null;
@@ -142,7 +143,7 @@ export function ImageGallery({ media, title }: Props) {
         height={1000}
         className="h-full w-full object-contain object-center"
         priority={isPriority}
-        loading={isPriority ? "eager" : "lazy"}
+        loading={isPriority ? undefined : "lazy"}
         sizes="(max-width: 768px) 100vw, 768px"
         logContext={{ component: "ImageGallery", imageType: "active", index: active }}
       />
@@ -203,7 +204,8 @@ export function ImageGallery({ media, title }: Props) {
           fill
           className="object-contain object-center"
           sizes="96px"
-          loading="lazy"
+          priority={index === firstImageIndex}
+          loading={index === firstImageIndex ? undefined : "lazy"}
           logContext={{ component: "ImageGallery", imageType: "thumbnail", index }}
         />
       </div>
