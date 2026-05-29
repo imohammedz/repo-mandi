@@ -400,7 +400,7 @@ export default async function VehicleDetailPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-4 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4 md:space-y-5">
+    <main className="mx-auto w-full max-w-4xl space-y-5 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4">
       <div className="flex flex-wrap gap-2">
         <Link
           href="/vehicles"
@@ -483,7 +483,7 @@ export default async function VehicleDetailPage({
         </section>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-6">
+      <div className="space-y-5">
         <SellerCard
           id="seller-contact-card"
           name={vehicle.businessName || vehicle.sellerName}
@@ -497,10 +497,10 @@ export default async function VehicleDetailPage({
           photosVerified={vehicle.photosVerified ?? false}
           rcVerified={vehicle.rcVerified ?? false}
           yardVerified={vehicle.yardVerified ?? false}
-          className="self-start lg:sticky lg:top-24"
+          className="h-fit w-full"
         />
 
-        <div className="space-y-4 lg:space-y-5">
+        <div className="w-full space-y-5">
           <section className="space-y-4">
             <h2 className="text-base font-semibold text-slate-900">Vehicle Specifications</h2>
             {renderSpecGroup("Vehicle Information", vehicleInfoSpecs)}
@@ -528,7 +528,7 @@ export default async function VehicleDetailPage({
           {documentRows.length ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-semibold text-slate-900">Documents</h2>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="mt-3 space-y-2">
                 {documentRows.map((doc) => {
                   const label = DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.customName) || "Document";
                   const isVerified =
