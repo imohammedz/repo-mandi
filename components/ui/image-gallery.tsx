@@ -141,6 +141,7 @@ export function ImageGallery({ media, title }: Props) {
         fill
         className="object-contain object-center"
         priority={isPriority}
+        loading={isPriority ? "eager" : "lazy"}
         sizes="(max-width: 768px) 100vw, 768px"
         logContext={{ component: "ImageGallery", imageType: "active", index: active }}
       />
@@ -211,7 +212,7 @@ export function ImageGallery({ media, title }: Props) {
   return (
     <>
       <div className="space-y-3">
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-black">
+        <div className="relative h-[280px] overflow-hidden rounded-2xl border border-slate-200 bg-black sm:h-[340px] md:h-[420px]">
           <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap gap-2">
             <span className="rounded-full bg-black/65 px-2 py-1 text-[11px] font-medium text-white">
               {photoCount} Photos
@@ -228,7 +229,7 @@ export function ImageGallery({ media, title }: Props) {
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
-            className="relative block aspect-[4/3] w-full bg-black"
+            className="relative block h-full w-full bg-black"
             aria-label="Open gallery fullscreen"
           >
             {activeMedia ? renderMainMedia(activeMedia, active === 0) : null}
