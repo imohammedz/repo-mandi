@@ -5,6 +5,7 @@ import { formatEnumLabel } from "@/lib/formatting";
 import { CircleCheck } from "lucide-react";
 
 type Props = {
+  id?: string;
   name: string;
   role: string;
   phone: string;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function SellerCard({
+  id,
   name,
   role,
   phone,
@@ -39,7 +41,7 @@ export function SellerCard({
   if (yardVerified) trustBadges.push("Yard Verified");
 
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
+    <section id={id} className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
       <h3 className="text-sm font-semibold tracking-wide text-slate-700">Seller Profile</h3>
       <p className="mt-3 text-lg font-semibold text-slate-900">{name}</p>
       <p className="text-sm text-slate-500">

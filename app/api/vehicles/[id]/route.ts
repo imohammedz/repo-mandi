@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { vehicles } from "@/lib/schema";
+import { vehicleMedia, vehicles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -42,7 +42,14 @@ export async function GET(
       walkaroundVideo: sanitizeSupabaseMediaUrl(row.walkaroundVideo) || null,
       engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
     };
-    return Response.json(normalizedRow);
+    const mediaRows = await db.select().from(vehicleMedia).where(eq(vehicleMedia.vehicleId, row.id));
+    return Response.json({
+      ...normalizedRow,
+      media: mediaRows.map((media) => ({
+        ...media,
+        url: sanitizeSupabaseMediaUrl(media.url),
+      })),
+    });
   } catch (error) {
     console.error("GET /api/vehicles/[id] failed", error);
     return Response.json({ message: "Failed to fetch vehicle." }, { status: 500 });

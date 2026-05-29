@@ -13,13 +13,13 @@ import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
 import { vehicleMedia, vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { eq, ne, desc, and, isNull } from "drizzle-orm";
-import { ImageGallery } from "@/components/ui/image-gallery";
+import { eq, ne, desc, and, isNull, asc } from "drizzle-orm";
+import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { getCurrentUser } from "@/lib/auth";
-import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
@@ -153,6 +153,24 @@ const DOCUMENT_LABELS: Record<string, string> = {
   INSPECTION_REPORT: "Evaluation Report",
 };
 
+const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
+  FRONT: 1,
+  BACK: 2,
+  LEFT_SIDE: 3,
+  SIDE: 3,
+  RIGHT_SIDE: 4,
+  INTERIOR: 5,
+  TRAILER_BODY: 6,
+  LOAD_BODY: 6,
+  HYDRAULIC_SYSTEM: 6,
+  TYRES: 7,
+  CHASSIS: 8,
+  DAMAGE: 9,
+  OTHER: 10,
+};
+
+const VIDEO_DISPLAY_PRIORITY = 11;
+
 export default async function VehicleDetailPage({
   params,
 }: {
@@ -169,18 +187,86 @@ export default async function VehicleDetailPage({
   if (!isPublicLive && !canViewPrivate) notFound();
 
   const vehicle = dbToVehicle(row);
-  const orderedImages = Array.from(
-    new Set(
-      [
-        vehicle.frontPhoto,
-        vehicle.backPhoto,
-        vehicle.leftSidePhoto || vehicle.sidePhoto,
-        vehicle.rightSidePhoto,
-        vehicle.interiorPhoto,
-        ...vehicle.gallery,
-      ].filter(Boolean)
-    )
-  ) as string[];
+  const mediaRows = await db
+    .select()
+    .from(vehicleMedia)
+    .where(eq(vehicleMedia.vehicleId, vehicle.id))
+    .orderBy(asc(vehicleMedia.createdAt));
+
+  const galleryMedia: GalleryMediaItem[] = [];
+  const seenMedia = new Set<string>();
+  const pushGalleryMedia = (item: GalleryMediaItem) => {
+    const sourceUrl = item.url || item.mediumUrl || item.fullUrl || item.thumbnailUrl;
+    if (!sourceUrl) return;
+    const key = `${item.kind}:${sourceUrl}`;
+    if (seenMedia.has(key)) return;
+    seenMedia.add(key);
+    galleryMedia.push(item);
+  };
+
+  for (const row of mediaRows) {
+    if (row.type === "PHOTO") {
+      pushGalleryMedia({
+        kind: "image",
+        url: row.url,
+        category: row.category,
+      });
+      continue;
+    }
+
+    if (row.type === "VIDEO") {
+      pushGalleryMedia({
+        kind: "video",
+        url: row.url,
+        category: row.category,
+      });
+    }
+  }
+
+  const fallbackPhotoFields: Array<{ url?: string; category: string }> = [
+    { url: vehicle.frontPhoto, category: "FRONT" },
+    { url: vehicle.backPhoto, category: "BACK" },
+    { url: vehicle.leftSidePhoto || vehicle.sidePhoto, category: "LEFT_SIDE" },
+    { url: vehicle.rightSidePhoto, category: "RIGHT_SIDE" },
+    { url: vehicle.interiorPhoto, category: "INTERIOR" },
+  ];
+  for (const photo of fallbackPhotoFields) {
+    if (!photo.url) continue;
+    pushGalleryMedia({
+      kind: "image",
+      url: photo.url,
+      category: photo.category,
+    });
+  }
+  for (const additionalUrl of vehicle.gallery) {
+    pushGalleryMedia({
+      kind: "image",
+      url: additionalUrl,
+      category: "OTHER",
+    });
+  }
+  if (vehicle.walkaroundVideo) {
+    pushGalleryMedia({
+      kind: "video",
+      url: vehicle.walkaroundVideo,
+      category: "WALKAROUND",
+    });
+  }
+  if (vehicle.engineStartUpVideo) {
+    pushGalleryMedia({
+      kind: "video",
+      url: vehicle.engineStartUpVideo,
+      category: "ENGINE_STARTUP",
+    });
+  }
+
+  const orderedGalleryMedia = [...galleryMedia].sort((a, b) => {
+    const aPriority =
+      a.kind === "video" ? VIDEO_DISPLAY_PRIORITY : PHOTO_DISPLAY_PRIORITY[a.category || "OTHER"] || 10;
+    const bPriority =
+      b.kind === "video" ? VIDEO_DISPLAY_PRIORITY : PHOTO_DISPLAY_PRIORITY[b.category || "OTHER"] || 10;
+    return aPriority - bPriority;
+  });
 
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
@@ -204,12 +290,6 @@ export default async function VehicleDetailPage({
     .orderBy(desc(vehiclesTable.createdAt))
     .limit(3);
   const similar = similarRows.map(dbToVehicle);
-
-  const videoRows = await db
-    .select()
-    .from(vehicleMedia)
-    .where(and(eq(vehicleMedia.vehicleId, vehicle.id), eq(vehicleMedia.type, "VIDEO")))
-    .orderBy(desc(vehicleMedia.createdAt));
 
   const documentRows = await db
     .select()
@@ -309,7 +389,7 @@ export default async function VehicleDetailPage({
   }
 
   return (
-    <main className="space-y-5 px-4 pb-32 pt-4">
+    <main className="space-y-5 px-4 pb-44 pt-4">
       <Link
         href="/vehicles"
         className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
@@ -318,25 +398,9 @@ export default async function VehicleDetailPage({
       </Link>
 
       <div className="relative">
-        <ImageGallery images={orderedImages} title={heroTitle} videoCount={videoRows.length} />
+        <ImageGallery media={orderedGalleryMedia} title={heroTitle} />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
-
-      {videoRows.length ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Videos</h2>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            {videoRows.map((video) => (
-              <div key={video.id} className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  {toReadableLabel(video.category)}
-                </p>
-                <video src={video.url} controls className="w-full rounded-xl bg-black" />
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap gap-2">
@@ -400,6 +464,7 @@ export default async function VehicleDetailPage({
 
       <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
         <SellerCard
+          id="seller-contact-card"
           name={vehicle.businessName || vehicle.sellerName}
           role={vehicle.sellerRole}
           phone={vehicle.sellerPhone}
@@ -484,16 +549,12 @@ export default async function VehicleDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-16 z-30 mx-auto w-full max-w-xl border-t border-slate-100 bg-white p-3 lg:hidden">
-        <VehicleContactActions
-          vehicleId={vehicle.id}
-          sellerPhone={vehicle.sellerPhone}
-          vehicleTitle={heroTitle}
-          className="w-full"
-          showRequestDetails
-          layout="inline"
-        />
-      </div>
+      <VehicleStickyContactCta
+        sellerCardId="seller-contact-card"
+        vehicleId={vehicle.id}
+        sellerPhone={vehicle.sellerPhone}
+        vehicleTitle={heroTitle}
+      />
     </main>
   );
 }
