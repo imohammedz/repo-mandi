@@ -24,7 +24,7 @@ async function getOwnedVehicle(id: string, sellerId: number) {
   if (vehicle.sellerId !== sellerId) {
     return { vehicle: null, error: "forbidden" as const };
   }
-  return { vehicle, error: null as const };
+  return { vehicle, error: null };
 }
 
 export async function PATCH(
@@ -45,7 +45,7 @@ export async function PATCH(
     const { vehicle: existing, error } = await getOwnedVehicle(id, currentUser.id);
     if (!existing) {
       return Response.json(
-        { message: error === "forbidden" ? "Forbidden." : "Vehicle not found." },
+        { message: error === "forbidden" ? "You do not have permission to access this listing." : "Vehicle not found." },
         { status: error === "forbidden" ? 403 : 404 }
       );
     }
@@ -119,7 +119,7 @@ export async function DELETE(
     const { vehicle: existing, error } = await getOwnedVehicle(id, currentUser.id);
     if (!existing) {
       return Response.json(
-        { message: error === "forbidden" ? "Forbidden." : "Vehicle not found." },
+        { message: error === "forbidden" ? "You do not have permission to access this listing." : "Vehicle not found." },
         { status: error === "forbidden" ? 403 : 404 }
       );
     }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
@@ -137,12 +138,12 @@ export default async function VehicleListingPage({
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <p className="text-base font-semibold text-slate-900">No vehicles found</p>
-            <a
+            <Link
               href="/vehicles"
               className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700"
             >
               Clear filters
-            </a>
+            </Link>
           </div>
         )}
       </section>

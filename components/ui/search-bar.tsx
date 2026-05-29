@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type Props = {
   placeholder?: string;
@@ -15,12 +15,11 @@ export function SearchBar({
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [query, setQuery] = useState("");
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const next = new URLSearchParams(searchParams.toString());
+    const next = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
     const normalized = query.trim();
     if (normalized) next.set("q", normalized);
     else next.delete("q");

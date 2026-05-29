@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
@@ -75,12 +75,15 @@ export function ImageGallery({ media, title }: Props) {
   const activeMedia = resolvedMedia[active] ?? null;
   const hasMedia = resolvedMedia.length > 0;
 
-  const changeActive = (next: number) => {
-    if (!hasMedia) return;
-    const length = resolvedMedia.length;
-    const normalized = (next + length) % length;
-    setActive(normalized);
-  };
+  const changeActive = useCallback(
+    (next: number) => {
+      if (!hasMedia) return;
+      const length = resolvedMedia.length;
+      const normalized = (next + length) % length;
+      setActive(normalized);
+    },
+    [hasMedia, resolvedMedia.length]
+  );
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -100,7 +103,7 @@ export function ImageGallery({ media, title }: Props) {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [active, lightboxOpen]);
+  }, [active, changeActive, lightboxOpen]);
 
   if (!hasMedia) {
     return (
@@ -267,6 +270,9 @@ export function ImageGallery({ media, title }: Props) {
       {lightboxOpen && activeMedia ? (
         <div
           className="fixed inset-0 z-50 bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image viewer"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setLightboxOpen(false);

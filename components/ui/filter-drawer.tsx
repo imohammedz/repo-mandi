@@ -159,9 +159,16 @@ export function FilterDrawer() {
 
       {open ? (
         <div className="fixed inset-0 z-50 bg-black/40">
-          <aside className="absolute right-0 top-0 h-full w-[92%] max-w-md overflow-y-auto bg-white p-5">
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="vehicle-filter-title"
+            className="absolute right-0 top-0 h-full w-[92%] max-w-md overflow-y-auto bg-white p-5"
+          >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900">Filter vehicles</h3>
+              <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
+                Filter vehicles
+              </h3>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded-lg border border-slate-200 p-2"

@@ -21,7 +21,7 @@ export default async function EditSellerListingPage({
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
   if (!row || row.deletedAt) notFound();
   if (currentUser.accountType !== "ADMIN" && row.sellerId !== currentUser.id) {
-    redirect("/seller/listings");
+    notFound();
   }
 
   return <EditVehicleClient vehicle={dbToVehicle(row)} />;
