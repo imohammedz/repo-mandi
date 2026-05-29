@@ -231,7 +231,7 @@ export function VehicleContactActions({
               onClick={() => openActionSheet("REQUEST_DETAILS")}
               className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
             >
-              Request
+            Request Details
             </button>
           ) : null}
         </div>
