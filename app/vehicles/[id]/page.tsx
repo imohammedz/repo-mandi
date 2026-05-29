@@ -124,13 +124,13 @@ const toSpecValue = (value: string | number | null | undefined) => {
 const renderSpecGroup = (title: string, rows: Array<{ label: string; value: string }>) => {
   if (!rows.length) return null;
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
-      <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2">
         {rows.map((row) => (
           <div key={`${title}-${row.label}`}>
-            <dt className="text-xs text-slate-500">{row.label}</dt>
-            <dd className="text-sm font-semibold text-slate-900">{row.value}</dd>
+            <dt className="text-xs font-medium text-slate-500">{row.label}</dt>
+            <dd className="mt-0.5 text-sm font-semibold text-slate-900">{row.value}</dd>
           </div>
         ))}
       </dl>
@@ -400,28 +400,30 @@ export default async function VehicleDetailPage({
   }
 
   return (
-    <main className="space-y-5 px-4 pb-44 pt-4">
-      <Link
-        href="/vehicles"
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to listings
-      </Link>
-      {isOwner ? (
+    <main className="mx-auto w-full max-w-6xl space-y-4 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4 md:space-y-5">
+      <div className="flex flex-wrap gap-2">
         <Link
-          href={`/seller/listings/${vehicle.id}/edit`}
-          className="ml-2 inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
+          href="/vehicles"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
         >
-          Edit listing
+          <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
-      ) : null}
+        {isOwner ? (
+          <Link
+            href={`/seller/listings/${vehicle.id}/edit`}
+            className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
+          >
+            Edit listing
+          </Link>
+        ) : null}
+      </div>
 
       <div className="relative">
         <ImageGallery media={orderedGalleryMedia} title={heroTitle} />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
         <div className="flex flex-wrap gap-2">
           {classificationTags.map((tag) => (
             <span
@@ -470,7 +472,7 @@ export default async function VehicleDetailPage({
       </section>
 
       {quickInfoChips.length ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
           <div className="flex flex-wrap gap-2">
             {quickInfoChips.map((chip) => (
               <span key={chip} className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -481,7 +483,7 @@ export default async function VehicleDetailPage({
         </section>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-6">
         <SellerCard
           id="seller-contact-card"
           name={vehicle.businessName || vehicle.sellerName}
@@ -495,11 +497,11 @@ export default async function VehicleDetailPage({
           photosVerified={vehicle.photosVerified ?? false}
           rcVerified={vehicle.rcVerified ?? false}
           yardVerified={vehicle.yardVerified ?? false}
-          className="lg:sticky lg:top-24"
+          className="self-start lg:sticky lg:top-24"
         />
 
-        <div className="space-y-5">
-          <section className="space-y-3">
+        <div className="space-y-4 lg:space-y-5">
+          <section className="space-y-4">
             <h2 className="text-base font-semibold text-slate-900">Vehicle Specifications</h2>
             {renderSpecGroup("Vehicle Information", vehicleInfoSpecs)}
             {renderSpecGroup("Registration & Compliance", registrationSpecs)}
@@ -507,7 +509,7 @@ export default async function VehicleDetailPage({
             {renderSpecGroup("Trailer / Body Details", trailerSpecs)}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Condition Notes</h2>
             {conditionNotes.length ? (
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
@@ -524,7 +526,7 @@ export default async function VehicleDetailPage({
           </section>
 
           {documentRows.length ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-semibold text-slate-900">Documents</h2>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {documentRows.map((doc) => {
