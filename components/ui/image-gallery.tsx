@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
@@ -82,10 +82,30 @@ export function ImageGallery({ media, title }: Props) {
     setActive(normalized);
   };
 
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setLightboxOpen(false);
+      }
+      if (event.key === "ArrowLeft") {
+        changeActive(active - 1);
+      }
+      if (event.key === "ArrowRight") {
+        changeActive(active + 1);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [active, lightboxOpen]);
+
   if (!hasMedia) {
     return (
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="flex aspect-[16/10] items-center justify-center bg-slate-100 px-4 text-center text-sm text-slate-500">
+      <div className="flex aspect-[4/3] items-center justify-center bg-slate-100 px-4 text-center text-sm text-slate-500">
           Photos not uploaded yet
         </div>
       </div>
@@ -202,7 +222,7 @@ export function ImageGallery({ media, title }: Props) {
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
-            className="relative block aspect-[16/10] w-full"
+            className="relative block aspect-[4/3] w-full"
             aria-label="Open gallery fullscreen"
           >
             {activeMedia ? renderMainMedia(activeMedia, active === 0) : null}
@@ -212,7 +232,7 @@ export function ImageGallery({ media, title }: Props) {
               <button
                 type="button"
                 onClick={() => changeActive(active - 1)}
-                className="absolute left-3 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white"
+                className="absolute left-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white"
                 aria-label="Previous media"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -220,7 +240,7 @@ export function ImageGallery({ media, title }: Props) {
               <button
                 type="button"
                 onClick={() => changeActive(active + 1)}
-                className="absolute right-3 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white"
+                className="absolute right-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white"
                 aria-label="Next media"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -245,15 +265,25 @@ export function ImageGallery({ media, title }: Props) {
       </div>
 
       {lightboxOpen && activeMedia ? (
-        <div className="fixed inset-0 z-50 bg-black/90 p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/90 p-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setLightboxOpen(false);
+            }
+          }}
+        >
           <button
             type="button"
             onClick={() => setLightboxOpen(false)}
-            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white"
-            aria-label="Close fullscreen gallery"
+            className="absolute right-4 top-4 z-10 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white"
+            aria-label="Close image viewer"
           >
             <X className="h-5 w-5" />
           </button>
+          <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">
+            {active + 1} / {resolvedMedia.length}
+          </div>
           <div className="mx-auto flex h-full w-full max-w-5xl items-center justify-center">
             {renderLightboxMedia(activeMedia)}
           </div>
@@ -262,7 +292,7 @@ export function ImageGallery({ media, title }: Props) {
               <button
                 type="button"
                 onClick={() => changeActive(active - 1)}
-                className="absolute left-4 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white"
+                className="absolute left-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white"
                 aria-label="Previous media fullscreen"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -270,7 +300,7 @@ export function ImageGallery({ media, title }: Props) {
               <button
                 type="button"
                 onClick={() => changeActive(active + 1)}
-                className="absolute right-4 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white"
+                className="absolute right-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white"
                 aria-label="Next media fullscreen"
               >
                 <ChevronRight className="h-5 w-5" />

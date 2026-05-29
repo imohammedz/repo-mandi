@@ -56,7 +56,12 @@ export default function EditVehicleClient({ vehicle }: Props) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this listing?")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this listing? This action will remove it from public listings."
+      )
+    )
+      return;
     setDeleting(true);
     setError("");
     try {

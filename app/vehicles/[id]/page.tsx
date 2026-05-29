@@ -188,8 +188,8 @@ export default async function VehicleDetailPage({
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
   if (!row || row.deletedAt) notFound();
   const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
-  const canViewPrivate =
-    currentUser?.accountType === "ADMIN" || (currentUser?.id && row.sellerId === currentUser.id);
+  const isOwner = Boolean(currentUser?.id && row.sellerId === currentUser.id);
+  const canViewPrivate = currentUser?.accountType === "ADMIN" || isOwner;
   if (!isPublicLive && !canViewPrivate) notFound();
 
   const vehicle = dbToVehicle(row);
@@ -407,6 +407,14 @@ export default async function VehicleDetailPage({
       >
         <ArrowLeft className="h-4 w-4" /> Back to listings
       </Link>
+      {isOwner ? (
+        <Link
+          href={`/seller/listings/${vehicle.id}/edit`}
+          className="ml-2 inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
+        >
+          Edit listing
+        </Link>
+      ) : null}
 
       <div className="relative">
         <ImageGallery media={orderedGalleryMedia} title={heroTitle} />

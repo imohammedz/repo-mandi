@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
@@ -17,12 +17,14 @@ function toPositiveNumberOrNull(value: unknown) {
 }
 
 async function getOwnedVehicle(id: string, sellerId: number) {
-  const [vehicle] = await db
-    .select()
-    .from(vehicles)
-    .where(and(eq(vehicles.id, id), eq(vehicles.sellerId, sellerId), isNull(vehicles.deletedAt)));
-
-  return vehicle;
+  const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+  if (!vehicle || vehicle.deletedAt) {
+    return { vehicle: null, error: "not_found" as const };
+  }
+  if (vehicle.sellerId !== sellerId) {
+    return { vehicle: null, error: "forbidden" as const };
+  }
+  return { vehicle, error: null as const };
 }
 
 export async function PATCH(
@@ -40,9 +42,12 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const existing = await getOwnedVehicle(id, currentUser.id);
+    const { vehicle: existing, error } = await getOwnedVehicle(id, currentUser.id);
     if (!existing) {
-      return Response.json({ message: "Vehicle not found." }, { status: 404 });
+      return Response.json(
+        { message: error === "forbidden" ? "Forbidden." : "Vehicle not found." },
+        { status: error === "forbidden" ? 403 : 404 }
+      );
     }
 
     const body = (await request.json()) as Record<string, unknown>;
@@ -111,9 +116,12 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const existing = await getOwnedVehicle(id, currentUser.id);
+    const { vehicle: existing, error } = await getOwnedVehicle(id, currentUser.id);
     if (!existing) {
-      return Response.json({ message: "Vehicle not found." }, { status: 404 });
+      return Response.json(
+        { message: error === "forbidden" ? "Forbidden." : "Vehicle not found." },
+        { status: error === "forbidden" ? 403 : 404 }
+      );
     }
 
     const [updated] = await db
