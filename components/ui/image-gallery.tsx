@@ -93,6 +93,9 @@ export function ImageGallery({ media, title }: Props) {
   }
 
   const renderMainMedia = (item: ResolvedGalleryItem, isPriority: boolean) => {
+    const videoLabel = item.category
+      ? `${title} ${item.category.toLowerCase().replace(/_/g, " ")} video`
+      : `${title} video`;
     if (item.kind === "video") {
       return (
         <video
@@ -100,7 +103,7 @@ export function ImageGallery({ media, title }: Props) {
           controls
           preload="metadata"
           className="h-full w-full object-cover"
-          aria-label={`${title} video`}
+          aria-label={videoLabel}
         />
       );
     }
@@ -120,6 +123,9 @@ export function ImageGallery({ media, title }: Props) {
   };
 
   const renderLightboxMedia = (item: ResolvedGalleryItem) => {
+    const videoLabel = item.category
+      ? `${title} ${item.category.toLowerCase().replace(/_/g, " ")} video fullscreen`
+      : `${title} video fullscreen`;
     if (item.kind === "video") {
       return (
         <video
@@ -127,7 +133,7 @@ export function ImageGallery({ media, title }: Props) {
           controls
           autoPlay
           className="max-h-[85vh] w-full rounded-xl bg-black object-contain"
-          aria-label={`${title} video fullscreen`}
+          aria-label={videoLabel}
         />
       );
     }
@@ -149,7 +155,12 @@ export function ImageGallery({ media, title }: Props) {
     if (item.kind === "video") {
       return (
         <div className="relative h-16 w-full overflow-hidden rounded-lg bg-black">
-          <video src={item.thumbnailUrl} preload="metadata" className="h-full w-full object-cover opacity-80" />
+          <video
+            src={item.thumbnailUrl}
+            preload="metadata"
+            className="h-full w-full object-cover opacity-80"
+            aria-label={`${title} video thumbnail ${index + 1}`}
+          />
           <span className="absolute inset-0 flex items-center justify-center">
             <Play className="h-4 w-4 text-white" />
           </span>
@@ -221,7 +232,7 @@ export function ImageGallery({ media, title }: Props) {
         <div className="flex gap-2 overflow-x-auto pb-1">
           {resolvedMedia.map((item, index) => (
             <button
-              key={`${item.kind}-${item.fullUrl}-${index}`}
+              key={`${item.kind}-${index}`}
               type="button"
               onClick={() => setActive(index)}
               className={`w-24 shrink-0 rounded-xl border p-0.5 ${active === index ? "border-slate-900" : "border-slate-200"}`}

@@ -170,6 +170,12 @@ const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
 };
 
 const VIDEO_DISPLAY_PRIORITY = 11;
+const DEFAULT_PHOTO_DISPLAY_PRIORITY = 10;
+
+const getMediaDisplayPriority = (item: GalleryMediaItem) =>
+  item.kind === "video"
+    ? VIDEO_DISPLAY_PRIORITY
+    : PHOTO_DISPLAY_PRIORITY[item.category || "OTHER"] || DEFAULT_PHOTO_DISPLAY_PRIORITY;
 
 export default async function VehicleDetailPage({
   params,
@@ -220,6 +226,15 @@ export default async function VehicleDetailPage({
         url: row.url,
         category: row.category,
       });
+      continue;
+    }
+
+    if (row.type !== "DOCUMENT") {
+      pushGalleryMedia({
+        kind: "image",
+        url: row.url,
+        category: "OTHER",
+      });
     }
   }
 
@@ -261,11 +276,7 @@ export default async function VehicleDetailPage({
   }
 
   const orderedGalleryMedia = [...galleryMedia].sort((a, b) => {
-    const aPriority =
-      a.kind === "video" ? VIDEO_DISPLAY_PRIORITY : PHOTO_DISPLAY_PRIORITY[a.category || "OTHER"] || 10;
-    const bPriority =
-      b.kind === "video" ? VIDEO_DISPLAY_PRIORITY : PHOTO_DISPLAY_PRIORITY[b.category || "OTHER"] || 10;
-    return aPriority - bPriority;
+    return getMediaDisplayPriority(a) - getMediaDisplayPriority(b);
   });
 
   const displayLocation =
