@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
 import type { Vehicle } from "@/types/vehicle";
 
 type AdminDashboardClientProps = {
@@ -126,7 +127,12 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
           ))}
         </div>
         {listToShow.length === 0 && (
-          <p className="text-sm text-slate-500">No listings in this queue.</p>
+          <p className="text-sm text-slate-500">
+            No listings in this queue. Need help?{" "}
+            <a href={getSupportMailto(SUPPORT_SUBJECTS.sellerVerification)} className="font-medium text-slate-700 underline underline-offset-2">
+              {SITE_CONFIG.supportEmail}
+            </a>
+          </p>
         )}
         {listToShow.map((vehicle) => (
           <article key={vehicle.id} className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">

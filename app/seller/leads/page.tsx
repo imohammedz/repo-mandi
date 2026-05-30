@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { leads, vehicles } from "@/lib/schema";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function SellerLeadsPage() {
       <h1 className="text-2xl font-semibold text-slate-900">Seller Leads</h1>
       <section className="space-y-3">
         {rows.length === 0 ? (
-          <p className="text-sm text-slate-500">No leads yet.</p>
+          <EmptyState title="No leads yet." description="New buyer leads will appear here." />
         ) : null}
         {rows.map((lead) => (
           <article key={lead.id} className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -48,4 +49,3 @@ export default async function SellerLeadsPage() {
     </main>
   );
 }
-

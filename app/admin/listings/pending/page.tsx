@@ -5,6 +5,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { vehicles } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SupportContactCard } from "@/components/ui/support-contact-card";
+import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { getAssetStructureLabel, getDetachableTypeLabel, getListingModeLabel } from "@/lib/vehicle-classification";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +33,9 @@ export default async function AdminPendingListingsPage() {
     <main className="space-y-4 px-4 pb-8 pt-4">
       <h1 className="text-2xl font-semibold text-slate-900">Pending Listings</h1>
       <section className="space-y-3">
+        {pending.length === 0 ? (
+          <EmptyState title="No verification requests yet." description="New listings pending verification will appear here." />
+        ) : null}
         {pending.map((vehicle) => (
           <article key={vehicle.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-2">
@@ -59,6 +65,11 @@ export default async function AdminPendingListingsPage() {
           </article>
         ))}
       </section>
+      <SupportContactCard
+        title="Need assistance?"
+        description="Contact support for Verified Seller, RC Verification, Yard Verification, and Inspection Request help."
+        subject={SUPPORT_SUBJECTS.sellerVerification}
+      />
     </main>
   );
 }

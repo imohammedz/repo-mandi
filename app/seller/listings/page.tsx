@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { vehicles } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/data/vehicles";
 import { MarkSoldButton } from "./mark-sold-button";
 import { DeleteListingButton } from "./delete-listing-button";
@@ -35,6 +36,9 @@ export default async function SellerListingsPage() {
       </header>
 
       <section className="space-y-3">
+        {listingRows.length === 0 ? (
+          <EmptyState title="No listings found." description="Add your first vehicle listing to get started." />
+        ) : null}
         {listingRows.map((item) => (
           <article key={item.id} className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-2">

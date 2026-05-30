@@ -17,6 +17,7 @@ import { eq, ne, desc, and, isNull, asc } from "drizzle-orm";
 import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
+import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { getCurrentUser } from "@/lib/auth";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
@@ -28,6 +29,7 @@ import {
   normalizeClassification,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel } from "@/lib/formatting";
+import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 export const dynamic = "force-dynamic";
 
@@ -469,6 +471,12 @@ export default async function VehicleDetailPage({
             </>
           ) : null}
         </div>
+        <p className="text-xs text-slate-600">
+          Need assistance?{" "}
+          <Link href={getSupportMailto(SUPPORT_SUBJECTS.sellerVerification)} className="font-medium text-slate-900 underline underline-offset-2">
+            Contact {SITE_CONFIG.supportEmail}
+          </Link>
+        </p>
       </section>
 
       {quickInfoChips.length ? (
@@ -524,6 +532,12 @@ export default async function VehicleDetailPage({
               <p className="mt-2 text-sm text-slate-500">No condition notes available.</p>
             )}
           </section>
+
+          <SupportContactCard
+            title="Questions about inspections?"
+            description={SITE_CONFIG.supportEmail}
+            subject={SUPPORT_SUBJECTS.inspection}
+          />
 
           {documentRows.length ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -6,6 +6,7 @@ import { VehicleSort } from "@/components/ui/vehicle-sort";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
+import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { and, asc, desc, eq, gte, ilike, isNull, lte, ne, or, SQL } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -138,6 +139,12 @@ export default async function VehicleListingPage({
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <p className="text-base font-semibold text-slate-900">No vehicles found</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Need help?{" "}
+              <Link href={getSupportMailto(SUPPORT_SUBJECTS.general)} className="font-medium text-slate-700 underline underline-offset-2">
+                {SITE_CONFIG.supportEmail}
+              </Link>
+            </p>
             <Link
               href="/vehicles"
               className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700"
