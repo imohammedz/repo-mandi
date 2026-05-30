@@ -43,39 +43,6 @@ type BrowseAsset = {
   filters: VehicleFilterQuery;
 };
 
-const quickFilterChips: Array<{ title: string; filters: VehicleFilterQuery }> = [
-  { title: "Repo Deals", filters: { listingType: "REPO" } },
-  {
-    title: "Prime Movers",
-    filters: { assetStructure: "DETACHABLE", detachableType: "PRIME_MOVER" },
-  },
-  {
-    title: "Trailers",
-    filters: { assetStructure: "DETACHABLE", detachableType: "TRAILER" },
-  },
-  {
-    title: "Tippers",
-    filters: {
-      assetStructure: "STANDALONE",
-      assetCategory: "Rigid Trucks",
-      bodyApplicationType: "Tipper",
-    },
-  },
-  {
-    title: "Pickups",
-    filters: {
-      assetStructure: "STANDALONE",
-      assetCategory: "SCV / LCV",
-      bodyApplicationType: "Pickup",
-    },
-  },
-  { title: "Equipment", filters: { assetStructure: "EQUIPMENT" } },
-  {
-    title: "Buses",
-    filters: { assetStructure: "STANDALONE", assetCategory: "Bus / Passenger Commercial" },
-  },
-];
-
 const browseAssets: BrowseAsset[] = [
   {
     title: "Complete Vehicles",
@@ -182,17 +149,6 @@ export default async function HomePage() {
             Discover verified repossessed trucks, tippers and pickups across India with transparent pricing and direct contact.
           </p>
           <SearchBar />
-          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {quickFilterChips.map((chip) => (
-              <Link
-                key={chip.title}
-                href={buildVehicleHref(chip.filters)}
-                className="inline-flex min-h-10 shrink-0 items-center rounded-full border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700"
-              >
-                {chip.title}
-              </Link>
-            ))}
-          </div>
         </section>
 
         <section className="space-y-3">
