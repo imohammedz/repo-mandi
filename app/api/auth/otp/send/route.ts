@@ -1,12 +1,39 @@
+import { sendOtp, getActiveOtpProvider } from "@/lib/otp/otp-service";
+import { normalizeIndianPhone } from "@/lib/otp/phone";
+
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  void request;
-  return Response.json(
-    {
-      message:
-        "This endpoint has been deprecated for login. Start authentication from /auth/login or /admin/login using the MSG91 widget flow.",
-    },
-    { status: 410 }
-  );
+  try {
+    const provider = await getActiveOtpProvider();
+
+    if (provider === "MSG91_SMS") {
+      return Response.json(
+        {
+          message:
+            "MSG91 SMS OTP uses the widget flow. Start authentication from /auth/login using the MSG91 widget.",
+        },
+        { status: 410 }
+      );
+    }
+
+    const body = (await request.json()) as { phone?: string; purpose?: string };
+    const phone = normalizeIndianPhone(String(body.phone ?? ""));
+
+    if (!phone) {
+      return Response.json({ message: "Enter a valid 10-digit mobile number." }, { status: 400 });
+    }
+
+    const purpose = typeof body.purpose === "string" && body.purpose ? body.purpose : "login";
+    const result = await sendOtp(phone, purpose);
+
+    if (!result.ok) {
+      return Response.json({ message: result.message }, { status: 400 });
+    }
+
+    return Response.json({ success: true, provider });
+  } catch (error) {
+    console.error("POST /api/auth/otp/send failed", error);
+    return Response.json({ message: "Failed to send OTP. Please try again." }, { status: 500 });
+  }
 }

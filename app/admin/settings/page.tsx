@@ -12,12 +12,23 @@ export default async function AdminSettingsPage() {
   if (!currentUser) redirect("/admin/login");
   if (currentUser.accountType !== "ADMIN") redirect("/admin/login");
 
-  const [row] = await db
+  const [autoApproveRow] = await db
     .select()
     .from(platformSettings)
     .where(eq(platformSettings.key, "AUTO_APPROVE_LISTINGS"));
 
-  const autoApproveListings = row?.value === "true";
+  const [otpProviderRow] = await db
+    .select()
+    .from(platformSettings)
+    .where(eq(platformSettings.key, "OTP_PROVIDER"));
 
-  return <AdminSettingsClient autoApproveListings={autoApproveListings} />;
+  const autoApproveListings = autoApproveRow?.value === "true";
+  const otpProvider = (otpProviderRow?.value ?? "MSG91_SMS") as "MSG91_SMS" | "WHATSAPP";
+
+  return (
+    <AdminSettingsClient
+      autoApproveListings={autoApproveListings}
+      otpProvider={otpProvider}
+    />
+  );
 }
