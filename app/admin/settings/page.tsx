@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     .where(eq(platformSettings.key, "OTP_PROVIDER"));
 
   const autoApproveListings = autoApproveRow?.value === "true";
-  const otpProvider = (otpProviderRow?.value ?? "MSG91_SMS") as "MSG91_SMS" | "WHATSAPP";
+  const otpProvider = (otpProviderRow?.value ?? "MSG91_SMS") as "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
 
   return (
     <AdminSettingsClient

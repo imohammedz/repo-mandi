@@ -21,13 +21,14 @@ export default async function LoginPage({
 
   const provider = providerRow?.value ?? "MSG91_SMS";
 
-  if (provider === "WHATSAPP") {
+  if (provider !== "MSG91_SMS") {
     return (
       <WhatsappOtpForm
         title="List Your Vehicle"
         subtitle="Sell repossessed commercial vehicles faster."
         backHref="/sell"
         initialPhone={initialPhone}
+        deliveryLabel={provider === "TWILIO_SMS" ? "Twilio SMS" : "WhatsApp"}
       />
     );
   }

@@ -13,6 +13,7 @@ type WhatsappOtpFormProps = {
   intent?: "default" | "admin";
   backHref?: string;
   initialPhone?: string;
+  deliveryLabel?: string;
 };
 
 type Step = "phone" | "code";
@@ -23,6 +24,7 @@ export default function WhatsappOtpForm({
   intent = "default",
   backHref,
   initialPhone = "",
+  deliveryLabel = "WhatsApp",
 }: WhatsappOtpFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
@@ -152,11 +154,11 @@ export default function WhatsappOtpForm({
             disabled={mobile.length !== 10 || submitting}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {submitting ? "Sending OTP…" : "Send OTP via WhatsApp"}
+            {submitting ? "Sending OTP…" : `Send OTP via ${deliveryLabel}`}
           </button>
 
           <p className="text-center text-xs text-slate-500">
-            An OTP will be sent to your WhatsApp number.
+            An OTP will be sent via {deliveryLabel}.
           </p>
         </>
       )}
@@ -164,7 +166,7 @@ export default function WhatsappOtpForm({
       {step === "code" && (
         <>
           <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            OTP sent to WhatsApp for <span className="font-medium">+91 {mobile}</span>.{" "}
+            OTP sent for <span className="font-medium">+91 {mobile}</span>.{" "}
             <button
               type="button"
               className="text-slate-500 underline"

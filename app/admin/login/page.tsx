@@ -14,12 +14,13 @@ export default async function AdminLoginPage() {
 
   const provider = providerRow?.value ?? "MSG91_SMS";
 
-  if (provider === "WHATSAPP") {
+  if (provider !== "MSG91_SMS") {
     return (
       <WhatsappOtpForm
         title="Admin Login"
         subtitle="Enter your approved admin number."
         intent="admin"
+        deliveryLabel={provider === "TWILIO_SMS" ? "Twilio SMS" : "WhatsApp"}
       />
     );
   }

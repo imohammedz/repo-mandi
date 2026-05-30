@@ -15,8 +15,9 @@ import { db } from "@/lib/db";
 import { platformSettings, otpCodes } from "@/lib/schema";
 import { normalizeToE164 } from "./phone";
 import { sendWhatsAppOtp, checkWhatsAppEnv } from "./providers/whatsapp";
+import { sendTwilioOtp, verifyTwilioOtp, checkTwilioEnv } from "./providers/twilio-sms";
 
-export type OtpProvider = "MSG91_SMS" | "WHATSAPP";
+export type OtpProvider = "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
 
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
@@ -34,6 +35,7 @@ export async function getActiveOtpProvider(): Promise<OtpProvider> {
     .where(eq(platformSettings.key, "OTP_PROVIDER"));
   const value = row?.value;
   if (value === "WHATSAPP") return "WHATSAPP";
+  if (value === "TWILIO_SMS") return "TWILIO_SMS";
   return "MSG91_SMS";
 }
 
@@ -52,6 +54,11 @@ function hashOtpCode(code: string): string {
 
 export function whatsAppEnvMissing(): string[] {
   const check = checkWhatsAppEnv();
+  return check.ok ? [] : check.missing;
+}
+
+export function twilioEnvMissing(): string[] {
+  const check = checkTwilioEnv();
   return check.ok ? [] : check.missing;
 }
 
@@ -80,11 +87,36 @@ export async function sendOtp(phone: string, purpose = "login"): Promise<SendOtp
     };
   }
 
-  // WHATSAPP flow
   const e164 = normalizeToE164(phone);
   if (!e164) {
-    return { ok: false, message: "Invalid phone number." };
+   return { ok: false, message: "Invalid phone number." };
   }
+
+  if (provider === "TWILIO_SMS") {
+   try {
+     await sendTwilioOtp(e164);
+     console.log("[OTP] Sent", { provider, purpose });
+     return { ok: true };
+   } catch (error) {
+     const err = error as { code?: string; message?: string };
+     if (err?.code === "TWILIO_NOT_CONFIGURED") {
+       return { ok: false, message: "Twilio SMS is not configured." };
+     }
+     if (err?.code === "TWILIO_TRIAL_NUMBER_UNVERIFIED") {
+       return {
+         ok: false,
+         message: "This number may need to be verified in Twilio while using a trial account.",
+       };
+     }
+     console.error("[OTP] Send failed", { provider, purpose }, error);
+     return {
+       ok: false,
+       message: "Unable to send OTP using Twilio. Please try again.",
+     };
+   }
+  }
+
+  // WHATSAPP flow
 
   // Derive the 10-digit local key stored in users.phone
   const localPhone = e164.startsWith("+91") ? e164.slice(3) : e164.slice(1);
@@ -168,6 +200,24 @@ export async function verifyOtp(
   const e164 = normalizeToE164(phone);
   if (!e164) {
     return { ok: false, message: "Invalid phone number." };
+  }
+
+  if (provider === "TWILIO_SMS") {
+    try {
+      const approved = await verifyTwilioOtp(e164, code);
+      if (!approved) {
+        return { ok: false, message: "Invalid or expired OTP." };
+      }
+      console.log("[OTP] Verified", { provider, purpose });
+      return { ok: true };
+    } catch (error) {
+      const err = error as { code?: string };
+      if (err?.code === "TWILIO_NOT_CONFIGURED") {
+        return { ok: false, message: "Twilio SMS is not configured." };
+      }
+      console.error("[OTP] Verify failed", { provider, purpose }, error);
+      return { ok: false, message: "Invalid or expired OTP." };
+    }
   }
 
   const localPhone = e164.startsWith("+91") ? e164.slice(3) : e164.slice(1);

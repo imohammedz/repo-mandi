@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-type OtpProvider = "MSG91_SMS" | "WHATSAPP";
+type OtpProvider = "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
 
 type AdminSettingsClientProps = {
   autoApproveListings: boolean;
@@ -20,11 +20,17 @@ const OTP_PROVIDER_OPTIONS: { value: OtpProvider; label: string; description: st
     label: "WhatsApp OTP",
     description: "Use WhatsApp template message OTP while SMS DLT is pending.",
   },
+  {
+    value: "TWILIO_SMS",
+    label: "Twilio SMS",
+    description: "Send OTP using Twilio Verify SMS. Useful for testing and fallback.",
+  },
 ];
 
 // These are checked at runtime on the server; we expose missing status via a
 // dedicated endpoint rather than exposing secret values to the client.
 const WHATSAPP_ENV_VARS = ["WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_NUMBER_ID", "WHATSAPP_TEMPLATE_NAME"];
+const TWILIO_ENV_VARS = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_VERIFY_SERVICE_SID"];
 
 export default function AdminSettingsClient({
   autoApproveListings,
@@ -40,6 +46,7 @@ export default function AdminSettingsClient({
   // Warn the user when WhatsApp is selected but env vars are likely missing.
   // We detect this via a separate lightweight endpoint.
   const [whatsAppEnvMissing, setWhatsAppEnvMissing] = useState<string[]>([]);
+  const [twilioEnvMissing, setTwilioEnvMissing] = useState<string[]>([]);
 
   const checkWhatsAppEnv = async () => {
     try {
@@ -56,10 +63,27 @@ export default function AdminSettingsClient({
     setSelectedOtpProvider(value);
     if (value === "WHATSAPP") {
       await checkWhatsAppEnv();
+      setTwilioEnvMissing([]);
+    } else if (value === "TWILIO_SMS") {
+      try {
+        const response = await fetch("/api/admin/settings/twilio-env-check");
+        if (!response.ok) return;
+        const data = (await response.json()) as { missing?: string[] };
+        setTwilioEnvMissing(data.missing ?? []);
+      } catch {
+        // non-critical
+      }
+      setWhatsAppEnvMissing([]);
     } else {
       setWhatsAppEnvMissing([]);
+      setTwilioEnvMissing([]);
     }
   };
+
+  useEffect(() => {
+    void handleOtpProviderChange(selectedOtpProvider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveSettings = async () => {
     setSaving(true);
@@ -178,6 +202,18 @@ export default function AdminSettingsClient({
           {selectedOtpProvider === "WHATSAPP" && whatsAppEnvMissing.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">
               Uses: {WHATSAPP_ENV_VARS.join(", ")} (server-side only, not exposed to client).
+            </p>
+          )}
+
+          {selectedOtpProvider === "TWILIO_SMS" && twilioEnvMissing.length > 0 && (
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700" role="alert">
+              ⚠ Twilio SMS is selected, but Twilio credentials are missing.
+            </p>
+          )}
+
+          {selectedOtpProvider === "TWILIO_SMS" && twilioEnvMissing.length === 0 && (
+            <p className="mt-2 text-xs text-slate-400">
+              Uses: {TWILIO_ENV_VARS.join(", ")} (server-side only, not exposed to client).
             </p>
           )}
         </div>

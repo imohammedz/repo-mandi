@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 const ALLOWED_KEYS = ["AUTO_APPROVE_LISTINGS", "OTP_PROVIDER"] as const;
 type SettingKey = (typeof ALLOWED_KEYS)[number];
 
-const OTP_PROVIDER_VALUES = ["MSG91_SMS", "WHATSAPP"] as const;
+const OTP_PROVIDER_VALUES = ["MSG91_SMS", "WHATSAPP", "TWILIO_SMS"] as const;
 type OtpProviderValue = (typeof OTP_PROVIDER_VALUES)[number];
 
 async function getSetting(key: SettingKey): Promise<string | null> {
