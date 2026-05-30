@@ -16,8 +16,7 @@ export const SUPPORT_SUBJECTS = {
 } as const;
 
 export function getSupportMailto(subject: string = SUPPORT_SUBJECTS.general) {
-  const query = subject ? `?subject=${encodeURIComponent(subject)}` : "";
-  return `mailto:${SITE_CONFIG.supportEmail}${query}`;
+  return `mailto:${SITE_CONFIG.supportEmail}?subject=${encodeURIComponent(subject)}`;
 }
 
 export function getDomainLabel(url: string) {
