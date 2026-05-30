@@ -89,31 +89,31 @@ export async function sendOtp(phone: string, purpose = "login"): Promise<SendOtp
 
   const e164 = normalizeToE164(phone);
   if (!e164) {
-   return { ok: false, message: "Invalid phone number." };
+    return { ok: false, message: "Invalid phone number." };
   }
 
   if (provider === "TWILIO_SMS") {
-   try {
-     await sendTwilioOtp(e164);
-     console.log("[OTP] Sent", { provider, purpose });
-     return { ok: true };
-   } catch (error) {
-     const err = error as { code?: string; message?: string };
-     if (err?.code === "TWILIO_NOT_CONFIGURED") {
-       return { ok: false, message: "Twilio SMS is not configured." };
-     }
-     if (err?.code === "TWILIO_TRIAL_NUMBER_UNVERIFIED") {
-       return {
-         ok: false,
-         message: "This number may need to be verified in Twilio while using a trial account.",
-       };
-     }
-     console.error("[OTP] Send failed", { provider, purpose }, error);
-     return {
-       ok: false,
-       message: "Unable to send OTP using Twilio. Please try again.",
-     };
-   }
+    try {
+      await sendTwilioOtp(e164);
+      console.log("[OTP] Sent", { provider, purpose });
+      return { ok: true };
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      if (err?.code === "TWILIO_NOT_CONFIGURED") {
+        return { ok: false, message: "Twilio SMS is not configured." };
+      }
+      if (err?.code === "TWILIO_TRIAL_NUMBER_UNVERIFIED") {
+        return {
+          ok: false,
+          message: "This number may need to be verified in Twilio while using a trial account.",
+        };
+      }
+      console.error("[OTP] Send failed", { provider, purpose }, error);
+      return {
+        ok: false,
+        message: "Unable to send OTP using Twilio. Please try again.",
+      };
+    }
   }
 
   // WHATSAPP flow

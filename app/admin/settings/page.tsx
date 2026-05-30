@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminSettingsClient from "./settings-client";
+import { checkWhatsAppEnv } from "@/lib/otp/providers/whatsapp";
+import { checkTwilioEnv } from "@/lib/otp/providers/twilio-sms";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +26,17 @@ export default async function AdminSettingsPage() {
 
   const autoApproveListings = autoApproveRow?.value === "true";
   const otpProvider = (otpProviderRow?.value ?? "MSG91_SMS") as "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
+  const whatsAppCheck = checkWhatsAppEnv();
+  const twilioCheck = checkTwilioEnv();
+  const initialWhatsAppEnvMissing = otpProvider === "WHATSAPP" && !whatsAppCheck.ok ? whatsAppCheck.missing : [];
+  const initialTwilioEnvMissing = otpProvider === "TWILIO_SMS" && !twilioCheck.ok ? twilioCheck.missing : [];
 
   return (
     <AdminSettingsClient
       autoApproveListings={autoApproveListings}
       otpProvider={otpProvider}
+      initialWhatsAppEnvMissing={initialWhatsAppEnvMissing}
+      initialTwilioEnvMissing={initialTwilioEnvMissing}
     />
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type OtpProvider = "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
 
 type AdminSettingsClientProps = {
   autoApproveListings: boolean;
   otpProvider: OtpProvider;
+  initialWhatsAppEnvMissing: string[];
+  initialTwilioEnvMissing: string[];
 };
 
 const OTP_PROVIDER_OPTIONS: { value: OtpProvider; label: string; description: string }[] = [
@@ -35,6 +37,8 @@ const TWILIO_ENV_VARS = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_VERI
 export default function AdminSettingsClient({
   autoApproveListings,
   otpProvider,
+  initialWhatsAppEnvMissing,
+  initialTwilioEnvMissing,
 }: AdminSettingsClientProps) {
   const [autoApprove, setAutoApprove] = useState(autoApproveListings);
   const [selectedOtpProvider, setSelectedOtpProvider] = useState<OtpProvider>(otpProvider);
@@ -45,8 +49,8 @@ export default function AdminSettingsClient({
 
   // Warn the user when WhatsApp is selected but env vars are likely missing.
   // We detect this via a separate lightweight endpoint.
-  const [whatsAppEnvMissing, setWhatsAppEnvMissing] = useState<string[]>([]);
-  const [twilioEnvMissing, setTwilioEnvMissing] = useState<string[]>([]);
+  const [whatsAppEnvMissing, setWhatsAppEnvMissing] = useState<string[]>(initialWhatsAppEnvMissing);
+  const [twilioEnvMissing, setTwilioEnvMissing] = useState<string[]>(initialTwilioEnvMissing);
 
   const checkWhatsAppEnv = async () => {
     try {
@@ -59,8 +63,7 @@ export default function AdminSettingsClient({
     }
   };
 
-  const handleOtpProviderChange = async (value: OtpProvider) => {
-    setSelectedOtpProvider(value);
+  const refreshProviderEnvStatus = async (value: OtpProvider) => {
     if (value === "WHATSAPP") {
       await checkWhatsAppEnv();
       setTwilioEnvMissing([]);
@@ -80,10 +83,10 @@ export default function AdminSettingsClient({
     }
   };
 
-  useEffect(() => {
-    void handleOtpProviderChange(selectedOtpProvider);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handleOtpProviderChange = async (value: OtpProvider) => {
+    setSelectedOtpProvider(value);
+    await refreshProviderEnvStatus(value);
+  };
 
   const saveSettings = async () => {
     setSaving(true);
