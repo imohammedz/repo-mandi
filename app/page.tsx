@@ -1,5 +1,16 @@
 import Link from "next/link";
-import { BadgeCheck, Building2, BusFront, CircleDollarSign, Package, Truck, Wrench } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  BusFront,
+  CarFront,
+  CircleDollarSign,
+  Package,
+  PackageOpen,
+  Tractor,
+  Truck,
+  Wrench,
+} from "lucide-react";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { featuredVehicles } from "@/data/vehicles";
@@ -75,7 +86,7 @@ const browseAssets: BrowseAsset[] = [
   {
     title: "Prime Movers",
     subtitle: "Truck heads and pullers",
-    icon: Truck,
+    icon: Tractor,
     filters: { assetStructure: "DETACHABLE", detachableType: "PRIME_MOVER" },
   },
   {
@@ -93,7 +104,7 @@ const browseAssets: BrowseAsset[] = [
   {
     title: "Tippers",
     subtitle: "Construction and mining tippers",
-    icon: Truck,
+    icon: PackageOpen,
     filters: {
       assetStructure: "STANDALONE",
       assetCategory: "Rigid Trucks",
@@ -103,7 +114,7 @@ const browseAssets: BrowseAsset[] = [
   {
     title: "Pickups",
     subtitle: "Small commercial vehicles",
-    icon: Truck,
+    icon: CarFront,
     filters: {
       assetStructure: "STANDALONE",
       assetCategory: "SCV / LCV",
