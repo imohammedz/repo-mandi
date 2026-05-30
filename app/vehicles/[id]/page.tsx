@@ -17,6 +17,7 @@ import { eq, ne, desc, and, isNull, asc } from "drizzle-orm";
 import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
+import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { getCurrentUser } from "@/lib/auth";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -29,7 +30,7 @@ import {
   normalizeClassification,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel } from "@/lib/formatting";
-import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 export const dynamic = "force-dynamic";
 
@@ -471,12 +472,7 @@ export default async function VehicleDetailPage({
             </>
           ) : null}
         </div>
-        <p className="text-xs text-slate-600">
-          Need assistance?{" "}
-          <Link href={getSupportMailto(SUPPORT_SUBJECTS.sellerVerification)} className="font-medium text-slate-900 underline underline-offset-2">
-            Contact {SITE_CONFIG.supportEmail}
-          </Link>
-        </p>
+        <SupportContactInline prompt="Need assistance?" subject={SUPPORT_SUBJECTS.sellerVerification} className="text-xs text-slate-600" />
       </section>
 
       {quickInfoChips.length ? (

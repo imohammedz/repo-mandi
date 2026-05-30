@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
+import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   ASSET_STRUCTURE_LABELS,
@@ -18,7 +19,7 @@ import {
   type DetachableType,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel } from "@/lib/formatting";
-import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
@@ -1730,12 +1731,7 @@ export default function AddVehiclePage() {
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documents (optional URLs)</summary>
             <div className="mt-4 space-y-3">
               <TextField label="Inspection Report" value={form.inspectionReport} onChange={(value) => update("inspectionReport", value)} />
-              <p className="text-xs text-slate-500">
-                Questions about inspections?{" "}
-                <Link href={getSupportMailto(SUPPORT_SUBJECTS.inspection)} className="font-medium text-slate-700 underline underline-offset-2">
-                  {SITE_CONFIG.supportEmail}
-                </Link>
-              </p>
+              <SupportContactInline prompt="Questions about inspections?" subject={SUPPORT_SUBJECTS.inspection} />
               <TextField label="RC" value={form.rcDocument} onChange={(value) => update("rcDocument", value)} />
               <TextField label="Insurance" value={form.insuranceDocument} onChange={(value) => update("insuranceDocument", value)} />
               <TextField label="Fitness" value={form.fitnessDocument} onChange={(value) => update("fitnessDocument", value)} />

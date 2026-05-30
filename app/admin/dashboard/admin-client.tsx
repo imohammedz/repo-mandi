@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -129,9 +130,9 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
         {listToShow.length === 0 && (
           <p className="text-sm text-slate-500">
             No listings in this queue. Need help?{" "}
-            <a href={getSupportMailto(SUPPORT_SUBJECTS.sellerVerification)} className="font-medium text-slate-700 underline underline-offset-2">
+            <Link href={getSupportMailto(SUPPORT_SUBJECTS.sellerVerification)} className="font-medium text-slate-700 underline underline-offset-2">
               {SITE_CONFIG.supportEmail}
-            </a>
+            </Link>
           </p>
         )}
         {listToShow.map((vehicle) => (
