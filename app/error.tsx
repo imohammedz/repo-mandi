@@ -21,7 +21,6 @@ export default function Error({
       <p className="text-sm text-slate-600">If the problem continues, contact {SITE_CONFIG.supportEmail}.</p>
       <SupportContactCard
         title="Support Email"
-        description="If the problem continues, contact support."
         subject={SUPPORT_SUBJECTS.general}
         ctaLabel="Contact Support"
       />

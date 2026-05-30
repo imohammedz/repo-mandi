@@ -535,7 +535,7 @@ export default async function VehicleDetailPage({
 
           <SupportContactCard
             title="Questions about inspections?"
-            description={SITE_CONFIG.supportEmail}
+            description="Contact RepoMandi support for inspection and yard verification help."
             subject={SUPPORT_SUBJECTS.inspection}
           />
 
