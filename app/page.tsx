@@ -1,13 +1,25 @@
 import Link from "next/link";
-import { BadgeCheck, Building2, CircleDollarSign, Truck } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  BusFront,
+  CarFront,
+  CircleDollarSign,
+  Package,
+  PackageOpen,
+  Tractor,
+  Truck,
+  Wrench,
+} from "lucide-react";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import { featuredVehicles, vehicleCategories } from "@/data/vehicles";
+import { featuredVehicles } from "@/data/vehicles";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Vehicle } from "@/types/vehicle";
+import type { LucideIcon } from "lucide-react";
 
 const trustItems = [
   { title: "Verified Listings", icon: BadgeCheck },
@@ -15,6 +27,90 @@ const trustItems = [
   { title: "Direct Seller Contact", icon: Building2 },
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
+
+type VehicleFilterQuery = Partial<{
+  listingType: string;
+  assetStructure: string;
+  detachableType: string;
+  assetCategory: string;
+  bodyApplicationType: string;
+}>;
+
+type BrowseAsset = {
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+  filters: VehicleFilterQuery;
+};
+
+const browseAssets: BrowseAsset[] = [
+  {
+    title: "Complete Vehicles",
+    subtitle: "Trucks, buses and ready-to-use assets",
+    icon: Truck,
+    filters: { assetStructure: "STANDALONE" },
+  },
+  {
+    title: "Prime Movers",
+    subtitle: "Truck heads and pullers",
+    icon: Tractor,
+    filters: { assetStructure: "DETACHABLE", detachableType: "PRIME_MOVER" },
+  },
+  {
+    title: "Trailers",
+    subtitle: "Flatbed, tanker, low bed and more",
+    icon: Package,
+    filters: { assetStructure: "DETACHABLE", detachableType: "TRAILER" },
+  },
+  {
+    title: "Repo Vehicles",
+    subtitle: "Bank-seized commercial vehicles",
+    icon: CircleDollarSign,
+    filters: { listingType: "REPO" },
+  },
+  {
+    title: "Tippers",
+    subtitle: "Construction and mining tippers",
+    icon: PackageOpen,
+    filters: {
+      assetStructure: "STANDALONE",
+      assetCategory: "Rigid Trucks",
+      bodyApplicationType: "Tipper",
+    },
+  },
+  {
+    title: "Pickups",
+    subtitle: "Small commercial vehicles",
+    icon: CarFront,
+    filters: {
+      assetStructure: "STANDALONE",
+      assetCategory: "SCV / LCV",
+      bodyApplicationType: "Pickup",
+    },
+  },
+  {
+    title: "Equipment",
+    subtitle: "Construction and special equipment",
+    icon: Wrench,
+    filters: { assetStructure: "EQUIPMENT" },
+  },
+  {
+    title: "Buses",
+    subtitle: "Passenger commercial vehicles",
+    icon: BusFront,
+    filters: { assetStructure: "STANDALONE", assetCategory: "Bus / Passenger Commercial" },
+  },
+];
+
+function buildVehicleHref(filters: VehicleFilterQuery) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) params.set(key, value);
+  }
+
+  return `/vehicles?${params.toString()}`;
+}
 
 export const revalidate = 60;
 
@@ -53,27 +149,25 @@ export default async function HomePage() {
             Discover verified repossessed trucks, tippers and pickups across India with transparent pricing and direct contact.
           </p>
           <SearchBar />
-          <div className="flex flex-wrap gap-2">
-            {vehicleCategories.slice(0, 5).map((category) => (
-              <button
-                key={category}
-                className="min-h-10 rounded-full border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700"
-              >
-                {category}
-              </button>
-            ))}
-          </div>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-900">Vehicle Categories</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Browse by Asset</h2>
           <div className="grid grid-cols-2 gap-3">
-            {vehicleCategories.map((category) => (
-              <article key={category} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
-                <Truck className="mx-auto h-5 w-5 text-slate-700" />
-                <p className="mt-2 text-sm font-medium text-slate-800">{category}</p>
-              </article>
-            ))}
+            {browseAssets.map((asset) => {
+              const Icon = asset.icon;
+              return (
+                <Link
+                  key={asset.title}
+                  href={buildVehicleHref(asset.filters)}
+                  className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-slate-200"
+                >
+                  <Icon className="h-5 w-5 text-slate-700" />
+                  <p className="mt-3 text-sm font-medium text-slate-800">{asset.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{asset.subtitle}</p>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
