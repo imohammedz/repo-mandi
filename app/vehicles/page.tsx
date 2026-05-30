@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { SearchBar } from "@/components/ui/search-bar";
+import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { VehicleSort } from "@/components/ui/vehicle-sort";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
+import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { and, asc, desc, eq, gte, ilike, isNull, lte, ne, or, SQL } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -138,6 +140,7 @@ export default async function VehicleListingPage({
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <p className="text-base font-semibold text-slate-900">No vehicles found</p>
+            <SupportContactInline className="mt-2 text-xs text-slate-500" subject={SUPPORT_SUBJECTS.general} />
             <Link
               href="/vehicles"
               className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700"

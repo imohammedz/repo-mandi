@@ -10,6 +10,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { MarkSoldButton } from "../listings/mark-sold-button";
 import { DeleteListingButton } from "../listings/delete-listing-button";
+import { SupportContactCard } from "@/components/ui/support-contact-card";
+import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +101,13 @@ export default async function SellerDashboardPage() {
           View Leads
         </Link>
       </section>
+
+      <SupportContactCard
+        title="Need help?"
+        description="Listing verification • RC verification • Seller verification • Inspection requests"
+        subject={SUPPORT_SUBJECTS.sellerVerification}
+        ctaLabel="Email Support"
+      />
     </main>
   );
 }
