@@ -10,7 +10,7 @@
  */
 
 import { createHash, randomInt } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { platformSettings, otpCodes } from "@/lib/schema";
 import { normalizeToE164 } from "./phone";
@@ -113,10 +113,10 @@ export async function sendOtp(phone: string, purpose = "login"): Promise<SendOtp
 
   try {
     await sendWhatsAppOtp(e164, code);
-    console.log(`[OTP] Sent via ${provider} to ${localPhone} for purpose=${purpose}`);
+    console.log("[OTP] Sent", { provider, phone: localPhone, purpose });
     return { ok: true };
   } catch (error) {
-    console.error(`[OTP] Send failed via ${provider} for purpose=${purpose}`, error);
+    console.error("[OTP] Send failed", { provider, purpose }, error);
     // Clean up the stored code since delivery failed
     await db
       .delete(otpCodes)
@@ -183,7 +183,7 @@ export async function verifyOtp(
         gt(otpCodes.expiresAt, now)
       )
     )
-    .orderBy(otpCodes.createdAt)
+    .orderBy(desc(otpCodes.createdAt))
     .limit(1);
 
   if (!record) {
@@ -229,6 +229,6 @@ export async function verifyOtp(
     .set({ consumedAt: now })
     .where(eq(otpCodes.id, record.id));
 
-  console.log(`[OTP] Verified via ${provider} for phone=${localPhone} purpose=${purpose}`);
+  console.log("[OTP] Verified", { provider, phone: localPhone, purpose });
   return { ok: true };
 }

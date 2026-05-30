@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { AuthVerifyResponse } from "@/app/auth/types";
+import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 type WhatsappOtpFormProps = {
   title: string;
@@ -49,8 +50,8 @@ export default function WhatsappOtpForm({
   };
 
   const handleSendOtp = async () => {
-    const phone = mobile.replace(/\D/g, "").slice(0, 10);
-    if (phone.length !== 10 || submitting) return;
+    const phone = normalizeIndianPhone(mobile);
+    if (!phone || submitting) return;
 
     setSubmitting(true);
     setError("");
@@ -78,10 +79,10 @@ export default function WhatsappOtpForm({
   };
 
   const handleVerifyOtp = async () => {
-    const phone = mobile.replace(/\D/g, "").slice(0, 10);
+    const phone = normalizeIndianPhone(mobile);
     const trimmedCode = code.trim();
 
-    if (!trimmedCode || phone.length !== 10 || submitting) return;
+    if (!phone || !trimmedCode || submitting) return;
 
     setSubmitting(true);
     setError("");
