@@ -222,7 +222,7 @@ export async function generateMetadata({
   if (!row) {
     return {
       title: `${SITE_CONFIG.name} Listing`,
-      description: "Commercial vehicle listing on RepoMandi.",
+      description: `Commercial vehicle listing on ${SITE_CONFIG.name}.`,
     };
   }
 

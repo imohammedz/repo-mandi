@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Share2, X } from "lucide-react";
 import {
   buildEmailShareUrl,
@@ -59,6 +59,7 @@ export function ShareListingButton({
 }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const toastTimerRef = useRef<number | null>(null);
   const sharePayload = useMemo(
     () =>
       buildListingSharePayload({
@@ -72,9 +73,21 @@ export function ShareListingButton({
   );
 
   const showToast = (message: string) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
     setToastMessage(message);
-    window.setTimeout(() => setToastMessage(""), 2200);
+    toastTimerRef.current = window.setTimeout(() => setToastMessage(""), 2200);
   };
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    },
+    []
+  );
 
   const openFallback = () => {
     // TODO: Hook onShareClick to persisted shareCount analytics when backend field is introduced.
@@ -141,7 +154,12 @@ export function ShareListingButton({
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-50">
-          <button aria-label="Close share options" onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-slate-900/45" />
+          <button
+            type="button"
+            aria-label="Close share options"
+            onClick={() => setIsModalOpen(false)}
+            className="absolute inset-0 bg-slate-900/45"
+          />
           <section className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white p-4 shadow-2xl">
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-slate-200" />
             <div className="mb-3 flex items-center justify-between">

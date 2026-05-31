@@ -231,7 +231,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           className={compact ? "h-40 w-full object-cover" : "h-52 w-full object-cover"}
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
-        <div className="absolute right-3 top-3 z-20 flex items-center gap-2">
+        <div className="absolute right-3 top-3 z-20 flex items-center gap-3">
           <ShareListingButton
             listingId={vehicle.id}
             title={title}
