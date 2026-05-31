@@ -467,6 +467,18 @@ export const platformSettings = pgTable("platform_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const otpCodes = pgTable("otp_codes", {
+  id: serial("id").primaryKey(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  codeHash: text("code_hash").notNull(),
+  purpose: varchar("purpose", { length: 50 }).notNull().default("login"),
+  provider: varchar("provider", { length: 20 }).notNull().default("WHATSAPP"),
+  expiresAt: timestamp("expires_at").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Inferred types ───────────────────────────────────────────────────────────
 
 export type DbVehicle = typeof vehicles.$inferSelect;
@@ -484,3 +496,5 @@ export type DbSellerVerifiedPhoneInsert = typeof sellerVerifiedPhones.$inferInse
 export type DbSavedListing = typeof savedListings.$inferSelect;
 export type DbSavedListingInsert = typeof savedListings.$inferInsert;
 export type DbPlatformSetting = typeof platformSettings.$inferSelect;
+export type DbOtpCode = typeof otpCodes.$inferSelect;
+export type DbOtpCodeInsert = typeof otpCodes.$inferInsert;
