@@ -403,8 +403,10 @@ export default async function VehicleDetailPage({
       .from(usersTable)
       .where(eq(usersTable.id, vehicle.sellerId));
     if (sellerRow?.joinedSince) {
-      const year = new Date(sellerRow.joinedSince).getFullYear();
-      memberSinceYear = Number.isNaN(year) ? undefined : String(year);
+      const joinedAt = new Date(sellerRow.joinedSince);
+      if (!Number.isNaN(joinedAt.getTime())) {
+        memberSinceYear = String(joinedAt.getFullYear());
+      }
     }
     const [soldResult] = await db
       .select({ count: count() })

@@ -257,14 +257,17 @@ export function FinanceEstimateCard({ vehicleId, vehicleTitle, listingPrice }: P
                   inputMode="tel"
                   className="min-h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-900"
                 />
-                <textarea
-                  value={requirementText}
-                  onChange={(event) => setRequirementText(event.target.value)}
-                  placeholder="Example: I want finance for this vehicle with 20% down payment."
-                  rows={3}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
-                />
-                <p className="text-xs text-slate-500">Finance Requirement *</p>
+                <label className="block text-xs text-slate-500">
+                  Finance Requirement *
+                  <textarea
+                    value={requirementText}
+                    onChange={(event) => setRequirementText(event.target.value)}
+                    placeholder="Example: I want finance for this vehicle with 20% down payment."
+                    rows={3}
+                    aria-required="true"
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-900"
+                  />
+                </label>
                 <button
                   onClick={handleContinue}
                   disabled={submitting}
