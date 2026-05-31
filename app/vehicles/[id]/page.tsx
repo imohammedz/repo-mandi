@@ -520,6 +520,15 @@ export default async function VehicleDetailPage({
 
       <div className="relative">
         <ImageGallery media={orderedGalleryMedia} title={heroTitle} />
+        <ShareListingButton
+          listingId={vehicle.id}
+          title={heroTitle}
+          location={displayLocation}
+          price={vehicle.expectedPrice ?? vehicle.price}
+          variant="icon"
+          className="absolute right-14 top-3 z-20"
+        />
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
@@ -549,17 +558,6 @@ export default async function VehicleDetailPage({
         </div>
 
         <p className="text-3xl font-bold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <ShareListingButton
-            listingId={vehicle.id}
-            title={heroTitle}
-            location={displayLocation}
-            price={vehicle.expectedPrice ?? vehicle.price}
-            label="Share"
-          />
-          <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="border border-slate-200" />
-        </div>
-
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <MapPin className="h-4 w-4" />
           <span>{displayLocation || "Location unavailable"}</span>

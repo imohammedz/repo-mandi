@@ -157,11 +157,11 @@ export function ShareListingButton({
         aria-label="Share listing"
         className={
           variant === "icon"
-            ? `inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 p-2 text-gray-800 shadow transition hover:bg-white ${className}`
+            ? `inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow transition hover:bg-white ${className}`
             : `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 ${className}`
         }
       >
-        <Share2 className="h-4 w-4" />
+        <Share2 className={variant === "icon" ? "h-5 w-5" : "h-4 w-4"} />
         {variant === "button" ? <span>{label}</span> : null}
       </button>
 

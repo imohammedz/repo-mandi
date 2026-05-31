@@ -237,7 +237,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           location={displayLocation}
           price={vehicle.expectedPrice ?? vehicle.price}
           variant="icon"
-          className="absolute right-12 top-3 z-20"
+          className="absolute right-14 top-3 z-20"
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
