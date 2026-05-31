@@ -379,8 +379,6 @@ const indiaStates = [
   "Lakshadweep",
 ];
 
-const TOTAL_STEPS = 8;
-const STEP_LABELS = ["Listing", "Asset Basics", "Condition", "Pricing", "Repo Details", "Technical", "Photos", "Review"];
 const STEP_LISTING = 1;
 const STEP_BASICS = 2;
 const STEP_CONDITION = 3;
@@ -388,6 +386,18 @@ const STEP_PRICING = 4;
 const STEP_REPO = 5;
 const STEP_TECHNICAL = 6;
 const STEP_PHOTOS = 7;
+const STEP_REVIEW = 8;
+const ALL_STEPS: number[] = [STEP_LISTING, STEP_BASICS, STEP_CONDITION, STEP_PRICING, STEP_REPO, STEP_TECHNICAL, STEP_PHOTOS, STEP_REVIEW];
+const STEP_LABELS: Record<number, string> = {
+  [STEP_LISTING]: "Listing",
+  [STEP_BASICS]: "Asset Basics",
+  [STEP_CONDITION]: "Condition",
+  [STEP_PRICING]: "Pricing",
+  [STEP_REPO]: "Repo Details",
+  [STEP_TECHNICAL]: "Technical",
+  [STEP_PHOTOS]: "Photos",
+  [STEP_REVIEW]: "Review",
+};
 
 const emptyForm: FormData = {
   listingType: "",
@@ -655,6 +665,10 @@ export default function AddVehiclePage() {
 
       return next;
     });
+
+    if (key === "listingType" && value !== "REPO" && step === STEP_REPO) {
+      setStep(STEP_TECHNICAL);
+    }
   };
 
   useEffect(() => {
@@ -741,6 +755,20 @@ export default function AddVehiclePage() {
     (!form.bodyApplicationType ||
       form.assetCategory === "Prime Mover + Trailer" ||
       form.assetCategory === "Rigid Trucks");
+  const visibleSteps = useMemo(
+    () => (form.listingType === "REPO" ? [...ALL_STEPS] : ALL_STEPS.filter((stepId) => stepId !== STEP_REPO)),
+    [form.listingType]
+  );
+  const currentStepIndex = visibleSteps.indexOf(step);
+  const currentStepNumber = currentStepIndex >= 0 ? currentStepIndex + 1 : 1;
+  const totalSteps = visibleSteps.length;
+  const currentStepLabel = STEP_LABELS[step];
+  const lastVisibleStep = visibleSteps[visibleSteps.length - 1] ?? STEP_REVIEW;
+  const canSubmit = step === lastVisibleStep && !submitting;
+  const getVisibleStepNumber = (stepId: number) => {
+    const stepIndex = visibleSteps.indexOf(stepId);
+    return stepIndex >= 0 ? stepIndex + 1 : stepId;
+  };
 
   const validateStep = (targetStep: number) => {
     if (targetStep === STEP_LISTING) {
@@ -802,16 +830,26 @@ export default function AddVehiclePage() {
       return;
     }
     setError("");
-    setStep((previous) => Math.min(previous + 1, TOTAL_STEPS));
+    const nextIndex = visibleSteps.indexOf(step);
+    if (nextIndex === -1) {
+      setStep(STEP_LISTING);
+      return;
+    }
+    setStep(visibleSteps[Math.min(nextIndex + 1, visibleSteps.length - 1)] ?? lastVisibleStep);
   };
 
   const back = () => {
-    if (step === 1) {
+    if (step === STEP_LISTING) {
       router.back();
       return;
     }
     setError("");
-    setStep((previous) => previous - 1);
+    const previousIndex = visibleSteps.indexOf(step);
+    if (previousIndex <= 0) {
+      setStep(STEP_LISTING);
+      return;
+    }
+    setStep(visibleSteps[previousIndex - 1] ?? STEP_LISTING);
   };
 
   const uploadSinglePhoto = async (category: UploadCategory, file: File | null) => {
@@ -1203,8 +1241,6 @@ export default function AddVehiclePage() {
     );
   }
 
-  const canSubmit = step === TOTAL_STEPS && !submitting;
-
   return (
     <main className="space-y-6 px-4 pb-10 pt-4">
       <div className="flex items-center gap-3">
@@ -1213,10 +1249,10 @@ export default function AddVehiclePage() {
         </button>
         <div className="flex-1">
           <p className="text-xs font-medium text-slate-500">
-            Step {step} of {TOTAL_STEPS} &mdash; <span className="text-slate-700">{STEP_LABELS[step - 1]}</span>
+            Step {currentStepNumber} of {totalSteps} &mdash; <span className="text-slate-700">{currentStepLabel}</span>
           </p>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-slate-900" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
+            <div className="h-full rounded-full bg-slate-900" style={{ width: `${(currentStepNumber / totalSteps) * 100}%` }} />
           </div>
         </div>
       </div>
@@ -1444,7 +1480,7 @@ export default function AddVehiclePage() {
 
       {step === 5 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 5: Repo Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_REPO)}: Repo Details</h1>
           {form.listingType !== "REPO" ? (
             <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               Repo details are only required for REPO listings.
@@ -1464,7 +1500,7 @@ export default function AddVehiclePage() {
 
       {step === 6 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 6: Technical Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_TECHNICAL)}: Technical Details</h1>
 
           {poweredAsset ? (
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
@@ -1554,7 +1590,7 @@ export default function AddVehiclePage() {
 
       {step === 7 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 7: Photos &amp; Documents</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PHOTOS)}: Photos &amp; Documents</h1>
           <p className="text-sm text-slate-500">Photos are optional for now. Listings with photos get more buyer trust and leads.</p>
 
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
@@ -1758,7 +1794,7 @@ export default function AddVehiclePage() {
 
       {step === 8 ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 8: Seller Info &amp; Review</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_REVIEW)}: Seller Info &amp; Review</h1>
           <p className="text-sm text-slate-500">Profile data is auto-filled and read-only. Review before submitting.</p>
           <TextField label="Seller Name" value={user?.fullName ?? ""} onChange={() => {}} required readOnly />
           <TextField label="Seller Contact" value={user?.phone ?? ""} onChange={() => {}} required readOnly />
@@ -1813,7 +1849,7 @@ export default function AddVehiclePage() {
           disabled={submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || verifyingAlternatePhone}
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {step === TOTAL_STEPS ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}
+          {canSubmit ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}
         </button>
       </div>
     </main>
