@@ -23,6 +23,7 @@ type Props = {
 };
 
 const MOBILE_SHARE_MEDIA_QUERY = "(max-width: 768px)";
+const TOAST_DURATION_MS = 2200;
 
 const canUseNativeShare = () =>
   typeof navigator !== "undefined" &&
@@ -45,8 +46,11 @@ async function copyText(value: string) {
   document.body.appendChild(textarea);
   textarea.select();
   // Legacy fallback for older browsers without Clipboard API support.
-  document.execCommand("copy");
+  const copied = document.execCommand("copy");
   document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error("Unable to copy text");
+  }
 }
 
 export function ShareListingButton({
@@ -80,7 +84,7 @@ export function ShareListingButton({
       window.clearTimeout(toastTimerRef.current);
     }
     setToastMessage(message);
-    toastTimerRef.current = window.setTimeout(() => setToastMessage(""), 2200);
+    toastTimerRef.current = window.setTimeout(() => setToastMessage(""), TOAST_DURATION_MS);
   };
 
   useEffect(
