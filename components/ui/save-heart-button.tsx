@@ -49,7 +49,7 @@ export function SaveHeartButton({ vehicleId, vehicle, className = "" }: Props) {
       whileTap={{ scale: 0.86 }}
       disabled={pending}
       aria-label={saved ? "Remove from saved listings" : "Save listing"}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow transition hover:bg-white disabled:opacity-60 ${className}`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow transition hover:bg-white disabled:opacity-60 ${className}`}
     >
       <span className="relative block">
         <motion.span
