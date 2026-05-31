@@ -7,6 +7,7 @@ import { vehicles } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { formatCurrency } from "@/data/vehicles";
 import { MarkSoldButton } from "./mark-sold-button";
 import { DeleteListingButton } from "./delete-listing-button";
@@ -54,6 +55,13 @@ export default async function SellerListingsPage() {
               </p>
             ) : null}
             <div className="flex flex-wrap gap-2">
+              <ShareListingButton
+                listingId={item.id}
+                title={item.title}
+                price={item.expectedPrice ?? item.price}
+                location={[item.city, item.state].filter(Boolean).join(", ")}
+                label="Share Listing"
+              />
               <Link href={`/vehicles/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
                 View
               </Link>

@@ -12,6 +12,7 @@ import { MarkSoldButton } from "../listings/mark-sold-button";
 import { DeleteListingButton } from "../listings/delete-listing-button";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { ShareListingButton } from "@/components/ui/share-listing-button";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,14 @@ export default async function SellerDashboardPage() {
             <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
               <span>{vehicle.inquiries} inquiries</span>
               <div className="flex gap-2">
+                <ShareListingButton
+                  listingId={vehicle.id}
+                  title={vehicle.title}
+                  price={vehicle.expectedPrice ?? vehicle.price}
+                  location={[vehicle.city, vehicle.state].filter(Boolean).join(", ")}
+                  label="Share Listing"
+                  className="min-h-10 px-3 text-xs"
+                />
                 <Link
                   href={`/vehicles/${vehicle.id}`}
                   className="min-h-10 rounded-lg border border-slate-200 px-3 font-medium text-slate-700 inline-flex items-center"

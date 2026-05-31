@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -20,6 +21,7 @@ import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { getCurrentUser } from "@/lib/auth";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
 import {
   getAssetStructureLabel,
@@ -29,9 +31,18 @@ import {
   normalizeClassification,
 } from "@/lib/vehicle-classification";
 import { formatDisplayLabel } from "@/lib/formatting";
-import { SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { resolveImageSrcForRender } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
+
+type VehicleRow = typeof vehiclesTable.$inferSelect;
+
+const getVehicleRow = async (id: string): Promise<VehicleRow | null> => {
+  const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
+  if (!row || row.deletedAt) return null;
+  return row;
+};
 
 const normalizeText = (value: string | null | undefined) => {
   if (!value) return "";
@@ -201,6 +212,49 @@ const getMediaDisplayPriority = (item: GalleryMediaItem) =>
     ? VIDEO_DISPLAY_PRIORITY
     : PHOTO_DISPLAY_PRIORITY[item.category || "OTHER"] || DEFAULT_PHOTO_DISPLAY_PRIORITY;
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const row = await getVehicleRow(id);
+  if (!row) {
+    return {
+      title: `${SITE_CONFIG.name} Listing`,
+      description: "Commercial vehicle listing on RepoMandi.",
+    };
+  }
+
+  const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
+  if (!isPublicLive) {
+    return {
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const vehicle = dbToVehicle(row);
+  const shareTitle = buildHeroTitle(vehicle);
+  const sharePrice = formatCurrency(vehicle.expectedPrice ?? vehicle.price);
+  const shareLocation = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
+  const description = `${shareLocation || "India"} • ${sharePrice} • Verified commercial vehicle listing on ${SITE_CONFIG.name}.`;
+  const image = resolveImageSrcForRender(vehicle.image || vehicle.gallery[0]);
+  const canonical = `/vehicles/${vehicle.id}`;
+
+  return {
+    title: shareTitle,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: shareTitle,
+      description,
+      url: canonical,
+      images: image ? [{ url: image, alt: shareTitle }] : undefined,
+      type: "website",
+    },
+  };
+}
+
 export default async function VehicleDetailPage({
   params,
 }: {
@@ -209,8 +263,8 @@ export default async function VehicleDetailPage({
   const { id } = await params;
   const currentUser = await getCurrentUser();
 
-  const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
-  if (!row || row.deletedAt) notFound();
+  const row = await getVehicleRow(id);
+  if (!row) notFound();
   const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
   const isOwner = Boolean(currentUser?.id && row.sellerId === currentUser.id);
   const canViewPrivate = currentUser?.accountType === "ADMIN" || isOwner;
@@ -467,7 +521,6 @@ export default async function VehicleDetailPage({
 
       <div className="relative">
         <ImageGallery media={orderedGalleryMedia} title={heroTitle} />
-        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
@@ -497,6 +550,16 @@ export default async function VehicleDetailPage({
         </div>
 
         <p className="text-3xl font-bold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <ShareListingButton
+            listingId={vehicle.id}
+            title={heroTitle}
+            location={displayLocation}
+            price={vehicle.expectedPrice ?? vehicle.price}
+            label="Share"
+          />
+          <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="border border-slate-200" />
+        </div>
 
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <MapPin className="h-4 w-4" />
