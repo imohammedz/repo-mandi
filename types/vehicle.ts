@@ -4,10 +4,17 @@ export type ListingType = "REGULAR" | "REPO";
 export type ListingMode = "NORMAL" | "BULK";
 export type KmMeterStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN";
 export type RunningCondition = "RUNNING" | "NOT_RUNNING" | "UNKNOWN";
-export type EngineCondition = "GOOD" | "AVERAGE" | "NEEDS_WORK" | "NOT_CHECKED" | "UNKNOWN";
+export type EngineCondition = "EXCELLENT" | "GOOD" | "AVERAGE" | "NEEDS_WORK" | "NOT_CHECKED" | "UNKNOWN";
 export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 export type TyreCondition = "NEW" | "GOOD" | "FAIR" | "AROUND_50" | "POOR" | "MIXED" | "UNKNOWN";
 export type AvailabilityStatus = "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN";
+export type TransferType = "RC_TRANSFER" | "RTO_NOC" | "OPEN_NOC" | "UNKNOWN";
+export type TyreMountStatus =
+  | "ON_DISC"
+  | "WITH_TYRES"
+  | "WITHOUT_DISC_AND_TYRES"
+  | "PARTIAL"
+  | "UNKNOWN";
 export type AssetStructure = "STANDALONE" | "DETACHABLE" | "EQUIPMENT";
 export type DetachableType = "PRIME_MOVER" | "TRAILER";
 export type AssetConfiguration =
@@ -74,8 +81,10 @@ export type Vehicle = {
   trailerManufacturingMonthYear?: string | null;
   suspensionType?: string | null;
   tyreInspectionReport?: AvailabilityStatus | null;
+  totalTyres?: number | null;
   tyreCount?: number | null;
   currentTyreCount?: number | null;
+  tyreMountStatus?: TyreMountStatus | null;
   tyreCondition?: TyreCondition | null;
   registrationState: string;
   city: string;
@@ -107,6 +116,7 @@ export type Vehicle = {
   businessName?: string;
   gstin?: string;
   condition: "Running" | "Non-running" | "Unknown";
+  description?: string;
   conditionNotes: string;
   engineCondition?: EngineCondition | null;
   needsTowing?: YesNoUnknown | null;
@@ -121,6 +131,7 @@ export type Vehicle = {
   insuranceExpiry?: string;
   fitnessExpiry?: string;
   permitExpiry?: string;
+  transferType?: TransferType | null;
   nocStatus?: "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN" | null;
   machineSerialNumber?: string | null;
   engineNumber?: string;
@@ -140,6 +151,11 @@ export type Vehicle = {
   documentsAvailable?: YesNoUnknown | null;
   remarks?: string | null;
   fleetManagementSoftwareAvailable?: AvailabilityStatus | null;
+  insuranceValidity?: string | null;
+  permitValidity?: string | null;
+  fitnessStatus?: string | null;
+  taxValidity?: string | null;
+  parkingDue?: number | null;
   verifiedBadges: VerificationFlag[];
   rcVerified?: boolean;
   photosVerified?: boolean;

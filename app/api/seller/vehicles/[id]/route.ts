@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { vehicles } from "@/lib/schema";
+import { vehicleMedia, vehicles } from "@/lib/schema";
+import { sanitizeSupabaseMediaUrl } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,17 @@ function toPositiveNumberOrNull(value: unknown) {
   const parsed = Number(normalized);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
+
+const MAX_DOCUMENTS = 15;
+const MAX_DOCUMENTS_PER_GROUP = 4;
+const VALID_DOCUMENT_CATEGORIES = new Set([
+  "RC",
+  "INSURANCE",
+  "FITNESS",
+  "PERMIT",
+  "INSPECTION_REPORT",
+  "OTHER",
+]);
 
 async function getOwnedVehicle(id: string, sellerId: number) {
   const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, id));
@@ -51,6 +63,7 @@ export async function PATCH(
     }
 
     const body = (await request.json()) as Record<string, unknown>;
+    const documentsRaw = Array.isArray(body.documents) ? (body.documents as unknown[]) : null;
     const expectedPrice = toPositiveNumberOrNull(body.expectedPrice ?? body.price);
     if (body.expectedPrice !== undefined || body.price !== undefined) {
       if (expectedPrice === null) {
@@ -72,8 +85,46 @@ export async function PATCH(
       updates.vehicleOrYardLocation = location;
       updates.yardLocation = location;
     }
-    if ("conditionNotes" in body) updates.conditionNotes = toSafeString(body.conditionNotes);
+    if ("description" in body || "conditionNotes" in body) {
+      updates.conditionNotes = toSafeString(body.description ?? body.conditionNotes);
+    }
     if ("auctionDate" in body) updates.auctionDate = toSafeString(body.auctionDate);
+
+    const parsedDocuments =
+      documentsRaw?.map((item) => {
+        const current = item as Record<string, unknown>;
+        const categoryRaw = toSafeString(current.category).toUpperCase();
+        const category = VALID_DOCUMENT_CATEGORIES.has(categoryRaw) ? categoryRaw : "OTHER";
+        return {
+          url: sanitizeSupabaseMediaUrl(current.url),
+          category: category as
+            | "RC"
+            | "INSURANCE"
+            | "FITNESS"
+            | "PERMIT"
+            | "INSPECTION_REPORT"
+            | "OTHER",
+          customName: category === "OTHER" ? toSafeString(current.customName) : "",
+          mimeType: toSafeString(current.mimeType),
+          sizeBytes: toPositiveNumberOrNull(current.sizeBytes),
+          originalFileName: toSafeString(current.originalFileName),
+        };
+      }).filter((item) => Boolean(item.url)) ?? null;
+
+    if (parsedDocuments) {
+      if (parsedDocuments.length > MAX_DOCUMENTS) {
+        return Response.json({ message: "Maximum 15 document files allowed per listing." }, { status: 400 });
+      }
+      const groups = new Map<string, number>();
+      for (const doc of parsedDocuments) {
+        const groupKey = doc.category === "OTHER" ? `OTHER:${doc.customName.trim().toUpperCase() || "OTHER"}` : doc.category;
+        const next = (groups.get(groupKey) ?? 0) + 1;
+        if (next > MAX_DOCUMENTS_PER_GROUP) {
+          return Response.json({ message: "Maximum 4 files allowed for this document type." }, { status: 400 });
+        }
+        groups.set(groupKey, next);
+      }
+    }
 
     const needsReverification = existing.isPublished || existing.listingStatus === "VERIFIED";
     if (needsReverification) {
@@ -87,6 +138,26 @@ export async function PATCH(
     }
 
     const [updated] = await db.update(vehicles).set(updates).where(eq(vehicles.id, id)).returning();
+
+    if (parsedDocuments) {
+      await db
+        .delete(vehicleMedia)
+        .where(and(eq(vehicleMedia.vehicleId, id), eq(vehicleMedia.type, "DOCUMENT")));
+      if (parsedDocuments.length) {
+        await db.insert(vehicleMedia).values(
+          parsedDocuments.map((document) => ({
+            vehicleId: id,
+            type: "DOCUMENT" as const,
+            category: document.category,
+            customName: document.category === "OTHER" ? document.customName || null : null,
+            url: document.url,
+            originalFileName: document.originalFileName,
+            mimeType: document.mimeType || "application/pdf",
+            sizeBytes: document.sizeBytes ?? null,
+          }))
+        );
+      }
+    }
 
     return Response.json({
       vehicle: updated,

@@ -23,6 +23,14 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     detachableType: row.detachableType,
     assetConfiguration: row.assetConfiguration,
   });
+  let transferType: Vehicle["transferType"] = null;
+  if (row.transferType) {
+    transferType = row.transferType as Vehicle["transferType"];
+  } else if (row.nocStatus === "AVAILABLE") {
+    transferType = "RC_TRANSFER";
+  } else if (row.nocStatus === "NOT_AVAILABLE" || row.nocStatus === "UNKNOWN") {
+    transferType = "UNKNOWN";
+  }
 
   return {
     id: row.id,
@@ -68,8 +76,10 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     trailerManufacturingMonthYear: row.trailerManufacturingMonthYear,
     suspensionType: row.suspensionType,
     tyreInspectionReport: row.tyreInspectionReport,
+    totalTyres: row.totalTyres ?? row.tyreCount ?? row.currentTyreCount,
     tyreCount: row.tyreCount,
     currentTyreCount: row.currentTyreCount,
+    tyreMountStatus: row.tyreMountStatus,
     tyreCondition: row.tyreCondition,
     registrationState: row.registrationState,
     city: row.city,
@@ -104,6 +114,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     businessName: row.businessName,
     gstin: row.gstin,
     condition: row.condition as Vehicle["condition"],
+    description: row.conditionNotes,
     conditionNotes: row.conditionNotes,
     engineCondition: row.engineCondition,
     needsTowing: row.needsTowing,
@@ -118,6 +129,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     insuranceExpiry: row.insuranceExpiry,
     fitnessExpiry: row.fitnessExpiry,
     permitExpiry: row.permitExpiry,
+    transferType,
     nocStatus: row.nocStatus,
     machineSerialNumber: row.machineSerialNumber,
     engineNumber: row.engineNumber,
@@ -137,6 +149,11 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     documentsAvailable: row.documentsAvailable,
     remarks: row.remarks,
     fleetManagementSoftwareAvailable: row.fleetManagementSoftwareAvailable,
+    insuranceValidity: row.insuranceValidity,
+    permitValidity: row.permitValidity,
+    fitnessStatus: row.fitnessStatus,
+    taxValidity: row.taxValidity,
+    parkingDue: row.parkingDue,
     verifiedBadges: trustBadges,
     rcVerified: row.rcVerified,
     photosVerified: row.photosVerified,

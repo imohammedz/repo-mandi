@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
-import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   ASSET_STRUCTURE_LABELS,
@@ -19,7 +18,6 @@ import {
   type DetachableType,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel } from "@/lib/formatting";
-import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
@@ -65,6 +63,15 @@ type UploadCategory =
 
 type AdditionalPhoto = { url: string; category: string };
 type UploadedVideo = { url: string; category: string; mimeType: string; sizeBytes: number };
+type DocumentCategory = "RC" | "INSURANCE" | "FITNESS" | "PERMIT" | "INSPECTION_REPORT" | "OTHER";
+type UploadedDocument = {
+  url: string;
+  category: DocumentCategory;
+  customName: string;
+  mimeType: string;
+  sizeBytes: number;
+  originalFileName: string;
+};
 
 function getString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -177,7 +184,7 @@ type FormData = {
   state: string;
   city: string;
   vehicleOrYardLocation: string;
-  conditionNotes: string;
+  description: string;
   engineCondition: string;
   needsTowing: string;
   roadSafeStatus: string;
@@ -210,8 +217,9 @@ type FormData = {
   trailerManufacturingMonthYear: string;
   suspensionType: string;
   tyreInspectionReport: string;
-  tyreCount: string;
+  totalTyres: string;
   currentTyreCount: string;
+  tyreMountStatus: string;
   tyreCondition: string;
   trailerNumber: string;
   bodyType: string;
@@ -232,17 +240,17 @@ type FormData = {
   insuranceExpiry: string;
   fitnessExpiry: string;
   permitExpiry: string;
-  nocStatus: string;
+  transferType: string;
   engineNumber: string;
   chassisNumber: string;
   gpsInstalled: string;
   abs: string;
   fleetManagementSoftwareAvailable: string;
-  inspectionReport: string;
-  rcDocument: string;
-  insuranceDocument: string;
-  fitnessDocument: string;
-  permitDocument: string;
+  insuranceValidity: string;
+  permitValidity: string;
+  fitnessStatus: string;
+  taxValidity: string;
+  parkingDue: string;
   alternateContactNumber: string;
   alternateContactNumberVerified: boolean;
   gstin: string;
@@ -300,13 +308,32 @@ const repoStatusOptions = [
 ];
 const fuelTypeOptions = ["Diesel", "CNG"];
 const bsNormOptions = ["BS3", "BS4", "BS6", "UNKNOWN"];
-const transmissionOptions = ["Manual", "Automatic", "Semi-Automatic", "Unknown"];
 const yesNoUnknownOptions = ["YES", "NO", "UNKNOWN"] as const;
-const runningConditionOptions = ["RUNNING", "NOT_RUNNING", "UNKNOWN"];
-const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"];
+const yesNoOptions = ["YES", "NO"] as const;
+const engineConditionOptions = ["EXCELLENT", "GOOD", "UNKNOWN"];
 const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Other"];
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
-const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
+const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
+const transferTypeLabels: Record<string, string> = {
+  RC_TRANSFER: "RC Transfer",
+  RTO_NOC: "RTO NOC",
+  OPEN_NOC: "Open NOC",
+  UNKNOWN: "Unknown",
+};
+const transferTypeDescriptions: Record<string, string> = {
+  RC_TRANSFER: "Vehicle can be transferred directly through RC transfer process.",
+  RTO_NOC: "Seller can provide RTO NOC for transfer.",
+  OPEN_NOC: "Vehicle is being sold with open NOC.",
+  UNKNOWN: "Seller is unsure.",
+};
+const tyreMountStatusOptions = [
+  "ON_DISC",
+  "WITH_TYRES",
+  "WITHOUT_DISC_AND_TYRES",
+  "PARTIAL",
+  "UNKNOWN",
+];
+const tyreConditionOptions = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN"];
 const videoCategoryOptions = [
   { value: "WALKAROUND", label: "Walkaround Video" },
   { value: "ENGINE_STARTUP", label: "Engine Start Video" },
@@ -316,6 +343,16 @@ const videoCategoryOptions = [
 
 const MAX_PHOTOS = 20;
 const MAX_VIDEOS = 3;
+const MAX_DOCUMENTS = 15;
+const MAX_DOCUMENTS_PER_GROUP = 4;
+const DOCUMENT_CATEGORIES: Array<{ value: DocumentCategory; label: string }> = [
+  { value: "RC", label: "RC" },
+  { value: "INSURANCE", label: "Insurance" },
+  { value: "FITNESS", label: "Fitness" },
+  { value: "PERMIT", label: "Permit" },
+  { value: "INSPECTION_REPORT", label: "Inspection Report" },
+  { value: "OTHER", label: "Other" },
+];
 
 const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
   { value: "TYRES", label: "Tyres" },
@@ -375,15 +412,23 @@ const indiaStates = [
   "Lakshadweep",
 ];
 
-const TOTAL_STEPS = 8;
-const STEP_LABELS = ["Listing", "Asset Basics", "Condition", "Pricing", "Repo Details", "Technical", "Photos", "Review"];
 const STEP_LISTING = 1;
 const STEP_BASICS = 2;
-const STEP_CONDITION = 3;
-const STEP_PRICING = 4;
-const STEP_REPO = 5;
-const STEP_TECHNICAL = 6;
-const STEP_PHOTOS = 7;
+const STEP_PRICING = 3;
+const STEP_REPO = 4;
+const STEP_TECHNICAL = 5;
+const STEP_PHOTOS = 6;
+const STEP_REVIEW = 7;
+const ALL_STEPS: number[] = [STEP_LISTING, STEP_BASICS, STEP_PRICING, STEP_REPO, STEP_TECHNICAL, STEP_PHOTOS, STEP_REVIEW];
+const STEP_LABELS: Record<number, string> = {
+  [STEP_LISTING]: "Listing Information",
+  [STEP_BASICS]: "Asset Basics",
+  [STEP_PRICING]: "Pricing & Ownership Information",
+  [STEP_REPO]: "Repo Details",
+  [STEP_TECHNICAL]: "Technical Details",
+  [STEP_PHOTOS]: "Photos & Documents",
+  [STEP_REVIEW]: "Seller Info & Review",
+};
 
 const emptyForm: FormData = {
   listingType: "",
@@ -406,7 +451,7 @@ const emptyForm: FormData = {
   state: "",
   city: "",
   vehicleOrYardLocation: "",
-  conditionNotes: "",
+  description: "",
   engineCondition: "",
   needsTowing: "",
   roadSafeStatus: "",
@@ -439,8 +484,9 @@ const emptyForm: FormData = {
   trailerManufacturingMonthYear: "",
   suspensionType: "",
   tyreInspectionReport: "",
-  tyreCount: "",
+  totalTyres: "",
   currentTyreCount: "",
+  tyreMountStatus: "",
   tyreCondition: "",
   trailerNumber: "",
   bodyType: "",
@@ -461,17 +507,17 @@ const emptyForm: FormData = {
   insuranceExpiry: "",
   fitnessExpiry: "",
   permitExpiry: "",
-  nocStatus: "",
+  transferType: "UNKNOWN",
   engineNumber: "",
   chassisNumber: "",
   gpsInstalled: "",
   abs: "",
   fleetManagementSoftwareAvailable: "",
-  inspectionReport: "",
-  rcDocument: "",
-  insuranceDocument: "",
-  fitnessDocument: "",
-  permitDocument: "",
+  insuranceValidity: "",
+  permitValidity: "",
+  fitnessStatus: "",
+  taxValidity: "",
+  parkingDue: "0",
   alternateContactNumber: "",
   alternateContactNumberVerified: false,
   gstin: "",
@@ -485,6 +531,7 @@ function SelectField({
   required = false,
   labelSuffix,
   helperText,
+  optionLabels,
 }: {
   label: string;
   value: string;
@@ -493,6 +540,7 @@ function SelectField({
   required?: boolean;
   labelSuffix?: ReactNode;
   helperText?: string;
+  optionLabels?: Record<string, string>;
 }) {
   return (
     <label className="space-y-1.5">
@@ -509,7 +557,7 @@ function SelectField({
         <option value="">Select</option>
         {options.map((option) => (
           <option key={option} value={option}>
-            {formatEnumLabel(option)}
+            {optionLabels?.[option] ?? formatEnumLabel(option)}
           </option>
         ))}
       </select>
@@ -526,6 +574,7 @@ function TextField({
   placeholder,
   type = "text",
   readOnly = false,
+  min,
 }: {
   label: string;
   value: string;
@@ -534,6 +583,7 @@ function TextField({
   placeholder?: string;
   type?: "text" | "number" | "tel" | "date";
   readOnly?: boolean;
+  min?: number;
 }) {
   return (
     <label className="space-y-1.5">
@@ -546,6 +596,7 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         readOnly={readOnly}
+        min={min}
         className={`min-h-12 w-full rounded-xl border px-4 text-sm ${
           readOnly ? "border-slate-100 bg-slate-50 text-slate-500" : "border-slate-200 bg-white text-slate-800"
         }`}
@@ -596,6 +647,16 @@ function UploadPreviewImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+function documentGroupKey(item: Pick<UploadedDocument, "category" | "customName">) {
+  if (item.category !== "OTHER") return item.category;
+  return `OTHER:${item.customName.trim().toUpperCase() || "OTHER"}`;
+}
+
+function getDocumentGroupCount(documents: UploadedDocument[], item: Pick<UploadedDocument, "category" | "customName">) {
+  const key = documentGroupKey(item);
+  return documents.filter((doc) => documentGroupKey(doc) === key).length;
+}
+
 export default function AddVehiclePage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -608,10 +669,14 @@ export default function AddVehiclePage() {
   const [submitted, setSubmitted] = useState(false);
   const [additionalPhotos, setAdditionalPhotos] = useState<AdditionalPhoto[]>([]);
   const [videos, setVideos] = useState<UploadedVideo[]>([]);
+  const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [pendingAdditionalAction, setPendingAdditionalAction] = useState<"new" | number>("new");
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [pendingVideoAction, setPendingVideoAction] = useState<"new" | number>("new");
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
+  const [selectedDocumentCategory, setSelectedDocumentCategory] = useState<DocumentCategory>("RC");
+  const [selectedOtherDocumentName, setSelectedOtherDocumentName] = useState("");
   const [verifyingAlternatePhone, setVerifyingAlternatePhone] = useState(false);
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
@@ -622,6 +687,7 @@ export default function AddVehiclePage() {
   };
   const additionalFileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
+  const documentFileRef = useRef<HTMLInputElement>(null);
 
   const update = <T extends keyof FormData>(key: T, value: FormData[T]) => {
     setForm((previous) => {
@@ -650,6 +716,10 @@ export default function AddVehiclePage() {
 
       return next;
     });
+
+    if (key === "listingType" && value !== "REPO" && step === STEP_REPO) {
+      setStep(STEP_TECHNICAL);
+    }
   };
 
   useEffect(() => {
@@ -731,11 +801,33 @@ export default function AddVehiclePage() {
   const totalPhotosCount = uploadedRequiredPhotoCount + (form.interiorPhoto ? 1 : 0) + additionalPhotos.length;
   const canAddMorePhotos = totalPhotosCount < MAX_PHOTOS;
   const canAddMoreVideos = videos.length < MAX_VIDEOS;
+  const selectedDocumentTemplate = {
+    category: selectedDocumentCategory,
+    customName: selectedDocumentCategory === "OTHER" ? selectedOtherDocumentName : "",
+  };
+  const selectedDocumentGroupCount = getDocumentGroupCount(documents, selectedDocumentTemplate);
+  const canAddMoreDocumentsTotal = documents.length < MAX_DOCUMENTS;
+  const canAddMoreDocumentsInGroup = selectedDocumentGroupCount < MAX_DOCUMENTS_PER_GROUP;
+  const documentUploadCounterClass = documents.length >= MAX_DOCUMENTS ? "text-rose-600" : "text-slate-900";
   const standaloneShowsSuspension =
     isStandalone &&
     (!form.bodyApplicationType ||
       form.assetCategory === "Prime Mover + Trailer" ||
       form.assetCategory === "Rigid Trucks");
+  const visibleSteps = useMemo(
+    () => (form.listingType === "REPO" ? [...ALL_STEPS] : ALL_STEPS.filter((stepId) => stepId !== STEP_REPO)),
+    [form.listingType]
+  );
+  const currentStepIndex = visibleSteps.indexOf(step);
+  const currentStepNumber = currentStepIndex >= 0 ? currentStepIndex + 1 : 1;
+  const totalSteps = visibleSteps.length;
+  const currentStepLabel = STEP_LABELS[step];
+  const lastVisibleStep = visibleSteps[visibleSteps.length - 1] ?? STEP_REVIEW;
+  const canSubmit = step === lastVisibleStep && !submitting;
+  const getVisibleStepNumber = (stepId: number) => {
+    const stepIndex = visibleSteps.indexOf(stepId);
+    return stepIndex >= 0 ? stepIndex + 1 : stepId;
+  };
 
   const validateStep = (targetStep: number) => {
     if (targetStep === STEP_LISTING) {
@@ -763,16 +855,10 @@ export default function AddVehiclePage() {
       }
     }
 
-    if (targetStep === STEP_CONDITION) {
-      if (poweredAsset) {
-        if (!form.runningCondition) return "Running condition is required.";
-      }
-      if (!form.conditionNotes.trim()) return "Condition notes are required.";
-    }
-
     if (targetStep === STEP_PRICING) {
       if (!form.expectedPrice || Number(form.expectedPrice) <= 0) return "Expected price is required.";
       if (!form.vehicleOrYardLocation.trim()) return "Vehicle / yard location is required.";
+      if (!form.transferType) return "Transfer type is required.";
     }
 
     if (targetStep === STEP_REPO && form.listingType === "REPO") {
@@ -786,7 +872,6 @@ export default function AddVehiclePage() {
         return "Trailer type, trailer length, and number of axles are required for trailer listings.";
       }
     }
-
     return "";
   };
 
@@ -797,16 +882,26 @@ export default function AddVehiclePage() {
       return;
     }
     setError("");
-    setStep((previous) => Math.min(previous + 1, TOTAL_STEPS));
+    const nextIndex = visibleSteps.indexOf(step);
+    if (nextIndex === -1) {
+      setStep(STEP_LISTING);
+      return;
+    }
+    setStep(visibleSteps[Math.min(nextIndex + 1, visibleSteps.length - 1)] ?? lastVisibleStep);
   };
 
   const back = () => {
-    if (step === 1) {
+    if (step === STEP_LISTING) {
       router.back();
       return;
     }
     setError("");
-    setStep((previous) => previous - 1);
+    const previousIndex = visibleSteps.indexOf(step);
+    if (previousIndex <= 0) {
+      setStep(STEP_LISTING);
+      return;
+    }
+    setStep(visibleSteps[previousIndex - 1] ?? STEP_LISTING);
   };
 
   const uploadSinglePhoto = async (category: UploadCategory, file: File | null) => {
@@ -833,6 +928,11 @@ export default function AddVehiclePage() {
       setUploadingField("");
       if (fileRefs[category].current) fileRefs[category].current.value = "";
     }
+  };
+
+  const deleteSinglePhoto = (category: UploadCategory) => {
+    update(category, "");
+    if (fileRefs[category].current) fileRefs[category].current.value = "";
   };
 
   const uploadAdditionalPhotos = async (files: File[]) => {
@@ -1005,6 +1105,73 @@ export default function AddVehiclePage() {
     }
   };
 
+  const uploadDocuments = async (files: File[]) => {
+    if (!files.length) return;
+    const customName = selectedDocumentCategory === "OTHER" ? selectedOtherDocumentName.trim() : "";
+    if (selectedDocumentCategory === "OTHER" && !customName) {
+      setError("Document name is required for Other documents.");
+      return;
+    }
+
+    setUploadingDocuments(true);
+    setError("");
+    const results: UploadedDocument[] = [];
+
+    for (const file of files) {
+      const nextTemplate = { category: selectedDocumentCategory, customName };
+      const groupCount = getDocumentGroupCount([...documents, ...results], nextTemplate);
+      if (documents.length + results.length >= MAX_DOCUMENTS) {
+        setError(`Maximum ${MAX_DOCUMENTS} document files allowed per listing.`);
+        break;
+      }
+      if (groupCount >= MAX_DOCUMENTS_PER_GROUP) {
+        setError("Maximum 4 files allowed for this document type.");
+        break;
+      }
+
+      try {
+        const payload = new FormData();
+        payload.append("files", file);
+        payload.append("mediaType", "document");
+        const response = await fetch("/api/uploads", { method: "POST", body: payload });
+        const data = (await response.json()) as {
+          files?: Array<{ url: string; mimeType: string; sizeBytes: number; originalFileName?: string }>;
+          message?: string;
+        };
+        const uploaded = data.files?.[0];
+        if (!response.ok || !uploaded?.url) {
+          setError(data.message ?? "Failed to upload document.");
+          break;
+        }
+        results.push({
+          url: uploaded.url,
+          category: selectedDocumentCategory,
+          customName,
+          mimeType: uploaded.mimeType,
+          sizeBytes: uploaded.sizeBytes,
+          originalFileName: uploaded.originalFileName || file.name,
+        });
+      } catch {
+        setError("Failed to upload document.");
+        break;
+      }
+    }
+
+    if (results.length) {
+      setDocuments((previous) => [...previous, ...results]);
+    }
+    setUploadingDocuments(false);
+    if (documentFileRef.current) {
+      documentFileRef.current.value = "";
+    }
+  };
+
+  const handleDocumentFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    await uploadDocuments(Array.from(files));
+  };
+
   const handleVerifyAlternatePhone = async () => {
     const phone = form.alternateContactNumber.replace(/\D/g, "").slice(0, 10);
     if (phone.length !== 10) {
@@ -1082,7 +1249,6 @@ export default function AddVehiclePage() {
     const stepError =
       validateStep(STEP_LISTING) ||
       validateStep(STEP_BASICS) ||
-      validateStep(STEP_CONDITION) ||
       validateStep(STEP_PRICING) ||
       validateStep(STEP_REPO) ||
       validateStep(STEP_TECHNICAL) ||
@@ -1102,6 +1268,7 @@ export default function AddVehiclePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          conditionNotes: form.description,
           assetConfiguration: toLegacyAssetConfiguration(
             form.assetStructure as AssetStructure,
             (form.detachableType || null) as DetachableType | null
@@ -1119,13 +1286,32 @@ export default function AddVehiclePage() {
             mimeType: video.mimeType,
             sizeBytes: video.sizeBytes,
           })),
+          documents: documents.map((document) => ({
+            url: document.url,
+            category: document.category,
+            customName: document.category === "OTHER" ? document.customName : null,
+            mimeType: document.mimeType,
+            sizeBytes: document.sizeBytes,
+            originalFileName: document.originalFileName,
+          })),
           expectedPrice: form.expectedPrice.replace(/\D/g, ""),
           reservePrice: form.reservePrice.replace(/\D/g, ""),
+          parkingDue: form.parkingDue.replace(/\D/g, ""),
           kmDriven: form.kmDriven.replace(/\D/g, ""),
           odometerReading: form.odometerReading.replace(/\D/g, ""),
           hourMeterReading: form.hourMeterReading.replace(/\D/g, ""),
-          tyreCount: form.tyreCount.replace(/\D/g, ""),
+          totalTyres: form.totalTyres.replace(/\D/g, ""),
+          tyreCount: form.totalTyres.replace(/\D/g, ""),
           currentTyreCount: form.currentTyreCount.replace(/\D/g, ""),
+          bodyType: form.bodyApplicationType || form.bodyType,
+          bodyLength: form.bodyDimensions || form.bodyLength,
+          transferType: form.transferType,
+          nocStatus:
+            form.transferType === "RC_TRANSFER"
+              ? "AVAILABLE"
+              : form.transferType === "RTO_NOC" || form.transferType === "OPEN_NOC"
+                ? "NOT_AVAILABLE"
+                : "UNKNOWN",
           numberOfAxles: form.numberOfAxles.replace(/\D/g, ""),
           horsepower: form.horsepower.replace(/\D/g, ""),
           vehicleRegistrationNumber: form.vehicleRegistrationNumber.toUpperCase(),
@@ -1175,6 +1361,7 @@ export default function AddVehiclePage() {
               setStep(1);
               setAdditionalPhotos([]);
               setVideos([]);
+              setDocuments([]);
               setForm({
                 ...emptyForm,
                 listingType: form.listingType,
@@ -1190,8 +1377,6 @@ export default function AddVehiclePage() {
     );
   }
 
-  const canSubmit = step === TOTAL_STEPS && !submitting;
-
   return (
     <main className="space-y-6 px-4 pb-10 pt-4">
       <div className="flex items-center gap-3">
@@ -1200,15 +1385,15 @@ export default function AddVehiclePage() {
         </button>
         <div className="flex-1">
           <p className="text-xs font-medium text-slate-500">
-            Step {step} of {TOTAL_STEPS} &mdash; <span className="text-slate-700">{STEP_LABELS[step - 1]}</span>
+            Step {currentStepNumber} of {totalSteps} &mdash; <span className="text-slate-700">{currentStepLabel}</span>
           </p>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-slate-900" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
+            <div className="h-full rounded-full bg-slate-900" style={{ width: `${(currentStepNumber / totalSteps) * 100}%` }} />
           </div>
         </div>
       </div>
 
-      {step === 1 ? (
+      {step === STEP_LISTING ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 1: Listing Information</h1>
           <p className="text-sm text-slate-500">Choose the listing classification before entering asset details.</p>
@@ -1302,7 +1487,7 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 2 ? (
+      {step === STEP_BASICS ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 2: Asset Basics</h1>
           <SelectField
@@ -1403,35 +1588,26 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 3 ? (
+      {step === STEP_PRICING ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 3: Condition &amp; Usage</h1>
-          {poweredAsset ? (
-            <>
-              <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
-              <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
-            </>
-          ) : (
-            <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Engine, running, and KM fields are hidden for trailer-only listings.
-            </p>
-          )}
-          <TextAreaField label="Condition Notes" value={form.conditionNotes} onChange={(value) => update("conditionNotes", value)} required placeholder="Example: Engine running. Cabin work needed. Tyres missing." />
-          <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
-        </section>
-      ) : null}
-
-      {step === 4 ? (
-        <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 4: Pricing &amp; Location</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PRICING)}: Pricing &amp; Ownership Information</h1>
           <TextField label="Expected Price" value={form.expectedPrice} onChange={(value) => update("expectedPrice", value.replace(/\D/g, ""))} required placeholder="₹5,00,000" type="tel" />
           <TextField label="Vehicle / Yard Location" value={form.vehicleOrYardLocation} onChange={(value) => update("vehicleOrYardLocation", value)} required placeholder="e.g. Kompally Yard, Hyderabad" />
+          <SelectField
+            label="Transfer Type"
+            value={form.transferType}
+            options={transferTypeOptions}
+            onChange={(value) => update("transferType", value)}
+            required
+            optionLabels={transferTypeLabels}
+            helperText={transferTypeDescriptions[form.transferType] ?? undefined}
+          />
         </section>
       ) : null}
 
-      {step === 5 ? (
+      {step === STEP_REPO ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 5: Repo Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_REPO)}: Repo Details</h1>
           {form.listingType !== "REPO" ? (
             <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               Repo details are only required for REPO listings.
@@ -1449,22 +1625,29 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 6 ? (
+      {step === STEP_TECHNICAL ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 6: Technical Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_TECHNICAL)}: Vehicle Condition &amp; Technical Details</h1>
+
+          {poweredAsset ? (
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Vehicle Condition</summary>
+              <div className="mt-4 space-y-3">
+                <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
+                <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
+              </div>
+            </details>
+          ) : null}
 
           {poweredAsset ? (
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Powertrain Details</summary>
               <div className="mt-4 space-y-3">
                 <SelectField label="Fuel Type" value={form.fuelType} options={fuelTypeOptions} onChange={(value) => update("fuelType", value)} />
-                <SelectField label="BS Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
-                <SelectField label="Transmission" value={form.transmission} options={transmissionOptions} onChange={(value) => update("transmission", value)} />
+                <SelectField label="BS Norm / Emission Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
                 <SelectField label="Axle Configuration" value={form.axleConfiguration} options={axleConfigurationOptions} onChange={(value) => update("axleConfiguration", value)} />
-                <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
-                <TextField label="Horsepower" value={form.horsepower} onChange={(value) => update("horsepower", value.replace(/\D/g, ""))} type="tel" />
                 <TextField label="Odometer Reading" value={form.odometerReading} onChange={(value) => update("odometerReading", value.replace(/\D/g, ""))} type="tel" />
-                <TextField label="Hour Meter Reading" value={form.hourMeterReading} onChange={(value) => update("hourMeterReading", value.replace(/\D/g, ""))} type="tel" />
+                <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
               </div>
             </details>
           ) : null}
@@ -1479,7 +1662,6 @@ export default function AddVehiclePage() {
                 <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="Optional" />
                 <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
                 <SelectField label="ABS" value={form.abs} options={[...yesNoUnknownOptions]} onChange={(value) => update("abs", value)} />
-                <TextField label="Tyre Count" value={form.tyreCount} onChange={(value) => update("tyreCount", value.replace(/\D/g, ""))} type="tel" />
                 <TextField label="Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} />
                 <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
                 <TextField label="Trailer Manufacturing Month-Year" value={form.trailerManufacturingMonthYear} onChange={(value) => update("trailerManufacturingMonthYear", value)} placeholder="e.g. 03/2021" />
@@ -1491,55 +1673,108 @@ export default function AddVehiclePage() {
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Body / Attachment Details</summary>
               <div className="mt-4 space-y-3">
-                <TextField label="Body Type" value={form.bodyType} onChange={(value) => update("bodyType", value)} placeholder="e.g. Open Body" />
-                <TextField label="Body Length" value={form.bodyLength} onChange={(value) => update("bodyLength", value)} placeholder="e.g. 20 ft" />
-                <TextField label="Payload Capacity" value={form.payloadCapacity} onChange={(value) => update("payloadCapacity", value)} placeholder="e.g. 16 tonnes" />
+                <div className="space-y-1.5">
+                  <span className="text-sm font-medium text-slate-700">Body Type</span>
+                  <p className="min-h-12 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                    {form.bodyApplicationType || "Not selected"}
+                  </p>
+                </div>
+                <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="e.g. 20 ft x 8 ft" />
                 <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
                 {standaloneShowsSuspension ? (
                   <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
                 ) : null}
-                <SelectField label="Body Attached" value={form.bodyAttached} options={[...yesNoUnknownOptions]} onChange={(value) => update("bodyAttached", value)} />
+                <SelectField label="Body Attached" value={form.bodyAttached} options={[...yesNoOptions]} onChange={(value) => update("bodyAttached", value)} />
                 <SelectField label="Body Condition" value={form.bodyCondition} options={bodyConditionOptions} onChange={(value) => update("bodyCondition", value)} />
               </div>
             </details>
           ) : null}
 
           <details className="rounded-xl border border-slate-200 bg-white p-4" open>
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Included Accessories / Missing Parts</summary>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Tyre Information</summary>
             <div className="mt-4 space-y-3">
-              <SelectField label="Tyres Included" value={form.tyresIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("tyresIncluded", value)} />
-              <SelectField label="Rims / Discs Included" value={form.rimsDiscsIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("rimsDiscsIncluded", value)} />
-              <SelectField label="Battery Included" value={form.batteryIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("batteryIncluded", value)} />
-              <SelectField label="Key Available" value={form.keyAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("keyAvailable", value)} />
-              <SelectField label="Cabin Available" value={form.cabinAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("cabinAvailable", value)} />
-              <SelectField label="Engine Available" value={form.engineAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("engineAvailable", value)} />
-              <SelectField label="Documents Available" value={form.documentsAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("documentsAvailable", value)} />
-              <TextAreaField label="Remarks" value={form.remarks} onChange={(value) => update("remarks", value)} placeholder="Example: without tyres, only horse available, trailer separate." />
+              <TextField
+                label="Total Tyres"
+                value={form.totalTyres}
+                onChange={(value) => update("totalTyres", value.replace(/\D/g, ""))}
+                placeholder="e.g. 4, 6, 10, 12, 18, 22"
+                type="tel"
+              />
+              <SelectField
+                label="Tyre Mount Status"
+                value={form.tyreMountStatus}
+                options={tyreMountStatusOptions}
+                onChange={(value) => update("tyreMountStatus", value)}
+              />
+              <SelectField
+                label="Tyre Condition"
+                value={form.tyreCondition}
+                options={tyreConditionOptions}
+                onChange={(value) => update("tyreCondition", value)}
+              />
             </div>
           </details>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Identifiers &amp; Compliance</summary>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documentation Details</summary>
+            <p className="mt-1 text-xs text-slate-500">Optional information about vehicle paperwork and compliance.</p>
             <div className="mt-4 space-y-3">
-              <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
-              <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              {isEquipment ? <TextField label="Machine Serial Number" value={form.machineSerialNumber} onChange={(value) => update("machineSerialNumber", value)} /> : null}
-              <TextField label="Tax Due" value={form.taxDue} onChange={(value) => update("taxDue", value)} />
-              <TextField label="Challans" value={form.challans} onChange={(value) => update("challans", value)} />
-              <TextField label="Insurance Expiry" value={form.insuranceExpiry} onChange={(value) => update("insuranceExpiry", value)} type="date" />
-              <TextField label="Fitness Expiry" value={form.fitnessExpiry} onChange={(value) => update("fitnessExpiry", value)} type="date" />
-              <TextField label="Permit Expiry" value={form.permitExpiry} onChange={(value) => update("permitExpiry", value)} type="date" />
-              <SelectField label="NOC Status" value={form.nocStatus} options={[...availabilityOptions]} onChange={(value) => update("nocStatus", value)} />
-              <SelectField label="GPS Installed" value={form.gpsInstalled} options={[...yesNoUnknownOptions]} onChange={(value) => update("gpsInstalled", value)} />
-              <SelectField label="Fleet Management Software Available" value={form.fleetManagementSoftwareAvailable} options={[...availabilityOptions]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
+              <TextField
+                label="Insurance Validity"
+                value={form.insuranceValidity}
+                type="date"
+                placeholder="DD/MM/YYYY"
+                onChange={(value) => update("insuranceValidity", value)}
+              />
+              <TextField
+                label="Permit Validity"
+                value={form.permitValidity}
+                type="date"
+                placeholder="DD/MM/YYYY"
+                onChange={(value) => update("permitValidity", value)}
+              />
+              <TextField
+                label="Fitness Validity"
+                value={form.fitnessStatus}
+                type="date"
+                placeholder="DD/MM/YYYY"
+                onChange={(value) => update("fitnessStatus", value)}
+              />
+              <TextField
+                label="Tax Validity"
+                value={form.taxValidity}
+                type="date"
+                placeholder="DD/MM/YYYY"
+                onChange={(value) => update("taxValidity", value)}
+              />
+              <TextField
+                label="Parking Due (₹)"
+                value={form.parkingDue}
+                type="number"
+                placeholder="0"
+                min={0}
+                onChange={(value) => update("parkingDue", value.replace(/\D/g, ""))}
+              />
+            </div>
+          </details>
+
+          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Description / Remarks</summary>
+            <div className="mt-4">
+              <TextAreaField
+                label="Description / Remarks"
+                value={form.description}
+                onChange={(value) => update("description", value)}
+                placeholder="Add key condition, documents, or transfer notes."
+              />
             </div>
           </details>
         </section>
       ) : null}
 
-      {step === 7 ? (
+      {step === STEP_PHOTOS ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 7: Photos &amp; Documents</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PHOTOS)}: Photos &amp; Documents</h1>
           <p className="text-sm text-slate-500">Photos are optional for now. Listings with photos get more buyer trust and leads.</p>
 
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
@@ -1565,14 +1800,27 @@ export default function AddVehiclePage() {
                   <p className="text-sm font-medium text-slate-700">
                     {item.label} {item.required ? <span className="text-rose-500">*</span> : <span className="text-slate-400">(Optional)</span>}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => fileRefs[item.key].current?.click()}
-                    disabled={uploadingField === item.key}
-                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
-                  >
-                    {uploadingField === item.key ? "Uploading..." : photoValue ? "Replace" : "Upload"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileRefs[item.key].current?.click()}
+                      disabled={uploadingField === item.key}
+                      className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+                    >
+                      {uploadingField === item.key ? "Uploading..." : photoValue ? "Replace" : "Upload"}
+                    </button>
+                    {photoValue ? (
+                      <button
+                        type="button"
+                        onClick={() => deleteSinglePhoto(item.key)}
+                        disabled={uploadingField === item.key}
+                        aria-label="Delete photo"
+                        className="inline-flex min-h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600"
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <input ref={fileRefs[item.key]} type="file" accept="image/*" className="hidden" onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)} />
                 {photoValue ? <UploadPreviewImage src={photoValue} alt={item.label} /> : <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 text-center text-xs text-slate-400">No image uploaded</div>}
@@ -1619,10 +1867,10 @@ export default function AddVehiclePage() {
                   <button
                     type="button"
                     onClick={() => setAdditionalPhotos((previous) => previous.filter((_, i) => i !== index))}
-                    aria-label="Remove photo"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600"
+                    aria-label="Delete photo"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600"
                   >
-                    <X className="h-4 w-4" />
+                    Delete
                   </button>
                 </div>
                 <UploadPreviewImage src={photo.url} alt={`Additional photo ${index + 1}`} />
@@ -1727,23 +1975,135 @@ export default function AddVehiclePage() {
             <input ref={videoFileRef} type="file" accept="video/*" multiple className="hidden" onChange={handleVideoFileChange} />
           </div>
 
-          <details className="rounded-xl border border-slate-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documents (optional URLs)</summary>
-            <div className="mt-4 space-y-3">
-              <TextField label="Inspection Report" value={form.inspectionReport} onChange={(value) => update("inspectionReport", value)} />
-              <SupportContactInline prompt="Questions about inspections?" subject={SUPPORT_SUBJECTS.inspection} />
-              <TextField label="RC" value={form.rcDocument} onChange={(value) => update("rcDocument", value)} />
-              <TextField label="Insurance" value={form.insuranceDocument} onChange={(value) => update("insuranceDocument", value)} />
-              <TextField label="Fitness" value={form.fitnessDocument} onChange={(value) => update("fitnessDocument", value)} />
-              <TextField label="Permit" value={form.permitDocument} onChange={(value) => update("permitDocument", value)} />
+          <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-slate-800">Documents Uploads (Optional)</h2>
+              <p className="text-xs text-slate-500">
+                Upload RC, insurance, fitness, permit or inspection documents as PDF or images.
+              </p>
+              <p className="text-xs text-slate-500">Allowed: PDF, JPG, JPEG, PNG, WEBP</p>
             </div>
-          </details>
+
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+              <span className="text-sm text-slate-600">Documents uploaded</span>
+              <span className={`text-sm font-semibold ${documentUploadCounterClass}`}>
+                {documents.length} / {MAX_DOCUMENTS}
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Document Type</span>
+                <select
+                  value={selectedDocumentCategory}
+                  onChange={(event) => setSelectedDocumentCategory(event.target.value as DocumentCategory)}
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                >
+                  {DOCUMENT_CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Document Name (for Other)</span>
+                <input
+                  type="text"
+                  value={selectedOtherDocumentName}
+                  onChange={(event) => setSelectedOtherDocumentName(event.target.value)}
+                  disabled={selectedDocumentCategory !== "OTHER"}
+                  placeholder="e.g. NOC Letter"
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => documentFileRef.current?.click()}
+                disabled={!canAddMoreDocumentsTotal || !canAddMoreDocumentsInGroup || uploadingDocuments}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              >
+                {uploadingDocuments ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+
+            <div
+              className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                void uploadDocuments(Array.from(event.dataTransfer.files || []));
+              }}
+            >
+              Drag & drop files here or use Upload.
+            </div>
+
+            {documents.length ? (
+              <div className="space-y-2">
+                {documents.map((document, index) => (
+                  <div key={`${document.url}-${index}`} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                    {document.mimeType.startsWith("image/") ? (
+                      <SafeImage
+                        src={document.url}
+                        alt={document.originalFileName || "Document image"}
+                        width={72}
+                        height={72}
+                        className="h-14 w-14 rounded-md object-cover"
+                        logContext={{ component: "AddVehicleDocuments" }}
+                      />
+                    ) : (
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                        {document.mimeType === "application/pdf" ? <FileText className="h-5 w-5" /> : <FileImage className="h-5 w-5" />}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-700">
+                        {document.category === "OTHER" ? `Other: ${document.customName || "Other"}` : formatEnumLabel(document.category)}
+                      </p>
+                      <p className="truncate text-sm text-slate-800">{document.originalFileName || "Document file"}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDocuments((previous) => previous.filter((_, docIndex) => docIndex !== index))}
+                      className="inline-flex min-h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500">No documents uploaded.</p>
+            )}
+
+            {!canAddMoreDocumentsInGroup ? (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Maximum 4 files allowed for this document type.
+              </p>
+            ) : null}
+            {!canAddMoreDocumentsTotal ? (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Maximum 15 document files allowed per listing.
+              </p>
+            ) : null}
+
+            <input
+              ref={documentFileRef}
+              type="file"
+              accept=".pdf,image/jpeg,image/jpg,image/png,image/webp"
+              multiple
+              className="hidden"
+              onChange={handleDocumentFileChange}
+            />
+          </section>
         </section>
       ) : null}
 
-      {step === 8 ? (
+      {step === STEP_REVIEW ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 8: Seller Info &amp; Review</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_REVIEW)}: Seller Info &amp; Review</h1>
           <p className="text-sm text-slate-500">Profile data is auto-filled and read-only. Review before submitting.</p>
           <TextField label="Seller Name" value={user?.fullName ?? ""} onChange={() => {}} required readOnly />
           <TextField label="Seller Contact" value={user?.phone ?? ""} onChange={() => {}} required readOnly />
@@ -1783,7 +2143,7 @@ export default function AddVehiclePage() {
       {error ? <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
       <div className="flex gap-3">
-        {step > 1 ? (
+        {step > STEP_LISTING ? (
           <button
             type="button"
             onClick={back}
@@ -1795,10 +2155,12 @@ export default function AddVehiclePage() {
         <button
           type="button"
           onClick={canSubmit ? handleSubmit : next}
-          disabled={submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || verifyingAlternatePhone}
+          disabled={
+            submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || uploadingDocuments || verifyingAlternatePhone
+          }
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {step === TOTAL_STEPS ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}
+          {canSubmit ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}
         </button>
       </div>
     </main>

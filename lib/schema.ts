@@ -5,6 +5,7 @@ import {
   numeric,
   varchar,
   timestamp,
+  date,
   pgEnum,
   serial,
   boolean,
@@ -144,6 +145,7 @@ export const runningConditionEnum = pgEnum("running_condition", [
 ]);
 
 export const engineConditionEnum = pgEnum("engine_condition", [
+  "EXCELLENT",
   "GOOD",
   "AVERAGE",
   "NEEDS_WORK",
@@ -170,6 +172,14 @@ export const tyreConditionEnum = pgEnum("tyre_condition", [
   "AROUND_50",
   "POOR",
   "MIXED",
+  "UNKNOWN",
+]);
+
+export const tyreMountStatusEnum = pgEnum("tyre_mount_status", [
+  "ON_DISC",
+  "WITH_TYRES",
+  "WITHOUT_DISC_AND_TYRES",
+  "PARTIAL",
   "UNKNOWN",
 ]);
 
@@ -210,6 +220,13 @@ export const mediaCategoryEnum = pgEnum("vehicle_media_category", [
 export const nocStatusEnum = pgEnum("noc_status", [
   "AVAILABLE",
   "NOT_AVAILABLE",
+  "UNKNOWN",
+]);
+
+export const transferTypeEnum = pgEnum("transfer_type", [
+  "RC_TRANSFER",
+  "RTO_NOC",
+  "OPEN_NOC",
   "UNKNOWN",
 ]);
 
@@ -289,8 +306,10 @@ export const vehicles = pgTable("vehicles", {
   trailerManufacturingMonthYear: text("trailer_manufacturing_month_year"),
   suspensionType: text("suspension_type"),
   tyreInspectionReport: availabilityStatusEnum("tyre_inspection_report"),
+  totalTyres: integer("total_tyres"),
   tyreCount: integer("tyre_count"),
   currentTyreCount: integer("current_tyre_count"),
+  tyreMountStatus: tyreMountStatusEnum("tyre_mount_status"),
   tyreCondition: tyreConditionEnum("tyre_condition"),
   registrationState: text("registration_state").notNull().default(""),
   city: text("city").notNull(),
@@ -336,6 +355,7 @@ export const vehicles = pgTable("vehicles", {
   insuranceExpiry: text("insurance_expiry").notNull().default(""),
   fitnessExpiry: text("fitness_expiry").notNull().default(""),
   permitExpiry: text("permit_expiry").notNull().default(""),
+  transferType: transferTypeEnum("transfer_type"),
   nocStatus: nocStatusEnum("noc_status"),
   machineSerialNumber: text("machine_serial_number"),
   engineNumber: text("engine_number").notNull().default(""),
@@ -355,6 +375,11 @@ export const vehicles = pgTable("vehicles", {
   documentsAvailable: yesNoUnknownEnum("documents_available"),
   remarks: text("remarks"),
   fleetManagementSoftwareAvailable: availabilityStatusEnum("fleet_management_software_available"),
+  insuranceValidity: date("insurance_validity", { mode: "string" }),
+  permitValidity: date("permit_validity", { mode: "string" }),
+  fitnessStatus: date("fitness_status", { mode: "string" }),
+  taxValidity: date("tax_validity", { mode: "string" }),
+  parkingDue: integer("parking_due").default(0),
   verifiedBadges: text("verified_badges").array().notNull().default([]),
   inspectionNotes: text("inspection_notes").array().notNull().default([]),
   inquiries: integer("inquiries").notNull().default(0),
@@ -386,6 +411,7 @@ export const vehicleMedia = pgTable("vehicle_media", {
   category: mediaCategoryEnum("category").notNull(),
   customName: text("custom_name"),
   url: text("url").notNull(),
+  originalFileName: text("original_file_name").notNull().default(""),
   mimeType: text("mime_type").notNull().default(""),
   sizeBytes: integer("size_bytes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

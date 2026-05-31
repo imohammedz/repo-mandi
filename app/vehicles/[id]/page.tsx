@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CalendarDays,
   CircleCheck,
-  FileBadge,
   FileText,
   MapPin,
   ShieldCheck,
@@ -29,7 +28,7 @@ import {
   hasEngineOrPowertrain,
   normalizeClassification,
 } from "@/lib/vehicle-classification";
-import { formatEnumLabel } from "@/lib/formatting";
+import { formatDisplayLabel } from "@/lib/formatting";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +41,19 @@ const normalizeText = (value: string | null | undefined) => {
 const toReadableLabel = (value: string | null | undefined) => {
   const normalized = normalizeText(value);
   if (!normalized) return "";
-  return formatEnumLabel(normalized) || normalized;
+  return formatDisplayLabel(normalized) || normalized;
+};
+
+const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
+  const normalizedTransferType = normalizeText(transferType).replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
+  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
+  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
+  if (normalizedTransferType === "UNKNOWN") return "Unknown";
+
+  const normalizedNocStatus = normalizeText(nocStatus).replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
+  return "Unknown";
 };
 
 const dedupeLabels = (parts: Array<string | null | undefined>) => {
@@ -148,12 +159,22 @@ const formatDate = (value: Date | string | null | undefined) => {
   return parsed.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const getFileNameFromUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    return decodeURIComponent(parts[parts.length - 1] || "document");
+  } catch {
+    return "document";
+  }
+};
+
 const DOCUMENT_LABELS: Record<string, string> = {
   RC: "RC",
   INSURANCE: "Insurance",
   FITNESS: "Fitness",
   PERMIT: "Permit",
-  INSPECTION_REPORT: "Evaluation Report",
+  INSPECTION_REPORT: "Inspection Report",
 };
 
 const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
@@ -284,6 +305,7 @@ export default async function VehicleDetailPage({
 
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
+  const transferTypeLabel = getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus);
   const showsRunning = hasEngineOrPowertrain({
     assetStructure: vehicle.assetStructure,
     detachableType: vehicle.detachableType,
@@ -310,6 +332,13 @@ export default async function VehicleDetailPage({
     .from(vehicleMedia)
     .where(and(eq(vehicleMedia.vehicleId, vehicle.id), eq(vehicleMedia.type, "DOCUMENT")))
     .orderBy(desc(vehicleMedia.createdAt));
+  const documentCategorySummary = dedupeLabels(
+    documentRows.map((doc) => {
+      if (doc.category === "OTHER") return toReadableLabel(doc.customName) || "Other";
+      return DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.category);
+    })
+  );
+  const canDownloadDocuments = currentUser?.accountType === "ADMIN";
 
   const trustTags = dedupeLabels([
     vehicle.sellerVerified ? "Verified Seller" : "",
@@ -358,18 +387,6 @@ export default async function VehicleDetailPage({
       label: "RC Available",
       value: vehicle.documentsAvailable ? toReadableLabel(vehicle.documentsAvailable) : "",
     },
-    {
-      label: "Fitness Valid",
-      value: vehicle.fitnessExpiry ? `Valid till ${vehicle.fitnessExpiry}` : "",
-    },
-    {
-      label: "Insurance",
-      value: vehicle.insuranceExpiry ? `Valid till ${vehicle.insuranceExpiry}` : "",
-    },
-    {
-      label: "Permit",
-      value: vehicle.permitExpiry ? `Valid till ${vehicle.permitExpiry}` : "",
-    },
   ].filter((item) => item.value);
 
   const conditionSpecs = [
@@ -377,6 +394,7 @@ export default async function VehicleDetailPage({
       label: "Running Condition",
       value: showsRunning ? toReadableLabel(vehicle.runningCondition || vehicle.condition) : "",
     },
+    { label: "Engine Condition", value: vehicle.engineCondition ? toReadableLabel(vehicle.engineCondition) : "" },
     { label: "Tyres Included", value: vehicle.tyresIncluded ? toReadableLabel(vehicle.tyresIncluded) : "" },
     { label: "Rims Included", value: vehicle.rimsDiscsIncluded ? toReadableLabel(vehicle.rimsDiscsIncluded) : "" },
     { label: "Battery Included", value: vehicle.batteryIncluded ? toReadableLabel(vehicle.batteryIncluded) : "" },
@@ -394,13 +412,39 @@ export default async function VehicleDetailPage({
     { label: "Body Dimensions", value: toSpecValue(vehicle.bodyDimensions) },
   ].filter((item) => item.value);
 
-  const conditionNotes = dedupeLabels([
-    ...(vehicle.inspectionNotes || []),
-    normalizeText(vehicle.conditionNotes),
-  ]);
-  if (vehicle.yardVerified) {
-    conditionNotes.push("RepoMandi Physical Inspection Completed");
-  }
+  const formatDocumentationDate = (v: string | null | undefined) => {
+    if (!v) return "";
+    const trimmed = normalizeText(v);
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return toReadableLabel(trimmed);
+    const parsed = new Date(`${trimmed}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return toReadableLabel(trimmed);
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const year = parsed.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+  const parkingDueLabel = (v: number | string | null | undefined) => {
+    if (v === null || v === undefined || v === "") return "";
+    if (typeof v === "number") return `₹${v.toLocaleString("en-IN")}`;
+    const trimmed = normalizeText(v);
+    const parsed = Number(trimmed.replace(/[^\d]/g, ""));
+    if (Number.isFinite(parsed)) return `₹${Math.max(0, parsed).toLocaleString("en-IN")}`;
+    if (trimmed === "NO_DUE") return "₹0";
+    return toReadableLabel(trimmed);
+  };
+
+  const documentationSpecs = [
+    { label: "Insurance Valid Till", value: vehicle.insuranceValidity ? formatDocumentationDate(vehicle.insuranceValidity) : "" },
+    { label: "Permit Valid Till", value: vehicle.permitValidity ? formatDocumentationDate(vehicle.permitValidity) : "" },
+    { label: "Fitness Valid Till", value: vehicle.fitnessStatus ? formatDocumentationDate(vehicle.fitnessStatus) : "" },
+    { label: "Tax Valid Till", value: vehicle.taxValidity ? formatDocumentationDate(vehicle.taxValidity) : "" },
+    { label: "Parking Due", value: parkingDueLabel(vehicle.parkingDue) },
+  ].filter((item) => item.value);
+
+  const description = (vehicle.description ?? vehicle.conditionNotes ?? "").trim();
+  const inspectionNotes = dedupeLabels(vehicle.inspectionNotes || []);
+  if (vehicle.yardVerified) inspectionNotes.push("RepoMandi Physical Inspection Completed");
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-5 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4">
@@ -458,6 +502,10 @@ export default async function VehicleDetailPage({
           <MapPin className="h-4 w-4" />
           <span>{displayLocation || "Location unavailable"}</span>
         </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Transfer Type</p>
+          <p className="text-sm font-semibold text-slate-900">{transferTypeLabel}</p>
+        </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
           <span>{vehicle.listingType === "REPO" ? "Repo" : "Regular"}</span>
@@ -511,22 +559,29 @@ export default async function VehicleDetailPage({
             {renderSpecGroup("Registration & Compliance", registrationSpecs)}
             {renderSpecGroup("Condition & Usage", conditionSpecs)}
             {renderSpecGroup("Trailer / Body Details", trailerSpecs)}
+            {renderSpecGroup("Documentation Details", documentationSpecs)}
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Condition Notes</h2>
-            {conditionNotes.length ? (
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {conditionNotes.map((note) => (
-                  <li key={note} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                    <span>{note}</span>
-                  </li>
-                ))}
-              </ul>
+            <h2 className="text-base font-semibold text-slate-900">Description</h2>
+            {description ? (
+              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{description}</p>
             ) : (
-              <p className="mt-2 text-sm text-slate-500">No condition notes available.</p>
+              <p className="mt-2 text-sm text-slate-500">No description available.</p>
             )}
+            {inspectionNotes.length ? (
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <h3 className="text-sm font-semibold text-slate-800">Inspection Notes</h3>
+                <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                  {inspectionNotes.map((note) => (
+                    <li key={note} className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
 
           <SupportContactCard
@@ -537,34 +592,63 @@ export default async function VehicleDetailPage({
 
           {documentRows.length ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900">Documents</h2>
-              <div className="mt-3 space-y-2">
-                {documentRows.map((doc) => {
-                  const label = DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.customName) || "Document";
-                  const isVerified =
-                    (doc.category === "RC" && vehicle.rcVerified) ||
-                    (doc.category === "INSPECTION_REPORT" && vehicle.yardVerified);
-                  return (
-                    <a
-                      key={doc.id}
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        {doc.category === "RC" ? <FileBadge className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                        {label}
-                      </span>
-                      {isVerified ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
-                          <ShieldCheck className="h-3.5 w-3.5" />
-                          Verified
+              <h2 className="text-base font-semibold text-slate-900">Documents Uploaded</h2>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                {documentCategorySummary.map((label) => (
+                  <li key={label} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ul>
+              {canDownloadDocuments ? (
+                <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin Document Access</p>
+                  {documentRows.map((doc) => {
+                    const label =
+                      doc.category === "OTHER"
+                        ? `Other: ${toReadableLabel(doc.customName) || "Other"}`
+                        : DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.category) || "Document";
+                    const isVerified =
+                      (doc.category === "RC" && vehicle.rcVerified) ||
+                      (doc.category === "INSPECTION_REPORT" && vehicle.yardVerified);
+                    const fileName = doc.originalFileName || getFileNameFromUrl(doc.url);
+                    return (
+                      <a
+                        key={doc.id}
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-medium text-slate-800">{label}</span>
+                          <span className="block truncate text-xs text-slate-500">{fileName}</span>
                         </span>
-                      ) : null}
-                    </a>
-                  );
-                })}
+                        <span className="inline-flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          {isVerified ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              Verified
+                            </span>
+                          ) : null}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {!canDownloadDocuments ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  Document files are only available to admins during verification.
+                </p>
+              ) : null}
+              {!documentCategorySummary.length ? (
+                <p className="mt-3 text-sm text-slate-500">No documents uploaded.</p>
+              ) : null}
+              <div className="mt-3 text-xs text-slate-500">
+                {documentRows.length} {documentRows.length === 1 ? "file" : "files"} uploaded.
               </div>
             </section>
           ) : null}

@@ -5,11 +5,24 @@ import { useState } from "react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { formatDisplayLabel } from "@/lib/formatting";
 import type { Vehicle } from "@/types/vehicle";
 
 type AdminDashboardClientProps = {
   vehicleList: Vehicle[];
   stats: { label: string; value: string; hint?: string }[];
+};
+
+const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
+  const normalizedTransferType = (transferType || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
+  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
+  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
+  if (normalizedTransferType === "UNKNOWN") return "Unknown";
+
+  const normalizedNocStatus = (nocStatus || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
+  return "Unknown";
 };
 
 export default function AdminDashboardClient({ vehicleList, stats }: AdminDashboardClientProps) {
@@ -141,11 +154,15 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
                 <p className="text-xs text-slate-500">Seller: {vehicle.sellerName}</p>
+                <p className="mt-1 text-xs font-medium text-slate-600">
+                  Transfer: {getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus)}
+                </p>
               </div>
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}
             </div>
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Verify mileage ({typeof vehicle.kmDriven === "number" ? `${vehicle.kmDriven.toLocaleString("en-IN")} km` : "unknown"}), condition: {vehicle.condition}
+              Verify mileage ({typeof vehicle.kmDriven === "number" ? `${vehicle.kmDriven.toLocaleString("en-IN")} km` : "Unknown"}), condition: {formatDisplayLabel(vehicle.condition)}
+              {vehicle.engineCondition ? `, engine: ${formatDisplayLabel(vehicle.engineCondition)}` : ""}
             </p>
             {(vehicle.missingPhotos || vehicle.priceTooLow || vehicle.duplicateRegistration || vehicle.newSeller || vehicle.missingYardLocation) && (
               <div className="flex flex-wrap gap-2">

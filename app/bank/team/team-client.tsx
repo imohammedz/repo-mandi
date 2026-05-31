@@ -97,7 +97,7 @@ export default function BankTeamClient() {
         {users.map((member) => (
           <article key={member.id} className="rounded-xl border border-slate-100 bg-white p-3 text-xs text-slate-600">
             <p className="font-medium text-slate-900">{member.fullName}</p>
-            <p>{member.bankRole} • {member.phone}</p>
+            <p>{formatEnumLabel(member.bankRole) || "-"} • {member.phone}</p>
             <p>{member.email ?? "-"}</p>
             <p>Status: {formatEnumLabel(member.verificationStatus)}</p>
           </article>

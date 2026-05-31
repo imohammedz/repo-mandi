@@ -1,16 +1,70 @@
 import { redirect } from "next/navigation";
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { vehicles } from "@/lib/schema";
+import { vehicleMedia, vehicles } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { getAssetStructureLabel, getDetachableTypeLabel, getListingModeLabel } from "@/lib/vehicle-classification";
+import { formatDisplayLabel } from "@/lib/formatting";
 
 export const dynamic = "force-dynamic";
+
+const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
+  const normalizedTransferType = (transferType || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
+  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
+  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
+  if (normalizedTransferType === "UNKNOWN") return "Unknown";
+
+  const normalizedNocStatus = (nocStatus || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
+  return "Unknown";
+};
+
+const formatDocumentationDate = (value: string | null | undefined) => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return formatDisplayLabel(trimmed);
+  const parsed = new Date(`${trimmed}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return formatDisplayLabel(trimmed);
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const year = parsed.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatParkingDue = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") return `₹${value.toLocaleString("en-IN")}`;
+  const amount = Number(String(value).replace(/[^\d]/g, ""));
+  if (Number.isFinite(amount)) return `₹${Math.max(0, amount).toLocaleString("en-IN")}`;
+  if (value === "NO_DUE") return "₹0";
+  return formatDisplayLabel(value);
+};
+
+const DOCUMENT_CATEGORY_LABELS: Record<string, string> = {
+  RC: "RC",
+  INSURANCE: "Insurance",
+  FITNESS: "Fitness",
+  PERMIT: "Permit",
+  INSPECTION_REPORT: "Inspection Report",
+  OTHER: "Other",
+};
+
+const getFileNameFromUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    return decodeURIComponent(segments[segments.length - 1] || "document");
+  } catch {
+    return "document";
+  }
+};
 
 export default async function AdminPendingListingsPage() {
   const currentUser = await getCurrentUser();
@@ -28,6 +82,20 @@ export default async function AdminPendingListingsPage() {
     )
     .orderBy(desc(vehicles.createdAt));
   const pending = rows.map(dbToVehicle);
+  const vehicleIds = pending.map((vehicle) => vehicle.id);
+  const documentRows = vehicleIds.length
+    ? await db
+        .select()
+        .from(vehicleMedia)
+        .where(and(inArray(vehicleMedia.vehicleId, vehicleIds), eq(vehicleMedia.type, "DOCUMENT")))
+        .orderBy(desc(vehicleMedia.createdAt))
+    : [];
+  const documentsByVehicle = new Map<string, typeof documentRows>();
+  for (const documentRow of documentRows) {
+    const existing = documentsByVehicle.get(documentRow.vehicleId) ?? [];
+    existing.push(documentRow);
+    documentsByVehicle.set(documentRow.vehicleId, existing);
+  }
 
   return (
     <main className="space-y-4 px-4 pb-8 pt-4">
@@ -36,14 +104,19 @@ export default async function AdminPendingListingsPage() {
         {pending.length === 0 ? (
           <EmptyState title="No verification requests yet." description="New listings pending verification will appear here." />
         ) : null}
-        {pending.map((vehicle) => (
+        {pending.map((vehicle) => {
+          const vehicleDocuments = documentsByVehicle.get(vehicle.id) ?? [];
+          return (
           <article key={vehicle.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
                 <p className="text-xs text-slate-500">{vehicle.city}, {vehicle.state}</p>
+                <p className="mt-1 text-xs font-medium text-slate-600">
+                  Transfer: {getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus)}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold">
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">{vehicle.listingType}</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">{formatDisplayLabel(vehicle.listingType)}</span>
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">{getListingModeLabel(vehicle.listingMode)}</span>
                   <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">
                     {getAssetStructureLabel(vehicle.assetStructure) || vehicle.assetConfiguration || "Complete Vehicle"}
@@ -58,12 +131,50 @@ export default async function AdminPendingListingsPage() {
                   <p>Alternate number verified: {vehicle.alternateContactNumberVerified ? "Yes" : "No"}</p>
                   <p>Missing photos warning: {vehicle.missingPhotos ? "Yes" : "No"}</p>
                   <p>Videos uploaded: {vehicle.walkaroundVideo || vehicle.engineStartUpVideo ? "Yes" : "No"}</p>
+                  {vehicle.engineCondition ? <p>Engine condition: {formatDisplayLabel(vehicle.engineCondition)}</p> : null}
+                  {(vehicle.insuranceValidity || vehicle.permitValidity || vehicle.fitnessStatus || vehicle.taxValidity || vehicle.parkingDue != null) ? (
+                    <div className="mt-2 border-t border-slate-100 pt-2">
+                      <p className="font-semibold text-slate-700">Documentation Details</p>
+                      {vehicle.insuranceValidity ? <p>Insurance Valid Till: {formatDocumentationDate(vehicle.insuranceValidity)}</p> : null}
+                      {vehicle.permitValidity ? <p>Permit Valid Till: {formatDocumentationDate(vehicle.permitValidity)}</p> : null}
+                      {vehicle.fitnessStatus ? <p>Fitness Valid Till: {formatDocumentationDate(vehicle.fitnessStatus)}</p> : null}
+                      {vehicle.taxValidity ? <p>Tax Valid Till: {formatDocumentationDate(vehicle.taxValidity)}</p> : null}
+                      {vehicle.parkingDue !== null && vehicle.parkingDue !== undefined ? <p>Parking Due: {formatParkingDue(vehicle.parkingDue)}</p> : null}
+                    </div>
+                  ) : null}
+                  {vehicleDocuments.length ? (
+                    <div className="mt-2 border-t border-slate-100 pt-2">
+                      <p className="font-semibold text-slate-700">Uploaded Documents ({vehicleDocuments.length})</p>
+                      <ul className="mt-1 space-y-1">
+                        {vehicleDocuments.map((document) => {
+                          const categoryLabel =
+                            document.category === "OTHER"
+                              ? `Other${document.customName ? `: ${document.customName}` : ""}`
+                              : DOCUMENT_CATEGORY_LABELS[document.category] || formatDisplayLabel(document.category);
+                          const fileName = document.originalFileName || getFileNameFromUrl(document.url);
+                          return (
+                            <li key={document.id} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
+                              <p className="text-[11px] font-semibold text-slate-700">{categoryLabel}</p>
+                              <a
+                                href={document.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block truncate text-[11px] text-sky-700 underline"
+                              >
+                                {fileName}
+                              </a>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}
             </div>
           </article>
-        ))}
+        )})}
       </section>
       <SupportContactCard
         title="Need assistance?"

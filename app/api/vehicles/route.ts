@@ -51,6 +51,15 @@ type KmMeterStatus = (typeof VALID_KM_METER_STATUS)[number];
 const VALID_RUNNING_CONDITIONS = ["RUNNING", "NOT_RUNNING", "UNKNOWN"] as const;
 type RunningCondition = (typeof VALID_RUNNING_CONDITIONS)[number];
 const VALID_AVAILABILITY_STATUS = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"] as const;
+const VALID_TRANSFER_TYPES = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"] as const;
+const VALID_TYRE_MOUNT_STATUS = [
+  "ON_DISC",
+  "WITH_TYRES",
+  "WITHOUT_DISC_AND_TYRES",
+  "PARTIAL",
+  "UNKNOWN",
+] as const;
+const VALID_TYRE_CONDITIONS = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN", "FAIR"] as const;
 
 const VALID_REPO_STATUS = [
   "Bank Seized",
@@ -71,6 +80,16 @@ const LEGACY_RUNNING_MAP: Record<string, RunningCondition> = {
 const MIN_REASONABLE_PRICE = 100000; // INR threshold for low-price risk flagging in admin review.
 const MIN_VEHICLE_YEAR = 2000;
 const MAX_PHOTOS = 20;
+const MAX_DOCUMENTS = 15;
+const MAX_DOCUMENTS_PER_GROUP = 4;
+const VALID_DOCUMENT_CATEGORIES = new Set([
+  "RC",
+  "INSURANCE",
+  "FITNESS",
+  "PERMIT",
+  "INSPECTION_REPORT",
+  "OTHER",
+]);
 
 // Categories sellers can assign to additional (non-required) photos.
 const VALID_ADDITIONAL_PHOTO_CATEGORIES = new Set([
@@ -114,6 +133,40 @@ function toSafeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function parseDateInput(value: unknown) {
+  const raw = toSafeString(value);
+  if (!raw) return null;
+
+  const yyyyMmDd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const ddmmyyyy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const parts = yyyyMmDd
+    ? { year: Number(yyyyMmDd[1]), month: Number(yyyyMmDd[2]), day: Number(yyyyMmDd[3]) }
+    : ddmmyyyy
+      ? { year: Number(ddmmyyyy[3]), month: Number(ddmmyyyy[2]), day: Number(ddmmyyyy[1]) }
+      : null;
+
+  if (!parts) return null;
+
+  const candidate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const isValidDate =
+    candidate.getUTCFullYear() === parts.year &&
+    candidate.getUTCMonth() + 1 === parts.month &&
+    candidate.getUTCDate() === parts.day;
+  if (!isValidDate) return null;
+
+  const month = String(parts.month).padStart(2, "0");
+  const day = String(parts.day).padStart(2, "0");
+  return `${parts.year}-${month}-${day}`;
+}
+
+function parseParkingDueAmount(value: unknown) {
+  const raw = toSafeString(value);
+  if (!raw) return null;
+  const numeric = Number(raw.replace(/[^\d]/g, ""));
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(0, Math.trunc(numeric));
+}
+
 function parseRunningCondition(value: unknown): RunningCondition {
   const normalized = toSafeString(value);
   if (VALID_RUNNING_CONDITIONS.includes(normalized as RunningCondition)) {
@@ -135,6 +188,49 @@ function parseYesNoUnknown(value: unknown) {
   const normalized = toSafeString(value).toUpperCase();
   if (["YES", "NO", "UNKNOWN"].includes(normalized)) {
     return normalized as "YES" | "NO" | "UNKNOWN";
+  }
+  return null;
+}
+
+function parseTransferType(value: unknown) {
+  const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+  if (VALID_TRANSFER_TYPES.includes(normalized as (typeof VALID_TRANSFER_TYPES)[number])) {
+    return normalized as (typeof VALID_TRANSFER_TYPES)[number];
+  }
+  if (normalized === "AVAILABLE") return "RC_TRANSFER";
+  if (normalized === "NOT_AVAILABLE" || normalized === "UNKNOWN") return "UNKNOWN";
+  return null;
+}
+
+function toLegacyNocStatus(transferType: (typeof VALID_TRANSFER_TYPES)[number] | null) {
+  if (transferType === "RC_TRANSFER") return "AVAILABLE" as const;
+  if (transferType === "RTO_NOC" || transferType === "OPEN_NOC") return "NOT_AVAILABLE" as const;
+  return "UNKNOWN" as const;
+}
+
+function parseTyreMountStatus(value: unknown) {
+  const normalized = toSafeString(value)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
+    return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
+  }
+  if (normalized === "WITHOUT_TYRES_AND_DISCS") {
+    return "WITHOUT_DISC_AND_TYRES";
+  }
+  if (normalized === "TYRES_ONLY") return "WITH_TYRES";
+  if (normalized === "NO_TYRES") return "WITHOUT_DISC_AND_TYRES";
+  return null;
+}
+
+function parseTyreCondition(value: unknown) {
+  const normalized = toSafeString(value)
+    .toUpperCase()
+    .replace(/%/g, "")
+    .replace(/\s+/g, "_");
+  if (VALID_TYRE_CONDITIONS.includes(normalized as (typeof VALID_TYRE_CONDITIONS)[number])) {
+    return normalized as (typeof VALID_TYRE_CONDITIONS)[number];
   }
   return null;
 }
@@ -372,7 +468,7 @@ export async function POST(request: Request) {
     const state = toSafeString(body.state) || toSafeString(currentUser.state);
     const city = toSafeString(body.city) || toSafeString(currentUser.city);
     const location = toSafeString(body.vehicleOrYardLocation || body.yardLocation);
-    const conditionNotes = toSafeString(body.conditionNotes);
+    const description = toSafeString(body.description ?? body.conditionNotes);
     const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto);
     const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto);
     const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? body.sidePhoto);
@@ -381,6 +477,7 @@ export async function POST(request: Request) {
     const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto);
     const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : [];
     const videosRaw = Array.isArray(body.videos) ? (body.videos as unknown[]) : [];
+    const documentsRaw = Array.isArray(body.documents) ? (body.documents as unknown[]) : [];
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
@@ -397,8 +494,12 @@ export async function POST(request: Request) {
     const numberOfAxles = toNumberOrNull(body.numberOfAxles);
     const bodyDimensions = toSafeString(body.bodyDimensions);
     const suspensionType = toSafeString(body.suspensionType);
+    const transferType = parseTransferType(body.transferType ?? body.nocStatus);
+    const tyreMountStatus = parseTyreMountStatus(body.tyreMountStatus);
+    const totalTyres = toNumberOrNull(body.totalTyres ?? body.tyreCount);
     const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
     const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
+    const tyreCondition = parseTyreCondition(body.tyreCondition);
     const normalizedInteriorPhoto = interiorPhoto;
 
     const financeCompany = toSafeString(body.financeCompany);
@@ -424,14 +525,13 @@ export async function POST(request: Request) {
     if (poweredAsset && !registrationState) {
       alwaysRequiredMissing.push("registrationState");
     }
-    if (poweredAsset && !runningCondition) alwaysRequiredMissing.push("runningCondition");
     if (isTrailerAsset && !trailerType) alwaysRequiredMissing.push("trailerType");
     if (isTrailerAsset && !trailerLength) alwaysRequiredMissing.push("trailerLength");
     if (isTrailerAsset && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
-    if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
+    if (!transferType) alwaysRequiredMissing.push("transferType");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(
@@ -439,6 +539,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const requiredTransferType = transferType as (typeof VALID_TRANSFER_TYPES)[number];
 
     // Validate and cap additional photos.
     const additionalPhotoItems = additionalPhotosRaw
@@ -465,6 +566,43 @@ export async function POST(request: Request) {
       .filter((item) => Boolean(item.url))
       .slice(0, 3);
 
+    const documentItems = documentsRaw
+      .map((item) => {
+        const it = item as Record<string, unknown>;
+        const categoryRaw = toSafeString(it?.category).toUpperCase();
+        const category = VALID_DOCUMENT_CATEGORIES.has(categoryRaw) ? categoryRaw : "OTHER";
+        const customName = toSafeString(it?.customName);
+        return {
+          url: sanitizeSupabaseMediaUrl(it?.url),
+          category,
+          customName: category === "OTHER" ? customName : "",
+          mimeType: toSafeString(it?.mimeType),
+          sizeBytes: toNumberOrNull(it?.sizeBytes),
+          originalFileName: toSafeString(it?.originalFileName),
+        };
+      })
+      .filter((item) => Boolean(item.url))
+      .slice(0, MAX_DOCUMENTS);
+
+    const legacyDocumentRows: Array<{ value: string; category: string }> = [
+      { value: toSafeString(body.inspectionReport), category: "INSPECTION_REPORT" },
+      { value: toSafeString(body.rcDocument), category: "RC" },
+      { value: toSafeString(body.insuranceDocument), category: "INSURANCE" },
+      { value: toSafeString(body.fitnessDocument), category: "FITNESS" },
+      { value: toSafeString(body.permitDocument), category: "PERMIT" },
+    ];
+    for (const legacyRow of legacyDocumentRows) {
+      if (!legacyRow.value) continue;
+      documentItems.push({
+        url: sanitizeSupabaseMediaUrl(legacyRow.value),
+        category: legacyRow.category,
+        customName: "",
+        mimeType: "application/pdf",
+        sizeBytes: null,
+        originalFileName: "",
+      });
+    }
+
     const requiredPhotoCount = [
       frontPhoto,
       backPhoto,
@@ -477,6 +615,19 @@ export async function POST(request: Request) {
     }
     if (videoItems.length > 3) {
       return Response.json({ message: "Maximum 3 videos allowed." }, { status: 400 });
+    }
+    if (documentItems.length > MAX_DOCUMENTS) {
+      return Response.json({ message: `Maximum ${MAX_DOCUMENTS} document files allowed per listing.` }, { status: 400 });
+    }
+    const documentGroupCounts = new Map<string, number>();
+    for (const item of documentItems) {
+      const groupKey = item.category === "OTHER" ? `OTHER:${item.customName.trim().toUpperCase() || "OTHER"}` : item.category;
+      const current = documentGroupCounts.get(groupKey) ?? 0;
+      const next = current + 1;
+      if (next > MAX_DOCUMENTS_PER_GROUP) {
+        return Response.json({ message: "Maximum 4 files allowed for this document type." }, { status: 400 });
+      }
+      documentGroupCounts.set(groupKey, next);
     }
 
     if (!VALID_TYPES.includes(vehicleType)) {
@@ -616,20 +767,11 @@ export async function POST(request: Request) {
         trailerManufacturingMonthYear: toSafeString(body.trailerManufacturingMonthYear) || null,
         suspensionType: suspensionType || null,
         tyreInspectionReport: (tyreInspectionReport || null) as "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN" | null,
+        totalTyres,
         tyreCount: toNumberOrNull(body.tyreCount),
         currentTyreCount: toNumberOrNull(body.currentTyreCount),
-        tyreCondition: (toSafeString(body.tyreCondition)
-          .toUpperCase()
-          .replace(/%/g, "")
-          .replace(/\s+/g, "_") || null) as
-          | "NEW"
-          | "GOOD"
-          | "FAIR"
-          | "AROUND_50"
-          | "POOR"
-          | "MIXED"
-          | "UNKNOWN"
-          | null,
+        tyreMountStatus: tyreMountStatus || null,
+        tyreCondition: tyreCondition || null,
         city,
         state,
         vehicleOrYardLocation: location,
@@ -666,8 +808,9 @@ export async function POST(request: Request) {
         businessName: currentUser.businessName,
         gstin: toSafeString(body.gstin),
         condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
-        conditionNotes,
+        conditionNotes: description,
         engineCondition: (toSafeString(body.engineCondition).toUpperCase().replace(/\s+/g, "_") || null) as
+          | "EXCELLENT"
           | "GOOD"
           | "AVERAGE"
           | "NEEDS_WORK"
@@ -690,11 +833,8 @@ export async function POST(request: Request) {
         insuranceExpiry: toSafeString(body.insuranceExpiry),
         fitnessExpiry: toSafeString(body.fitnessExpiry),
         permitExpiry: toSafeString(body.permitExpiry),
-        nocStatus: (toSafeString(body.nocStatus).toUpperCase().replace(/\s+/g, "_") || null) as
-          | "AVAILABLE"
-          | "NOT_AVAILABLE"
-          | "UNKNOWN"
-          | null,
+        transferType: requiredTransferType,
+        nocStatus: toLegacyNocStatus(requiredTransferType),
         machineSerialNumber: machineSerialNumber || null,
         engineNumber: toSafeString(body.engineNumber),
         chassisNumber: toSafeString(body.chassisNumber),
@@ -717,6 +857,11 @@ export async function POST(request: Request) {
           | "NOT_AVAILABLE"
           | "UNKNOWN"
           | null,
+        insuranceValidity: parseDateInput(body.insuranceValidity),
+        permitValidity: parseDateInput(body.permitValidity),
+        fitnessStatus: parseDateInput(body.fitnessStatus),
+        taxValidity: parseDateInput(body.taxValidity),
+        parkingDue: parseParkingDueAmount(body.parkingDue),
         verifiedBadges: [],
         inspectionNotes: [],
         listingStatus: autoApprove ? "VERIFIED" : "PENDING",
@@ -743,6 +888,8 @@ export async function POST(request: Request) {
       url: string;
       mimeType?: string;
       sizeBytes?: number | null;
+      customName?: string | null;
+      originalFileName?: string;
     };
     const mediaRows: MediaRow[] = [];
     if (frontPhoto) mediaRows.push({ type: "PHOTO", category: "FRONT", url: frontPhoto });
@@ -764,19 +911,16 @@ export async function POST(request: Request) {
       });
     }
 
-    const documentRows: Array<{ value: string; category: MediaRow["category"] }> = [
-      { value: toSafeString(body.inspectionReport), category: "INSPECTION_REPORT" },
-      { value: toSafeString(body.rcDocument), category: "RC" },
-      { value: toSafeString(body.insuranceDocument), category: "INSURANCE" },
-      { value: toSafeString(body.fitnessDocument), category: "FITNESS" },
-      { value: toSafeString(body.permitDocument), category: "PERMIT" },
-    ];
-    for (const documentRow of documentRows) {
-      if (!documentRow.value) continue;
+    for (const documentRow of documentItems) {
+      if (!documentRow.url) continue;
       mediaRows.push({
         type: "DOCUMENT",
-        category: documentRow.category,
-        url: documentRow.value,
+        category: documentRow.category as MediaRow["category"],
+        url: documentRow.url,
+        mimeType: documentRow.mimeType || "application/pdf",
+        sizeBytes: documentRow.sizeBytes,
+        customName: documentRow.category === "OTHER" ? documentRow.customName || null : null,
+        originalFileName: documentRow.originalFileName,
       });
     }
 
@@ -801,7 +945,8 @@ export async function POST(request: Request) {
           url: item.url,
           mimeType: item.mimeType || "",
           sizeBytes: item.sizeBytes ?? null,
-          customName: null,
+          customName: item.customName ?? null,
+          originalFileName: item.originalFileName ?? "",
         }))
       );
     }
