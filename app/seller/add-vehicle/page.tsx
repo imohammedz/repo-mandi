@@ -210,8 +210,9 @@ type FormData = {
   trailerManufacturingMonthYear: string;
   suspensionType: string;
   tyreInspectionReport: string;
-  tyreCount: string;
+  totalTyres: string;
   currentTyreCount: string;
+  tyreMountStatus: string;
   tyreCondition: string;
   trailerNumber: string;
   bodyType: string;
@@ -232,7 +233,7 @@ type FormData = {
   insuranceExpiry: string;
   fitnessExpiry: string;
   permitExpiry: string;
-  nocStatus: string;
+  transferType: string;
   engineNumber: string;
   chassisNumber: string;
   gpsInstalled: string;
@@ -307,6 +308,9 @@ const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", 
 const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Other"];
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
 const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
+const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
+const tyreMountStatusOptions = ["ON_DISC", "TYRES_ONLY", "NO_TYRES", "PARTIAL"];
+const tyreConditionOptions = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN"];
 const videoCategoryOptions = [
   { value: "WALKAROUND", label: "Walkaround Video" },
   { value: "ENGINE_STARTUP", label: "Engine Start Video" },
@@ -439,8 +443,9 @@ const emptyForm: FormData = {
   trailerManufacturingMonthYear: "",
   suspensionType: "",
   tyreInspectionReport: "",
-  tyreCount: "",
+  totalTyres: "",
   currentTyreCount: "",
+  tyreMountStatus: "",
   tyreCondition: "",
   trailerNumber: "",
   bodyType: "",
@@ -461,7 +466,7 @@ const emptyForm: FormData = {
   insuranceExpiry: "",
   fitnessExpiry: "",
   permitExpiry: "",
-  nocStatus: "",
+  transferType: "",
   engineNumber: "",
   chassisNumber: "",
   gpsInstalled: "",
@@ -1124,8 +1129,16 @@ export default function AddVehiclePage() {
           kmDriven: form.kmDriven.replace(/\D/g, ""),
           odometerReading: form.odometerReading.replace(/\D/g, ""),
           hourMeterReading: form.hourMeterReading.replace(/\D/g, ""),
-          tyreCount: form.tyreCount.replace(/\D/g, ""),
+          totalTyres: form.totalTyres.replace(/\D/g, ""),
+          tyreCount: form.totalTyres.replace(/\D/g, ""),
           currentTyreCount: form.currentTyreCount.replace(/\D/g, ""),
+          transferType: form.transferType,
+          nocStatus:
+            form.transferType === "RC_TRANSFER"
+              ? "AVAILABLE"
+              : form.transferType === "RTO_NOC" || form.transferType === "OPEN_NOC"
+                ? "NOT_AVAILABLE"
+                : "UNKNOWN",
           numberOfAxles: form.numberOfAxles.replace(/\D/g, ""),
           horsepower: form.horsepower.replace(/\D/g, ""),
           vehicleRegistrationNumber: form.vehicleRegistrationNumber.toUpperCase(),
@@ -1479,7 +1492,6 @@ export default function AddVehiclePage() {
                 <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="Optional" />
                 <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
                 <SelectField label="ABS" value={form.abs} options={[...yesNoUnknownOptions]} onChange={(value) => update("abs", value)} />
-                <TextField label="Tyre Count" value={form.tyreCount} onChange={(value) => update("tyreCount", value.replace(/\D/g, ""))} type="tel" />
                 <TextField label="Manufacturer" value={form.trailerManufacturer} onChange={(value) => update("trailerManufacturer", value)} />
                 <TextField label="Trailer Number" value={form.trailerNumber} onChange={(value) => update("trailerNumber", value)} />
                 <TextField label="Trailer Manufacturing Month-Year" value={form.trailerManufacturingMonthYear} onChange={(value) => update("trailerManufacturingMonthYear", value)} placeholder="e.g. 03/2021" />
@@ -1507,7 +1519,10 @@ export default function AddVehiclePage() {
           <details className="rounded-xl border border-slate-200 bg-white p-4" open>
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Included Accessories / Missing Parts</summary>
             <div className="mt-4 space-y-3">
+              <TextField label="Total Tyres" value={form.totalTyres} onChange={(value) => update("totalTyres", value.replace(/\D/g, ""))} type="tel" />
               <SelectField label="Tyres Included" value={form.tyresIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("tyresIncluded", value)} />
+              <SelectField label="Tyre Mount Status" value={form.tyreMountStatus} options={tyreMountStatusOptions} onChange={(value) => update("tyreMountStatus", value)} />
+              <SelectField label="Tyre Condition" value={form.tyreCondition} options={tyreConditionOptions} onChange={(value) => update("tyreCondition", value)} />
               <SelectField label="Rims / Discs Included" value={form.rimsDiscsIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("rimsDiscsIncluded", value)} />
               <SelectField label="Battery Included" value={form.batteryIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("batteryIncluded", value)} />
               <SelectField label="Key Available" value={form.keyAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("keyAvailable", value)} />
@@ -1529,7 +1544,7 @@ export default function AddVehiclePage() {
               <TextField label="Insurance Expiry" value={form.insuranceExpiry} onChange={(value) => update("insuranceExpiry", value)} type="date" />
               <TextField label="Fitness Expiry" value={form.fitnessExpiry} onChange={(value) => update("fitnessExpiry", value)} type="date" />
               <TextField label="Permit Expiry" value={form.permitExpiry} onChange={(value) => update("permitExpiry", value)} type="date" />
-              <SelectField label="NOC Status" value={form.nocStatus} options={[...availabilityOptions]} onChange={(value) => update("nocStatus", value)} />
+              <SelectField label="Transfer Type" value={form.transferType} options={transferTypeOptions} onChange={(value) => update("transferType", value)} />
               <SelectField label="GPS Installed" value={form.gpsInstalled} options={[...yesNoUnknownOptions]} onChange={(value) => update("gpsInstalled", value)} />
               <SelectField label="Fleet Management Software Available" value={form.fleetManagementSoftwareAvailable} options={[...availabilityOptions]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
             </div>

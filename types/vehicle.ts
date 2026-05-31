@@ -8,6 +8,8 @@ export type EngineCondition = "GOOD" | "AVERAGE" | "NEEDS_WORK" | "NOT_CHECKED" 
 export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 export type TyreCondition = "NEW" | "GOOD" | "FAIR" | "AROUND_50" | "POOR" | "MIXED" | "UNKNOWN";
 export type AvailabilityStatus = "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN";
+export type TransferType = "RC_TRANSFER" | "RTO_NOC" | "OPEN_NOC" | "UNKNOWN";
+export type TyreMountStatus = "ON_DISC" | "TYRES_ONLY" | "NO_TYRES" | "PARTIAL";
 export type AssetStructure = "STANDALONE" | "DETACHABLE" | "EQUIPMENT";
 export type DetachableType = "PRIME_MOVER" | "TRAILER";
 export type AssetConfiguration =
@@ -74,8 +76,10 @@ export type Vehicle = {
   trailerManufacturingMonthYear?: string | null;
   suspensionType?: string | null;
   tyreInspectionReport?: AvailabilityStatus | null;
+  totalTyres?: number | null;
   tyreCount?: number | null;
   currentTyreCount?: number | null;
+  tyreMountStatus?: TyreMountStatus | null;
   tyreCondition?: TyreCondition | null;
   registrationState: string;
   city: string;
@@ -121,6 +125,7 @@ export type Vehicle = {
   insuranceExpiry?: string;
   fitnessExpiry?: string;
   permitExpiry?: string;
+  transferType?: TransferType | null;
   nocStatus?: "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN" | null;
   machineSerialNumber?: string | null;
   engineNumber?: string;

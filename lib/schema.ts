@@ -173,6 +173,13 @@ export const tyreConditionEnum = pgEnum("tyre_condition", [
   "UNKNOWN",
 ]);
 
+export const tyreMountStatusEnum = pgEnum("tyre_mount_status", [
+  "ON_DISC",
+  "TYRES_ONLY",
+  "NO_TYRES",
+  "PARTIAL",
+]);
+
 export const mediaTypeEnum = pgEnum("vehicle_media_type", [
   "PHOTO",
   "VIDEO",
@@ -210,6 +217,13 @@ export const mediaCategoryEnum = pgEnum("vehicle_media_category", [
 export const nocStatusEnum = pgEnum("noc_status", [
   "AVAILABLE",
   "NOT_AVAILABLE",
+  "UNKNOWN",
+]);
+
+export const transferTypeEnum = pgEnum("transfer_type", [
+  "RC_TRANSFER",
+  "RTO_NOC",
+  "OPEN_NOC",
   "UNKNOWN",
 ]);
 
@@ -289,8 +303,10 @@ export const vehicles = pgTable("vehicles", {
   trailerManufacturingMonthYear: text("trailer_manufacturing_month_year"),
   suspensionType: text("suspension_type"),
   tyreInspectionReport: availabilityStatusEnum("tyre_inspection_report"),
+  totalTyres: integer("total_tyres"),
   tyreCount: integer("tyre_count"),
   currentTyreCount: integer("current_tyre_count"),
+  tyreMountStatus: tyreMountStatusEnum("tyre_mount_status"),
   tyreCondition: tyreConditionEnum("tyre_condition"),
   registrationState: text("registration_state").notNull().default(""),
   city: text("city").notNull(),
@@ -336,6 +352,7 @@ export const vehicles = pgTable("vehicles", {
   insuranceExpiry: text("insurance_expiry").notNull().default(""),
   fitnessExpiry: text("fitness_expiry").notNull().default(""),
   permitExpiry: text("permit_expiry").notNull().default(""),
+  transferType: transferTypeEnum("transfer_type"),
   nocStatus: nocStatusEnum("noc_status"),
   machineSerialNumber: text("machine_serial_number"),
   engineNumber: text("engine_number").notNull().default(""),

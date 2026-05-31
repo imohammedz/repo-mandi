@@ -23,6 +23,13 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     detachableType: row.detachableType,
     assetConfiguration: row.assetConfiguration,
   });
+  const transferType = row.transferType
+    ? row.transferType
+    : row.nocStatus === "AVAILABLE"
+      ? "RC_TRANSFER"
+      : row.nocStatus === "NOT_AVAILABLE" || row.nocStatus === "UNKNOWN"
+        ? "UNKNOWN"
+        : null;
 
   return {
     id: row.id,
@@ -68,8 +75,10 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     trailerManufacturingMonthYear: row.trailerManufacturingMonthYear,
     suspensionType: row.suspensionType,
     tyreInspectionReport: row.tyreInspectionReport,
+    totalTyres: row.totalTyres ?? row.tyreCount ?? row.currentTyreCount,
     tyreCount: row.tyreCount,
     currentTyreCount: row.currentTyreCount,
+    tyreMountStatus: row.tyreMountStatus,
     tyreCondition: row.tyreCondition,
     registrationState: row.registrationState,
     city: row.city,
@@ -118,6 +127,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     insuranceExpiry: row.insuranceExpiry,
     fitnessExpiry: row.fitnessExpiry,
     permitExpiry: row.permitExpiry,
+    transferType: transferType as Vehicle["transferType"],
     nocStatus: row.nocStatus,
     machineSerialNumber: row.machineSerialNumber,
     engineNumber: row.engineNumber,

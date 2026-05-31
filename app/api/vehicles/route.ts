@@ -51,6 +51,9 @@ type KmMeterStatus = (typeof VALID_KM_METER_STATUS)[number];
 const VALID_RUNNING_CONDITIONS = ["RUNNING", "NOT_RUNNING", "UNKNOWN"] as const;
 type RunningCondition = (typeof VALID_RUNNING_CONDITIONS)[number];
 const VALID_AVAILABILITY_STATUS = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"] as const;
+const VALID_TRANSFER_TYPES = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"] as const;
+const VALID_TYRE_MOUNT_STATUS = ["ON_DISC", "TYRES_ONLY", "NO_TYRES", "PARTIAL"] as const;
+const VALID_TYRE_CONDITIONS = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN", "FAIR"] as const;
 
 const VALID_REPO_STATUS = [
   "Bank Seized",
@@ -135,6 +138,36 @@ function parseYesNoUnknown(value: unknown) {
   const normalized = toSafeString(value).toUpperCase();
   if (["YES", "NO", "UNKNOWN"].includes(normalized)) {
     return normalized as "YES" | "NO" | "UNKNOWN";
+  }
+
+  function parseTransferType(value: unknown) {
+    const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+    if (VALID_TRANSFER_TYPES.includes(normalized as (typeof VALID_TRANSFER_TYPES)[number])) {
+      return normalized as (typeof VALID_TRANSFER_TYPES)[number];
+    }
+    if (normalized === "AVAILABLE") return "RC_TRANSFER";
+    if (normalized === "NOT_AVAILABLE") return "UNKNOWN";
+    if (normalized === "UNKNOWN") return "UNKNOWN";
+    return null;
+  }
+
+  function parseTyreMountStatus(value: unknown) {
+    const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+    if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
+      return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
+    }
+    return null;
+  }
+
+  function parseTyreCondition(value: unknown) {
+    const normalized = toSafeString(value)
+      .toUpperCase()
+      .replace(/%/g, "")
+      .replace(/\s+/g, "_");
+    if (VALID_TYRE_CONDITIONS.includes(normalized as (typeof VALID_TYRE_CONDITIONS)[number])) {
+      return normalized as (typeof VALID_TYRE_CONDITIONS)[number];
+    }
+    return null;
   }
   return null;
 }
@@ -397,8 +430,12 @@ export async function POST(request: Request) {
     const numberOfAxles = toNumberOrNull(body.numberOfAxles);
     const bodyDimensions = toSafeString(body.bodyDimensions);
     const suspensionType = toSafeString(body.suspensionType);
+    const transferType = parseTransferType(body.transferType ?? body.nocStatus);
+    const tyreMountStatus = parseTyreMountStatus(body.tyreMountStatus);
+    const totalTyres = toNumberOrNull(body.totalTyres ?? body.tyreCount);
     const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
     const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
+    const tyreCondition = parseTyreCondition(body.tyreCondition);
     const normalizedInteriorPhoto = interiorPhoto;
 
     const financeCompany = toSafeString(body.financeCompany);
@@ -616,20 +653,11 @@ export async function POST(request: Request) {
         trailerManufacturingMonthYear: toSafeString(body.trailerManufacturingMonthYear) || null,
         suspensionType: suspensionType || null,
         tyreInspectionReport: (tyreInspectionReport || null) as "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN" | null,
+        totalTyres,
         tyreCount: toNumberOrNull(body.tyreCount),
         currentTyreCount: toNumberOrNull(body.currentTyreCount),
-        tyreCondition: (toSafeString(body.tyreCondition)
-          .toUpperCase()
-          .replace(/%/g, "")
-          .replace(/\s+/g, "_") || null) as
-          | "NEW"
-          | "GOOD"
-          | "FAIR"
-          | "AROUND_50"
-          | "POOR"
-          | "MIXED"
-          | "UNKNOWN"
-          | null,
+        tyreMountStatus: tyreMountStatus || null,
+        tyreCondition: tyreCondition || null,
         city,
         state,
         vehicleOrYardLocation: location,
@@ -690,6 +718,7 @@ export async function POST(request: Request) {
         insuranceExpiry: toSafeString(body.insuranceExpiry),
         fitnessExpiry: toSafeString(body.fitnessExpiry),
         permitExpiry: toSafeString(body.permitExpiry),
+        transferType: transferType || null,
         nocStatus: (toSafeString(body.nocStatus).toUpperCase().replace(/\s+/g, "_") || null) as
           | "AVAILABLE"
           | "NOT_AVAILABLE"
