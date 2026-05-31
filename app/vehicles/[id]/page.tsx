@@ -418,9 +418,9 @@ export default async function VehicleDetailPage({
   };
 
   const documentationSpecs = [
-    { label: "Insurance", value: validityLabel(vehicle.insuranceValidity) || (vehicle.insuranceExpiry ? `Valid till ${vehicle.insuranceExpiry}` : "") },
-    { label: "Permit", value: validityLabel(vehicle.permitValidity) || (vehicle.permitExpiry ? `Valid till ${vehicle.permitExpiry}` : "") },
-    { label: "Fitness", value: validityLabel(vehicle.fitnessStatus) || (vehicle.fitnessExpiry ? `Valid till ${vehicle.fitnessExpiry}` : "") },
+    { label: "Insurance", value: vehicle.insuranceValidity ? validityLabel(vehicle.insuranceValidity) : (vehicle.insuranceExpiry ? `Valid till ${vehicle.insuranceExpiry}` : "") },
+    { label: "Permit", value: vehicle.permitValidity ? validityLabel(vehicle.permitValidity) : (vehicle.permitExpiry ? `Valid till ${vehicle.permitExpiry}` : "") },
+    { label: "Fitness", value: vehicle.fitnessStatus ? validityLabel(vehicle.fitnessStatus) : (vehicle.fitnessExpiry ? `Valid till ${vehicle.fitnessExpiry}` : "") },
     { label: "Tax", value: taxValidityLabel(vehicle.taxValidity) },
     { label: "Parking Due", value: parkingDueLabel(vehicle.parkingDue) },
   ].filter((item) => item.value);
