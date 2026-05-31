@@ -177,7 +177,7 @@ type FormData = {
   state: string;
   city: string;
   vehicleOrYardLocation: string;
-  conditionNotes: string;
+  description: string;
   engineCondition: string;
   needsTowing: string;
   roadSafeStatus: string;
@@ -423,7 +423,7 @@ const emptyForm: FormData = {
   state: "",
   city: "",
   vehicleOrYardLocation: "",
-  conditionNotes: "",
+  description: "",
   engineCondition: "",
   needsTowing: "",
   roadSafeStatus: "",
@@ -818,8 +818,8 @@ export default function AddVehiclePage() {
     if (targetStep === STEP_TECHNICAL && poweredAsset && !form.runningCondition) {
       return "Running condition is required.";
     }
-    if (targetStep === STEP_TECHNICAL && !form.conditionNotes.trim()) {
-      return "Condition notes are required.";
+    if (targetStep === STEP_TECHNICAL && !form.description.trim()) {
+      return "Description / remarks is required.";
     }
 
     return "";
@@ -1146,6 +1146,7 @@ export default function AddVehiclePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          conditionNotes: form.description,
           assetConfiguration: toLegacyAssetConfiguration(
             form.assetStructure as AssetStructure,
             (form.detachableType || null) as DetachableType | null
@@ -1485,20 +1486,28 @@ export default function AddVehiclePage() {
 
       {step === STEP_TECHNICAL ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_TECHNICAL)}: Technical Details</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_TECHNICAL)}: Vehicle Condition &amp; Technical Details</h1>
+
+          {poweredAsset ? (
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">Vehicle Condition</summary>
+              <div className="mt-4 space-y-3">
+                <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
+                <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
+                <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
+              </div>
+            </details>
+          ) : null}
 
           {poweredAsset ? (
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Powertrain Details</summary>
               <div className="mt-4 space-y-3">
-                <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
-                <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
                 <SelectField label="Fuel Type" value={form.fuelType} options={fuelTypeOptions} onChange={(value) => update("fuelType", value)} />
                 <SelectField label="BS Norm / Emission Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
                 <SelectField label="Axle Configuration" value={form.axleConfiguration} options={axleConfigurationOptions} onChange={(value) => update("axleConfiguration", value)} />
                 <TextField label="Odometer Reading" value={form.odometerReading} onChange={(value) => update("odometerReading", value.replace(/\D/g, ""))} type="tel" />
                 <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
-                <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
               </div>
             </details>
           ) : null}
@@ -1584,14 +1593,14 @@ export default function AddVehiclePage() {
           </details>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4" open>
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Condition Notes</summary>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Description / Remarks</summary>
             <div className="mt-4">
               <TextAreaField
-                label="Condition Notes"
-                value={form.conditionNotes}
-                onChange={(value) => update("conditionNotes", value)}
+                label="Description / Remarks"
+                value={form.description}
+                onChange={(value) => update("description", value)}
                 required
-                placeholder="Example: Engine running. Cabin work needed. Tyres missing."
+                placeholder={"Example:\nEngine running.\nTyres around 50%.\nVehicle parked at Vijayawada yard.\nRC available.\nOpen NOC possible."}
               />
             </div>
           </details>

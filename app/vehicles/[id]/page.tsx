@@ -394,13 +394,9 @@ export default async function VehicleDetailPage({
     { label: "Body Dimensions", value: toSpecValue(vehicle.bodyDimensions) },
   ].filter((item) => item.value);
 
-  const conditionNotes = dedupeLabels([
-    ...(vehicle.inspectionNotes || []),
-    normalizeText(vehicle.conditionNotes),
-  ]);
-  if (vehicle.yardVerified) {
-    conditionNotes.push("RepoMandi Physical Inspection Completed");
-  }
+  const description = (vehicle.description ?? vehicle.conditionNotes ?? "").trim();
+  const inspectionNotes = dedupeLabels(vehicle.inspectionNotes || []);
+  if (vehicle.yardVerified) inspectionNotes.push("RepoMandi Physical Inspection Completed");
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-5 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4">
@@ -514,19 +510,25 @@ export default async function VehicleDetailPage({
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Condition Notes</h2>
-            {conditionNotes.length ? (
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {conditionNotes.map((note) => (
-                  <li key={note} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                    <span>{note}</span>
-                  </li>
-                ))}
-              </ul>
+            <h2 className="text-base font-semibold text-slate-900">Description</h2>
+            {description ? (
+              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{description}</p>
             ) : (
-              <p className="mt-2 text-sm text-slate-500">No condition notes available.</p>
+              <p className="mt-2 text-sm text-slate-500">No description available.</p>
             )}
+            {inspectionNotes.length ? (
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <h3 className="text-sm font-semibold text-slate-800">Inspection Notes</h3>
+                <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                  {inspectionNotes.map((note) => (
+                    <li key={note} className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
 
           <SupportContactCard

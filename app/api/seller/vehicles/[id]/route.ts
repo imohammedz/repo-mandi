@@ -72,7 +72,9 @@ export async function PATCH(
       updates.vehicleOrYardLocation = location;
       updates.yardLocation = location;
     }
-    if ("conditionNotes" in body) updates.conditionNotes = toSafeString(body.conditionNotes);
+    if ("description" in body || "conditionNotes" in body) {
+      updates.conditionNotes = toSafeString(body.description ?? body.conditionNotes);
+    }
     if ("auctionDate" in body) updates.auctionDate = toSafeString(body.auctionDate);
 
     const needsReverification = existing.isPublished || existing.listingStatus === "VERIFIED";

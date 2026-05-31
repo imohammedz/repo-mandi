@@ -163,6 +163,9 @@ function parseTyreMountStatus(value: unknown) {
   if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
     return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
   }
+  if (normalized === "WITHOUT_TYRES_&_DISCS" || normalized === "WITHOUT_TYRES_AND_DISCS") {
+    return "WITHOUT_DISC_AND_TYRES";
+  }
   if (normalized === "TYRES_ONLY") return "WITH_TYRES";
   if (normalized === "NO_TYRES") return "WITHOUT_DISC_AND_TYRES";
   return null;
@@ -412,7 +415,7 @@ export async function POST(request: Request) {
     const state = toSafeString(body.state) || toSafeString(currentUser.state);
     const city = toSafeString(body.city) || toSafeString(currentUser.city);
     const location = toSafeString(body.vehicleOrYardLocation || body.yardLocation);
-    const conditionNotes = toSafeString(body.conditionNotes);
+    const description = toSafeString(body.description ?? body.conditionNotes);
     const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto);
     const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto);
     const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? body.sidePhoto);
@@ -475,7 +478,7 @@ export async function POST(request: Request) {
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
-    if (!conditionNotes) alwaysRequiredMissing.push("conditionNotes");
+    if (!description) alwaysRequiredMissing.push("description");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(
@@ -701,7 +704,7 @@ export async function POST(request: Request) {
         businessName: currentUser.businessName,
         gstin: toSafeString(body.gstin),
         condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
-        conditionNotes,
+        conditionNotes: description,
         engineCondition: (toSafeString(body.engineCondition).toUpperCase().replace(/\s+/g, "_") || null) as
           | "GOOD"
           | "AVERAGE"

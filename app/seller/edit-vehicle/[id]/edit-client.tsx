@@ -16,7 +16,7 @@ export default function EditVehicleClient({ vehicle }: Props) {
     title: vehicle.title,
     price: String(vehicle.price),
     yardLocation: vehicle.yardLocation,
-    conditionNotes: vehicle.conditionNotes,
+    description: vehicle.description ?? vehicle.conditionNotes,
     auctionDate: vehicle.auctionDate,
   });
   const [saving, setSaving] = useState(false);
@@ -145,10 +145,10 @@ export default function EditVehicleClient({ vehicle }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-slate-700">Condition Notes</label>
+          <label className="text-sm font-medium text-slate-700">Description / Remarks</label>
           <textarea
-            value={form.conditionNotes}
-            onChange={(e) => set("conditionNotes")(e.target.value)}
+            value={form.description}
+            onChange={(e) => set("description")(e.target.value)}
             rows={3}
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none"
           />

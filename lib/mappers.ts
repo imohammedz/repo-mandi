@@ -114,6 +114,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     businessName: row.businessName,
     gstin: row.gstin,
     condition: row.condition as Vehicle["condition"],
+    description: row.conditionNotes,
     conditionNotes: row.conditionNotes,
     engineCondition: row.engineCondition,
     needsTowing: row.needsTowing,

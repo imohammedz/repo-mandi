@@ -116,6 +116,7 @@ export type Vehicle = {
   businessName?: string;
   gstin?: string;
   condition: "Running" | "Non-running" | "Unknown";
+  description?: string;
   conditionNotes: string;
   engineCondition?: EngineCondition | null;
   needsTowing?: YesNoUnknown | null;

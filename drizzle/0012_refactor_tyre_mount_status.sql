@@ -1,7 +1,7 @@
 DO $$ BEGIN
- CREATE TYPE "public"."tyre_mount_status" AS ENUM('ON_DISC', 'WITH_TYRES', 'WITHOUT_DISC_AND_TYRES', 'PARTIAL', 'UNKNOWN');
-EXCEPTION
- WHEN duplicate_object THEN null;
+ IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tyre_mount_status') THEN
+  CREATE TYPE "public"."tyre_mount_status" AS ENUM('ON_DISC', 'WITH_TYRES', 'WITHOUT_DISC_AND_TYRES', 'PARTIAL', 'UNKNOWN');
+ END IF;
 END $$;
 --> statement-breakpoint
 ALTER TYPE "public"."tyre_mount_status" ADD VALUE IF NOT EXISTS 'WITH_TYRES';

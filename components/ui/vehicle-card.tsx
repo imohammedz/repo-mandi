@@ -120,12 +120,14 @@ const getTyreSummary = (vehicle: Vehicle) => {
   const mountStatus =
     tyreMountStatusToken === "ON_DISC"
       ? "On Disc"
-      : tyreMountStatusToken === "TYRES_ONLY"
-        ? "Tyres Only"
-        : tyreMountStatusToken === "NO_TYRES"
-          ? "No Tyres"
+      : tyreMountStatusToken === "WITH_TYRES" || tyreMountStatusToken === "TYRES_ONLY"
+        ? "With Tyres"
+        : tyreMountStatusToken === "WITHOUT_DISC_AND_TYRES" || tyreMountStatusToken === "NO_TYRES"
+          ? "Without Disc & Tyres"
           : tyreMountStatusToken === "PARTIAL"
             ? "Partial"
+            : tyreMountStatusToken === "UNKNOWN"
+              ? "Unknown"
             : "";
 
   const tyreConditionToken = toNormalizedToken(vehicle.tyreCondition);
