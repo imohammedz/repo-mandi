@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FileImage, FileText, Trash2 } from "lucide-react";
@@ -96,10 +96,9 @@ export default function EditVehicleClient({ vehicle }: Props) {
     category: selectedDocumentCategory,
     customName: selectedDocumentCategory === "OTHER" ? selectedOtherDocumentName : "",
   };
-  const selectedDocumentGroupCount = useMemo(
-    () => documents.filter((doc) => documentGroupKey(doc) === documentGroupKey(selectedDocumentTemplate)).length,
-    [documents, selectedDocumentCategory, selectedOtherDocumentName]
-  );
+  const selectedDocumentGroupCount = documents.filter(
+    (doc) => documentGroupKey(doc) === documentGroupKey(selectedDocumentTemplate)
+  ).length;
 
   const set = (key: keyof typeof form) => (val: string) =>
     setForm((prev) => ({ ...prev, [key]: val }));

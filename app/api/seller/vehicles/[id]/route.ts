@@ -147,7 +147,7 @@ export async function PATCH(
         await db.insert(vehicleMedia).values(
           parsedDocuments.map((document) => ({
             vehicleId: id,
-            type: "DOCUMENT",
+            type: "DOCUMENT" as const,
             category: document.category,
             customName: document.category === "OTHER" ? document.customName || null : null,
             url: document.url,
