@@ -379,7 +379,7 @@ export const vehicles = pgTable("vehicles", {
   permitValidity: date("permit_validity", { mode: "string" }),
   fitnessStatus: date("fitness_status", { mode: "string" }),
   taxValidity: date("tax_validity", { mode: "string" }),
-  parkingDue: integer("parking_due"),
+  parkingDue: integer("parking_due").default(0),
   verifiedBadges: text("verified_badges").array().notNull().default([]),
   inspectionNotes: text("inspection_notes").array().notNull().default([]),
   inquiries: integer("inquiries").notNull().default(0),
