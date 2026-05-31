@@ -159,11 +159,14 @@ function parseTransferType(value: unknown) {
 }
 
 function parseTyreMountStatus(value: unknown) {
-  const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+  const normalized = toSafeString(value)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
   if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
     return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
   }
-  if (normalized === "WITHOUT_TYRES_&_DISCS" || normalized === "WITHOUT_TYRES_AND_DISCS") {
+  if (normalized === "WITHOUT_TYRES_AND_DISCS") {
     return "WITHOUT_DISC_AND_TYRES";
   }
   if (normalized === "TYRES_ONLY") return "WITH_TYRES";
