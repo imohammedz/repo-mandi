@@ -127,15 +127,26 @@ function parseDateInput(value: unknown) {
   const raw = toSafeString(value);
   if (!raw) return null;
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-
+  const yyyyMmDd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const ddmmyyyy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (ddmmyyyy) {
-    const [, dd, mm, yyyy] = ddmmyyyy;
-    return `${yyyy}-${mm}-${dd}`;
-  }
+  const parts = yyyyMmDd
+    ? { year: Number(yyyyMmDd[1]), month: Number(yyyyMmDd[2]), day: Number(yyyyMmDd[3]) }
+    : ddmmyyyy
+      ? { year: Number(ddmmyyyy[3]), month: Number(ddmmyyyy[2]), day: Number(ddmmyyyy[1]) }
+      : null;
 
-  return null;
+  if (!parts) return null;
+
+  const candidate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const isValidDate =
+    candidate.getUTCFullYear() === parts.year &&
+    candidate.getUTCMonth() + 1 === parts.month &&
+    candidate.getUTCDate() === parts.day;
+  if (!isValidDate) return null;
+
+  const month = String(parts.month).padStart(2, "0");
+  const day = String(parts.day).padStart(2, "0");
+  return `${parts.year}-${month}-${day}`;
 }
 
 function parseParkingDueAmount(value: unknown) {

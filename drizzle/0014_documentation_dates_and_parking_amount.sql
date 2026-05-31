@@ -31,6 +31,7 @@ ALTER TABLE "vehicles"
     CASE
       WHEN "parking_due" IS NULL THEN NULL
       WHEN "parking_due"::text = 'NO_DUE' THEN 0
+      WHEN "parking_due"::text = 'DUE' THEN 0
       WHEN "parking_due"::text ~ '^\d+$' THEN "parking_due"::text::integer
       ELSE NULL
     END

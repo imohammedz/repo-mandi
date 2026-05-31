@@ -399,7 +399,8 @@ export default async function VehicleDetailPage({
     if (!v) return "";
     const trimmed = normalizeText(v);
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
-    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? new Date(`${trimmed}T00:00:00`) : new Date(trimmed);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return toReadableLabel(trimmed);
+    const parsed = new Date(`${trimmed}T00:00:00`);
     if (Number.isNaN(parsed.getTime())) return toReadableLabel(trimmed);
     const day = String(parsed.getDate()).padStart(2, "0");
     const month = String(parsed.getMonth() + 1).padStart(2, "0");

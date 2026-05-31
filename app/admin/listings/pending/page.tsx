@@ -29,7 +29,8 @@ const formatDocumentationDate = (value: string | null | undefined) => {
   if (!value) return "";
   const trimmed = value.trim();
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
-  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? new Date(`${trimmed}T00:00:00`) : new Date(trimmed);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return formatDisplayLabel(trimmed);
+  const parsed = new Date(`${trimmed}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return formatDisplayLabel(trimmed);
   const day = String(parsed.getDate()).padStart(2, "0");
   const month = String(parsed.getMonth() + 1).padStart(2, "0");
