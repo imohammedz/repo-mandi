@@ -24,6 +24,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
+import { FinanceEstimateCard } from "@/components/ui/finance-estimate-card";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
@@ -619,6 +620,12 @@ export default async function VehicleDetailPage({
           </div>
         </section>
       ) : null}
+
+      <FinanceEstimateCard
+        vehicleId={vehicle.id}
+        vehicleTitle={heroTitle}
+        listingPrice={vehicle.expectedPrice ?? vehicle.price ?? null}
+      />
 
       <div className="space-y-5">
         <SellerCard
