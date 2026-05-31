@@ -1,8 +1,12 @@
 "use client";
 
-import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 import { formatEnumLabel } from "@/lib/formatting";
 import { CircleCheck } from "lucide-react";
+
+type StatCell = {
+  label: string;
+  value: string;
+};
 
 type Props = {
   id?: string;
@@ -17,6 +21,8 @@ type Props = {
   photosVerified?: boolean;
   rcVerified?: boolean;
   yardVerified?: boolean;
+  trucksSold?: number;
+  memberSinceYear?: string;
   className?: string;
 };
 
@@ -24,14 +30,13 @@ export function SellerCard({
   id,
   name,
   role,
-  phone,
-  vehicleTitle,
-  vehicleId,
   city,
   sellerVerified = false,
   photosVerified = false,
   rcVerified = false,
   yardVerified = false,
+  trucksSold,
+  memberSinceYear,
   className = "",
 }: Props) {
   const trustBadges: string[] = [];
@@ -39,6 +44,13 @@ export function SellerCard({
   if (photosVerified) trustBadges.push("Photos Verified");
   if (rcVerified) trustBadges.push("RC Verified");
   if (yardVerified) trustBadges.push("Yard Verified");
+
+  const stats: StatCell[] = [
+    { label: "Trucks Sold", value: trucksSold !== undefined ? String(trucksSold) : "0" },
+    { label: "Seller Rating", value: "- / 5" },
+    { label: "Response Rate", value: "-" },
+    { label: "Member Since", value: memberSinceYear ?? "-" },
+  ];
 
   return (
     <section id={id} className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
@@ -67,15 +79,17 @@ export function SellerCard({
           </span>
         </div>
       )}
-      {vehicleId ? (
-        <VehicleContactActions
-          vehicleId={vehicleId}
-          sellerPhone={phone}
-          vehicleTitle={vehicleTitle}
-          className="mt-5"
-          showRequestDetails
-        />
-      ) : null}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+          >
+            <p className="text-base font-semibold text-slate-900">{stat.value}</p>
+            <p className="mt-0.5 text-xs text-slate-500">{stat.label}</p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

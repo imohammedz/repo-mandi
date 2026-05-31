@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import { VehicleContactActions } from "@/components/ui/vehicle-contact-actions";
 
 type Props = {
-  sellerCardId: string;
   vehicleId: string;
   sellerPhone: string;
   vehicleTitle: string;
@@ -12,55 +11,7 @@ type Props = {
 
 const STICKY_OFFSET = "calc(4.5rem + env(safe-area-inset-bottom, 0px))";
 
-export function VehicleStickyContactCta({ sellerCardId, vehicleId, sellerPhone, vehicleTitle }: Props) {
-  const [showStickyCta, setShowStickyCta] = useState(false);
-  const sellerCardRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    let observer: IntersectionObserver | null = null;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let mounted = true;
-    let attempts = 0;
-
-    const setupObserver = () => {
-      if (!mounted) return;
-      if (!sellerCardRef.current) {
-        sellerCardRef.current = document.getElementById(sellerCardId);
-      }
-
-      if (!sellerCardRef.current) {
-        attempts += 1;
-        if (attempts > 10) {
-          setShowStickyCta(true);
-          return;
-        }
-        retryTimer = setTimeout(setupObserver, 100);
-        return;
-      }
-
-      observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          const sellerCardVisible = entry.isIntersecting && entry.intersectionRatio > 0;
-          setShowStickyCta(!sellerCardVisible);
-        },
-        { threshold: [0, 0.01, 0.05] }
-      );
-
-      observer.observe(sellerCardRef.current);
-    };
-
-    setupObserver();
-
-    return () => {
-      mounted = false;
-      if (retryTimer !== null) clearTimeout(retryTimer);
-      observer?.disconnect();
-    };
-  }, [sellerCardId]);
-
-  if (!showStickyCta) return null;
-
+export function VehicleStickyContactCta({ vehicleId, sellerPhone, vehicleTitle }: Props) {
   return (
     <div
       className="fixed inset-x-0 z-30 mx-auto w-full max-w-xl border-t border-slate-200 bg-white/95 p-3 backdrop-blur"
@@ -74,6 +25,12 @@ export function VehicleStickyContactCta({ sellerCardId, vehicleId, sellerPhone, 
         showRequestDetails
         layout="inline"
       />
+      <div className="mt-2 flex items-center justify-center gap-1.5">
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+        <p className="text-center text-xs text-slate-400">
+          Your details are safe and are not shared publicly.
+        </p>
+      </div>
     </div>
   );
 }

@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles as vehiclesTable } from "@/lib/schema";
+import { vehicleMedia, vehicles as vehiclesTable, users as usersTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { eq, ne, desc, and, isNull, asc } from "drizzle-orm";
+import { eq, ne, desc, and, isNull, asc, count } from "drizzle-orm";
 import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
@@ -393,6 +393,31 @@ export default async function VehicleDetailPage({
   );
   const canDownloadDocuments = currentUser?.accountType === "ADMIN";
 
+  // Seller stats
+  let memberSinceYear: string | undefined;
+  let trucksSold = 0;
+  if (vehicle.sellerId) {
+    const [sellerRow] = await db
+      .select({ joinedSince: usersTable.joinedSince })
+      .from(usersTable)
+      .where(eq(usersTable.id, vehicle.sellerId));
+    if (sellerRow?.joinedSince) {
+      const year = new Date(sellerRow.joinedSince).getFullYear();
+      memberSinceYear = Number.isNaN(year) ? undefined : String(year);
+    }
+    const [soldResult] = await db
+      .select({ count: count() })
+      .from(vehiclesTable)
+      .where(
+        and(
+          eq(vehiclesTable.sellerId, vehicle.sellerId),
+          eq(vehiclesTable.listingStatus, "SOLD"),
+          isNull(vehiclesTable.deletedAt)
+        )
+      );
+    trucksSold = soldResult?.count ?? 0;
+  }
+
   const trustTags = dedupeLabels([
     vehicle.sellerVerified ? "Verified Seller" : "",
     vehicle.photosVerified ? "Photos Verified" : "",
@@ -602,13 +627,14 @@ export default async function VehicleDetailPage({
           role={vehicle.sellerRole}
           phone={vehicle.sellerPhone}
           vehicleTitle={heroTitle}
-          vehicleId={vehicle.id}
           sellerId={vehicle.sellerId ?? undefined}
           city={displayLocation}
           sellerVerified={vehicle.sellerVerified ?? false}
           photosVerified={vehicle.photosVerified ?? false}
           rcVerified={vehicle.rcVerified ?? false}
           yardVerified={vehicle.yardVerified ?? false}
+          trucksSold={trucksSold}
+          memberSinceYear={memberSinceYear}
           className="h-fit w-full"
         />
 
@@ -725,7 +751,6 @@ export default async function VehicleDetailPage({
       </div>
 
       <VehicleStickyContactCta
-        sellerCardId="seller-contact-card"
         vehicleId={vehicle.id}
         sellerPhone={vehicle.sellerPhone}
         vehicleTitle={heroTitle}
