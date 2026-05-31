@@ -139,35 +139,35 @@ function parseYesNoUnknown(value: unknown) {
   if (["YES", "NO", "UNKNOWN"].includes(normalized)) {
     return normalized as "YES" | "NO" | "UNKNOWN";
   }
+  return null;
+}
 
-  function parseTransferType(value: unknown) {
-    const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
-    if (VALID_TRANSFER_TYPES.includes(normalized as (typeof VALID_TRANSFER_TYPES)[number])) {
-      return normalized as (typeof VALID_TRANSFER_TYPES)[number];
-    }
-    if (normalized === "AVAILABLE") return "RC_TRANSFER";
-    if (normalized === "NOT_AVAILABLE") return "UNKNOWN";
-    if (normalized === "UNKNOWN") return "UNKNOWN";
-    return null;
+function parseTransferType(value: unknown) {
+  const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+  if (VALID_TRANSFER_TYPES.includes(normalized as (typeof VALID_TRANSFER_TYPES)[number])) {
+    return normalized as (typeof VALID_TRANSFER_TYPES)[number];
   }
+  if (normalized === "AVAILABLE") return "RC_TRANSFER";
+  if (normalized === "NOT_AVAILABLE") return "UNKNOWN";
+  if (normalized === "UNKNOWN") return "UNKNOWN";
+  return null;
+}
 
-  function parseTyreMountStatus(value: unknown) {
-    const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
-    if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
-      return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
-    }
-    return null;
+function parseTyreMountStatus(value: unknown) {
+  const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+  if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
+    return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
   }
+  return null;
+}
 
-  function parseTyreCondition(value: unknown) {
-    const normalized = toSafeString(value)
-      .toUpperCase()
-      .replace(/%/g, "")
-      .replace(/\s+/g, "_");
-    if (VALID_TYRE_CONDITIONS.includes(normalized as (typeof VALID_TYRE_CONDITIONS)[number])) {
-      return normalized as (typeof VALID_TYRE_CONDITIONS)[number];
-    }
-    return null;
+function parseTyreCondition(value: unknown) {
+  const normalized = toSafeString(value)
+    .toUpperCase()
+    .replace(/%/g, "")
+    .replace(/\s+/g, "_");
+  if (VALID_TYRE_CONDITIONS.includes(normalized as (typeof VALID_TYRE_CONDITIONS)[number])) {
+    return normalized as (typeof VALID_TYRE_CONDITIONS)[number];
   }
   return null;
 }
