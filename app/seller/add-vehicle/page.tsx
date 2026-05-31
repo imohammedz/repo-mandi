@@ -505,7 +505,7 @@ const emptyForm: FormData = {
   permitValidity: "",
   fitnessStatus: "",
   taxValidity: "",
-  parkingDue: "",
+  parkingDue: "0",
   inspectionReport: "",
   rcDocument: "",
   insuranceDocument: "",
@@ -567,6 +567,7 @@ function TextField({
   placeholder,
   type = "text",
   readOnly = false,
+  min,
 }: {
   label: string;
   value: string;
@@ -575,6 +576,7 @@ function TextField({
   placeholder?: string;
   type?: "text" | "number" | "tel" | "date";
   readOnly?: boolean;
+  min?: number;
 }) {
   return (
     <label className="space-y-1.5">
@@ -587,6 +589,7 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         readOnly={readOnly}
+        min={min}
         className={`min-h-12 w-full rounded-xl border px-4 text-sm ${
           readOnly ? "border-slate-100 bg-slate-50 text-slate-500" : "border-slate-200 bg-white text-slate-800"
         }`}
@@ -1183,6 +1186,7 @@ export default function AddVehiclePage() {
           })),
           expectedPrice: form.expectedPrice.replace(/\D/g, ""),
           reservePrice: form.reservePrice.replace(/\D/g, ""),
+          parkingDue: form.parkingDue.replace(/\D/g, ""),
           kmDriven: form.kmDriven.replace(/\D/g, ""),
           odometerReading: form.odometerReading.replace(/\D/g, ""),
           hourMeterReading: form.hourMeterReading.replace(/\D/g, ""),
@@ -1604,40 +1608,41 @@ export default function AddVehiclePage() {
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documentation Details</summary>
             <p className="mt-1 text-xs text-slate-500">Optional information about vehicle paperwork and compliance.</p>
             <div className="mt-4 space-y-3">
-              <SelectField
+              <TextField
                 label="Insurance Validity"
                 value={form.insuranceValidity}
-                options={["VALID", "EXPIRED", "UNKNOWN"]}
-                optionLabels={{ VALID: "Valid", EXPIRED: "Expired", UNKNOWN: "Unknown" }}
+                type="date"
+                placeholder="DD/MM/YYYY"
                 onChange={(value) => update("insuranceValidity", value)}
               />
-              <SelectField
+              <TextField
                 label="Permit Validity"
                 value={form.permitValidity}
-                options={["VALID", "EXPIRED", "UNKNOWN"]}
-                optionLabels={{ VALID: "Valid", EXPIRED: "Expired", UNKNOWN: "Unknown" }}
+                type="date"
+                placeholder="DD/MM/YYYY"
                 onChange={(value) => update("permitValidity", value)}
               />
-              <SelectField
-                label="Fitness Status"
+              <TextField
+                label="Fitness Validity"
                 value={form.fitnessStatus}
-                options={["VALID", "EXPIRED", "UNKNOWN"]}
-                optionLabels={{ VALID: "Valid", EXPIRED: "Expired", UNKNOWN: "Unknown" }}
+                type="date"
+                placeholder="DD/MM/YYYY"
                 onChange={(value) => update("fitnessStatus", value)}
               />
-              <SelectField
+              <TextField
                 label="Tax Validity"
                 value={form.taxValidity}
-                options={["PAID", "DUE", "UNKNOWN"]}
-                optionLabels={{ PAID: "Paid", DUE: "Due", UNKNOWN: "Unknown" }}
+                type="date"
+                placeholder="DD/MM/YYYY"
                 onChange={(value) => update("taxValidity", value)}
               />
-              <SelectField
-                label="Parking Due"
+              <TextField
+                label="Parking Due (₹)"
                 value={form.parkingDue}
-                options={["NO_DUE", "DUE", "UNKNOWN"]}
-                optionLabels={{ NO_DUE: "No Due", DUE: "Due", UNKNOWN: "Unknown" }}
-                onChange={(value) => update("parkingDue", value)}
+                type="number"
+                placeholder="0"
+                min={0}
+                onChange={(value) => update("parkingDue", value.replace(/\D/g, ""))}
               />
             </div>
           </details>

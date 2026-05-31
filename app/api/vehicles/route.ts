@@ -123,6 +123,29 @@ function toSafeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function parseDateInput(value: unknown) {
+  const raw = toSafeString(value);
+  if (!raw) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const ddmmyyyy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const [, dd, mm, yyyy] = ddmmyyyy;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return null;
+}
+
+function parseParkingDueAmount(value: unknown) {
+  const raw = toSafeString(value);
+  if (!raw) return null;
+  const numeric = Number(raw.replace(/[^\d]/g, ""));
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(0, Math.trunc(numeric));
+}
+
 function parseRunningCondition(value: unknown): RunningCondition {
   const normalized = toSafeString(value);
   if (VALID_RUNNING_CONDITIONS.includes(normalized as RunningCondition)) {
@@ -761,11 +784,11 @@ export async function POST(request: Request) {
           | "NOT_AVAILABLE"
           | "UNKNOWN"
           | null,
-        insuranceValidity: (toSafeString(body.insuranceValidity).toUpperCase() || null) as "VALID" | "EXPIRED" | "UNKNOWN" | null,
-        permitValidity: (toSafeString(body.permitValidity).toUpperCase() || null) as "VALID" | "EXPIRED" | "UNKNOWN" | null,
-        fitnessStatus: (toSafeString(body.fitnessStatus).toUpperCase() || null) as "VALID" | "EXPIRED" | "UNKNOWN" | null,
-        taxValidity: (toSafeString(body.taxValidity).toUpperCase() || null) as "PAID" | "DUE" | "UNKNOWN" | null,
-        parkingDue: (toSafeString(body.parkingDue).toUpperCase().replace(/\s+/g, "_") || null) as "NO_DUE" | "DUE" | "UNKNOWN" | null,
+        insuranceValidity: parseDateInput(body.insuranceValidity),
+        permitValidity: parseDateInput(body.permitValidity),
+        fitnessStatus: parseDateInput(body.fitnessStatus),
+        taxValidity: parseDateInput(body.taxValidity),
+        parkingDue: parseParkingDueAmount(body.parkingDue),
         verifiedBadges: [],
         inspectionNotes: [],
         listingStatus: autoApprove ? "VERIFIED" : "PENDING",

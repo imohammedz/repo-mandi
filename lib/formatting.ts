@@ -1,20 +1,43 @@
-export function formatEnumLabel(value: string | null | undefined) {
+const SPECIAL_LABELS: Record<string, string> = {
+  RC_TRANSFER: "RC Transfer",
+  RTO_NOC: "RTO NOC",
+  OPEN_NOC: "Open NOC",
+};
+
+const SPECIAL_TOKEN_LABELS: Record<string, string> = {
+  RC: "RC",
+  RTO: "RTO",
+  NOC: "NOC",
+};
+
+export function formatDisplayLabel(value: string | null | undefined) {
   if (!value) return "";
 
-  return value
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (!compact) return "";
+
+  const normalizedKey = compact.replace(/[\s-]+/g, "_").toUpperCase();
+  if (SPECIAL_LABELS[normalizedKey]) return SPECIAL_LABELS[normalizedKey];
+
+  const tokens = compact
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .split(" ")
-    .map((token) => {
-      if (["YES", "NO", "UNKNOWN"].includes(token)) {
-        return token.charAt(0) + token.slice(1).toLowerCase();
-      }
-      if (/^[A-Z]{1,4}\d*$/.test(token) || /^\d+x\d+$/i.test(token)) {
-        return token.toUpperCase();
-      }
+    .map((token, index) => {
+      const upper = token.toUpperCase();
+      if (SPECIAL_TOKEN_LABELS[upper]) return SPECIAL_TOKEN_LABELS[upper];
+      if (/^\d+X\d+$/i.test(upper)) return upper.toLowerCase();
+      if (/^BS\d+$/i.test(upper)) return upper;
       const lowered = token.toLowerCase();
-      return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+      if (index === 0) return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+      return lowered;
     })
     .join(" ");
+
+  return tokens;
+}
+
+export function formatEnumLabel(value: string | null | undefined) {
+  return formatDisplayLabel(value);
 }

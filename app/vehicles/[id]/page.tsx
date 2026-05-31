@@ -29,7 +29,7 @@ import {
   hasEngineOrPowertrain,
   normalizeClassification,
 } from "@/lib/vehicle-classification";
-import { formatEnumLabel } from "@/lib/formatting";
+import { formatDisplayLabel } from "@/lib/formatting";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ const normalizeText = (value: string | null | undefined) => {
 const toReadableLabel = (value: string | null | undefined) => {
   const normalized = normalizeText(value);
   if (!normalized) return "";
-  return formatEnumLabel(normalized) || normalized;
+  return formatDisplayLabel(normalized) || normalized;
 };
 
 const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
@@ -395,33 +395,32 @@ export default async function VehicleDetailPage({
     { label: "Body Dimensions", value: toSpecValue(vehicle.bodyDimensions) },
   ].filter((item) => item.value);
 
-  const validityLabel = (v: string | null | undefined) => {
+  const formatDocumentationDate = (v: string | null | undefined) => {
     if (!v) return "";
-    if (v === "VALID") return "Valid";
-    if (v === "EXPIRED") return "Expired";
-    if (v === "UNKNOWN") return "Unknown";
-    return toReadableLabel(v);
+    const trimmed = normalizeText(v);
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? new Date(`${trimmed}T00:00:00`) : new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) return toReadableLabel(trimmed);
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const year = parsed.getFullYear();
+    return `${day}/${month}/${year}`;
   };
-  const taxValidityLabel = (v: string | null | undefined) => {
-    if (!v) return "";
-    if (v === "PAID") return "Paid";
-    if (v === "DUE") return "Due";
-    if (v === "UNKNOWN") return "Unknown";
-    return toReadableLabel(v);
-  };
-  const parkingDueLabel = (v: string | null | undefined) => {
-    if (!v) return "";
-    if (v === "NO_DUE") return "No Due";
-    if (v === "DUE") return "Due";
-    if (v === "UNKNOWN") return "Unknown";
-    return toReadableLabel(v);
+  const parkingDueLabel = (v: number | string | null | undefined) => {
+    if (v === null || v === undefined || v === "") return "";
+    if (typeof v === "number") return `₹${v.toLocaleString("en-IN")}`;
+    const trimmed = normalizeText(v);
+    const parsed = Number(trimmed.replace(/[^\d]/g, ""));
+    if (Number.isFinite(parsed)) return `₹${Math.max(0, parsed).toLocaleString("en-IN")}`;
+    if (trimmed === "NO_DUE") return "₹0";
+    return toReadableLabel(trimmed);
   };
 
   const documentationSpecs = [
-    { label: "Insurance", value: vehicle.insuranceValidity ? validityLabel(vehicle.insuranceValidity) : (vehicle.insuranceExpiry ? `Valid till ${vehicle.insuranceExpiry}` : "") },
-    { label: "Permit", value: vehicle.permitValidity ? validityLabel(vehicle.permitValidity) : (vehicle.permitExpiry ? `Valid till ${vehicle.permitExpiry}` : "") },
-    { label: "Fitness", value: vehicle.fitnessStatus ? validityLabel(vehicle.fitnessStatus) : (vehicle.fitnessExpiry ? `Valid till ${vehicle.fitnessExpiry}` : "") },
-    { label: "Tax", value: taxValidityLabel(vehicle.taxValidity) },
+    { label: "Insurance Valid Till", value: vehicle.insuranceValidity ? formatDocumentationDate(vehicle.insuranceValidity) : "" },
+    { label: "Permit Valid Till", value: vehicle.permitValidity ? formatDocumentationDate(vehicle.permitValidity) : "" },
+    { label: "Fitness Valid Till", value: vehicle.fitnessStatus ? formatDocumentationDate(vehicle.fitnessStatus) : "" },
+    { label: "Tax Valid Till", value: vehicle.taxValidity ? formatDocumentationDate(vehicle.taxValidity) : "" },
     { label: "Parking Due", value: parkingDueLabel(vehicle.parkingDue) },
   ].filter((item) => item.value);
 

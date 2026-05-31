@@ -8,9 +8,6 @@ export type EngineCondition = "GOOD" | "AVERAGE" | "NEEDS_WORK" | "NOT_CHECKED" 
 export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 export type TyreCondition = "NEW" | "GOOD" | "FAIR" | "AROUND_50" | "POOR" | "MIXED" | "UNKNOWN";
 export type AvailabilityStatus = "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN";
-export type ValidityStatus = "VALID" | "EXPIRED" | "UNKNOWN";
-export type TaxValidityStatus = "PAID" | "DUE" | "UNKNOWN";
-export type ParkingDueStatus = "NO_DUE" | "DUE" | "UNKNOWN";
 export type TransferType = "RC_TRANSFER" | "RTO_NOC" | "OPEN_NOC" | "UNKNOWN";
 export type TyreMountStatus =
   | "ON_DISC"
@@ -154,11 +151,11 @@ export type Vehicle = {
   documentsAvailable?: YesNoUnknown | null;
   remarks?: string | null;
   fleetManagementSoftwareAvailable?: AvailabilityStatus | null;
-  insuranceValidity?: ValidityStatus | null;
-  permitValidity?: ValidityStatus | null;
-  fitnessStatus?: ValidityStatus | null;
-  taxValidity?: TaxValidityStatus | null;
-  parkingDue?: ParkingDueStatus | null;
+  insuranceValidity?: string | null;
+  permitValidity?: string | null;
+  fitnessStatus?: string | null;
+  taxValidity?: string | null;
+  parkingDue?: number | null;
   verifiedBadges: VerificationFlag[];
   rcVerified?: boolean;
   photosVerified?: boolean;

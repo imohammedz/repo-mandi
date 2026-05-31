@@ -5,6 +5,7 @@ import { useState } from "react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { formatDisplayLabel } from "@/lib/formatting";
 import type { Vehicle } from "@/types/vehicle";
 
 type AdminDashboardClientProps = {
@@ -160,7 +161,7 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}
             </div>
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Verify mileage ({typeof vehicle.kmDriven === "number" ? `${vehicle.kmDriven.toLocaleString("en-IN")} km` : "unknown"}), condition: {vehicle.condition}
+              Verify mileage ({typeof vehicle.kmDriven === "number" ? `${vehicle.kmDriven.toLocaleString("en-IN")} km` : "Unknown"}), condition: {formatDisplayLabel(vehicle.condition)}
             </p>
             {(vehicle.missingPhotos || vehicle.priceTooLow || vehicle.duplicateRegistration || vehicle.newSeller || vehicle.missingYardLocation) && (
               <div className="flex flex-wrap gap-2">

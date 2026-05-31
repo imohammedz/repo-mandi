@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { getCurrentUser } from "@/lib/auth";
+import { formatDisplayLabel } from "@/lib/formatting";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +21,17 @@ export default async function ProfilePage() {
         <p className="mt-3 text-sm text-slate-500">Mobile</p>
         <p className="text-base font-semibold text-slate-900">+91 {user.phone}</p>
         <p className="mt-3 text-sm text-slate-500">Account Type</p>
-        <p className="text-base font-semibold text-slate-900">{user.accountType}</p>
+        <p className="text-base font-semibold text-slate-900">{formatDisplayLabel(user.accountType)}</p>
         {user.sellerRole ? (
           <>
             <p className="mt-3 text-sm text-slate-500">Seller Role</p>
-            <p className="text-base font-semibold text-slate-900">{user.sellerRole}</p>
+            <p className="text-base font-semibold text-slate-900">{formatDisplayLabel(user.sellerRole)}</p>
           </>
         ) : null}
         {user.bankRole ? (
           <>
             <p className="mt-3 text-sm text-slate-500">Bank Role</p>
-            <p className="text-base font-semibold text-slate-900">{user.bankRole}</p>
+            <p className="text-base font-semibold text-slate-900">{formatDisplayLabel(user.bankRole)}</p>
           </>
         ) : null}
       </section>

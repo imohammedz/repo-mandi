@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { getAssetStructureLabel, getDetachableTypeLabel, getListingModeLabel } from "@/lib/vehicle-classification";
+import { formatDisplayLabel } from "@/lib/formatting";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,27 @@ const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus
   const normalizedNocStatus = (nocStatus || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
   if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
   return "Unknown";
+};
+
+const formatDocumentationDate = (value: string | null | undefined) => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? new Date(`${trimmed}T00:00:00`) : new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return formatDisplayLabel(trimmed);
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const year = parsed.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatParkingDue = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") return `₹${value.toLocaleString("en-IN")}`;
+  const amount = Number(String(value).replace(/[^\d]/g, ""));
+  if (Number.isFinite(amount)) return `₹${Math.max(0, amount).toLocaleString("en-IN")}`;
+  if (value === "NO_DUE") return "₹0";
+  return formatDisplayLabel(value);
 };
 
 export default async function AdminPendingListingsPage() {
@@ -58,7 +80,7 @@ export default async function AdminPendingListingsPage() {
                   Transfer: {getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus)}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold">
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">{vehicle.listingType}</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">{formatDisplayLabel(vehicle.listingType)}</span>
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">{getListingModeLabel(vehicle.listingMode)}</span>
                   <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">
                     {getAssetStructureLabel(vehicle.assetStructure) || vehicle.assetConfiguration || "Complete Vehicle"}
@@ -73,14 +95,14 @@ export default async function AdminPendingListingsPage() {
                   <p>Alternate number verified: {vehicle.alternateContactNumberVerified ? "Yes" : "No"}</p>
                   <p>Missing photos warning: {vehicle.missingPhotos ? "Yes" : "No"}</p>
                   <p>Videos uploaded: {vehicle.walkaroundVideo || vehicle.engineStartUpVideo ? "Yes" : "No"}</p>
-                  {(vehicle.insuranceValidity || vehicle.permitValidity || vehicle.fitnessStatus || vehicle.taxValidity || vehicle.parkingDue) ? (
+                  {(vehicle.insuranceValidity || vehicle.permitValidity || vehicle.fitnessStatus || vehicle.taxValidity || vehicle.parkingDue != null) ? (
                     <div className="mt-2 border-t border-slate-100 pt-2">
                       <p className="font-semibold text-slate-700">Documentation Details</p>
-                      {vehicle.insuranceValidity ? <p>Insurance Validity: {vehicle.insuranceValidity}</p> : null}
-                      {vehicle.permitValidity ? <p>Permit Validity: {vehicle.permitValidity}</p> : null}
-                      {vehicle.fitnessStatus ? <p>Fitness Status: {vehicle.fitnessStatus}</p> : null}
-                      {vehicle.taxValidity ? <p>Tax Validity: {vehicle.taxValidity}</p> : null}
-                      {vehicle.parkingDue ? <p>Parking Due: {vehicle.parkingDue}</p> : null}
+                      {vehicle.insuranceValidity ? <p>Insurance Valid Till: {formatDocumentationDate(vehicle.insuranceValidity)}</p> : null}
+                      {vehicle.permitValidity ? <p>Permit Valid Till: {formatDocumentationDate(vehicle.permitValidity)}</p> : null}
+                      {vehicle.fitnessStatus ? <p>Fitness Valid Till: {formatDocumentationDate(vehicle.fitnessStatus)}</p> : null}
+                      {vehicle.taxValidity ? <p>Tax Valid Till: {formatDocumentationDate(vehicle.taxValidity)}</p> : null}
+                      {vehicle.parkingDue !== null && vehicle.parkingDue !== undefined ? <p>Parking Due: {formatParkingDue(vehicle.parkingDue)}</p> : null}
                     </div>
                   ) : null}
                 </div>
