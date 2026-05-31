@@ -480,7 +480,6 @@ export async function POST(request: Request) {
     if (poweredAsset && !registrationState) {
       alwaysRequiredMissing.push("registrationState");
     }
-    if (poweredAsset && !runningCondition) alwaysRequiredMissing.push("runningCondition");
     if (isTrailerAsset && !trailerType) alwaysRequiredMissing.push("trailerType");
     if (isTrailerAsset && !trailerLength) alwaysRequiredMissing.push("trailerLength");
     if (isTrailerAsset && numberOfAxles === null) alwaysRequiredMissing.push("numberOfAxles");
@@ -488,7 +487,6 @@ export async function POST(request: Request) {
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
     if (!transferType) alwaysRequiredMissing.push("transferType");
-    if (!description) alwaysRequiredMissing.push("description");
 
     if (alwaysRequiredMissing.length > 0) {
       return Response.json(

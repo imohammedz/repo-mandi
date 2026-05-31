@@ -302,7 +302,7 @@ const repoStatusOptions = [
 const fuelTypeOptions = ["Diesel", "CNG"];
 const bsNormOptions = ["BS3", "BS4", "BS6", "UNKNOWN"];
 const yesNoUnknownOptions = ["YES", "NO", "UNKNOWN"] as const;
-const runningConditionOptions = ["RUNNING", "NOT_RUNNING", "UNKNOWN"];
+const yesNoOptions = ["YES", "NO"] as const;
 const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"];
 const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Other"];
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
@@ -830,13 +830,6 @@ export default function AddVehiclePage() {
         return "Trailer type, trailer length, and number of axles are required for trailer listings.";
       }
     }
-    if (targetStep === STEP_TECHNICAL && poweredAsset && !form.runningCondition) {
-      return "Running condition is required.";
-    }
-    if (targetStep === STEP_TECHNICAL && !form.description.trim()) {
-      return "Description / remarks is required.";
-    }
-
     return "";
   };
 
@@ -1516,7 +1509,6 @@ export default function AddVehiclePage() {
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Vehicle Condition</summary>
               <div className="mt-4 space-y-3">
-                <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
                 <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
                 <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
               </div>
@@ -1568,7 +1560,7 @@ export default function AddVehiclePage() {
                 {standaloneShowsSuspension ? (
                   <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
                 ) : null}
-                <SelectField label="Body Attached" value={form.bodyAttached} options={[...yesNoUnknownOptions]} onChange={(value) => update("bodyAttached", value)} />
+                <SelectField label="Body Attached" value={form.bodyAttached} options={[...yesNoOptions]} onChange={(value) => update("bodyAttached", value)} />
                 <SelectField label="Body Condition" value={form.bodyCondition} options={bodyConditionOptions} onChange={(value) => update("bodyCondition", value)} />
               </div>
             </details>
@@ -1622,7 +1614,6 @@ export default function AddVehiclePage() {
                 label="Description / Remarks"
                 value={form.description}
                 onChange={(value) => update("description", value)}
-                required
                 placeholder={"Example:\nEngine running.\nTyres around 50%.\nVehicle parked at Vijayawada yard.\nRC available.\nOpen NOC possible."}
               />
             </div>
