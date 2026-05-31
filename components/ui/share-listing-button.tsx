@@ -66,7 +66,7 @@ export function ShareListingButton({
 }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const toastTimerRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sharePayload = useMemo(
     () =>
       buildListingSharePayload({
@@ -97,7 +97,7 @@ export function ShareListingButton({
   );
 
   const openFallback = () => {
-    // TODO: Hook onShareClick to persisted shareCount analytics when backend field is introduced.
+    // TODO: Persist shareCount updates through onShareClick into backend analytics once shareCount is added to schema.
     onShareClick?.();
     setIsModalOpen(true);
   };
@@ -210,7 +210,7 @@ export function ShareListingButton({
                 Email
               </button>
             </div>
-            {/* TODO: Add QR code share action in this sheet once QR generation is introduced. */}
+            {/* TODO: Add QR code share action in this share sheet after listing QR generation API/UI is added. */}
           </section>
         </div>
       ) : null}

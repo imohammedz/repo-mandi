@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -36,11 +37,11 @@ import { resolveImageSrcForRender } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
-const getVehicleRow = async (id: string): Promise<typeof vehiclesTable.$inferSelect | null> => {
+const getVehicleRow = cache(async (id: string): Promise<typeof vehiclesTable.$inferSelect | null> => {
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
   if (!row || row.deletedAt) return null;
   return row;
-};
+});
 
 const normalizeText = (value: string | null | undefined) => {
   if (!value) return "";
