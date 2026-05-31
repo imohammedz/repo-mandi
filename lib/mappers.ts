@@ -23,13 +23,14 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     detachableType: row.detachableType,
     assetConfiguration: row.assetConfiguration,
   });
-  const transferType = row.transferType
-    ? row.transferType
-    : row.nocStatus === "AVAILABLE"
-      ? "RC_TRANSFER"
-      : row.nocStatus === "NOT_AVAILABLE" || row.nocStatus === "UNKNOWN"
-        ? "UNKNOWN"
-        : null;
+  let transferType: Vehicle["transferType"] = null;
+  if (row.transferType) {
+    transferType = row.transferType as Vehicle["transferType"];
+  } else if (row.nocStatus === "AVAILABLE") {
+    transferType = "RC_TRANSFER";
+  } else if (row.nocStatus === "NOT_AVAILABLE" || row.nocStatus === "UNKNOWN") {
+    transferType = "UNKNOWN";
+  }
 
   return {
     id: row.id,
@@ -127,7 +128,7 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     insuranceExpiry: row.insuranceExpiry,
     fitnessExpiry: row.fitnessExpiry,
     permitExpiry: row.permitExpiry,
-    transferType: transferType as Vehicle["transferType"],
+    transferType,
     nocStatus: row.nocStatus,
     machineSerialNumber: row.machineSerialNumber,
     engineNumber: row.engineNumber,

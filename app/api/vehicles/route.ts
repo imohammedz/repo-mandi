@@ -148,8 +148,7 @@ function parseTransferType(value: unknown) {
     return normalized as (typeof VALID_TRANSFER_TYPES)[number];
   }
   if (normalized === "AVAILABLE") return "RC_TRANSFER";
-  if (normalized === "NOT_AVAILABLE") return "UNKNOWN";
-  if (normalized === "UNKNOWN") return "UNKNOWN";
+  if (normalized === "NOT_AVAILABLE" || normalized === "UNKNOWN") return "UNKNOWN";
   return null;
 }
 

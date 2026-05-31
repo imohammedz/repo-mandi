@@ -86,7 +86,7 @@ const getSecondaryLines = (vehicle: Vehicle, isTrailerOnly: boolean) => {
 
   if (isTrailerOnly) {
     if (typeof vehicle.numberOfAxles === "number" && vehicle.numberOfAxles > 0) {
-      lines.push(`${vehicle.numberOfAxles} Axle`);
+      lines.push(`${vehicle.numberOfAxles} ${vehicle.numberOfAxles === 1 ? "Axle" : "Axles"}`);
     }
     if (vehicle.suspensionType) {
       const suspension = toReadableLabel(vehicle.suspensionType);
@@ -98,7 +98,7 @@ const getSecondaryLines = (vehicle: Vehicle, isTrailerOnly: boolean) => {
 
   const totalTyres = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
   if (typeof totalTyres === "number" && totalTyres > 0) {
-    lines.push(`${totalTyres} Tyre`);
+    lines.push(`${totalTyres} ${totalTyres === 1 ? "Tyre" : "Tyres"}`);
   }
 
   const usageIsPrimeWithTrailer = usageType === "Prime Mover + Trailer";
