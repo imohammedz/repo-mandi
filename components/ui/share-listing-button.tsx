@@ -22,11 +22,13 @@ type Props = {
   onShareClick?: () => void;
 };
 
+const MOBILE_SHARE_MEDIA_QUERY = "(max-width: 768px)";
+
 const canUseNativeShare = () =>
   typeof navigator !== "undefined" &&
   typeof navigator.share === "function" &&
   (navigator.maxTouchPoints > 0 ||
-    window.matchMedia("(max-width: 1024px)").matches ||
+    window.matchMedia(MOBILE_SHARE_MEDIA_QUERY).matches ||
     /android|iphone|ipad|ipod/i.test(navigator.userAgent));
 
 async function copyText(value: string) {
@@ -42,6 +44,7 @@ async function copyText(value: string) {
   textarea.style.left = "-9999px";
   document.body.appendChild(textarea);
   textarea.select();
+  // Legacy fallback for older browsers without Clipboard API support.
   document.execCommand("copy");
   document.body.removeChild(textarea);
 }
@@ -108,7 +111,7 @@ export function ShareListingButton({
       onShareClick?.();
       await navigator.share(sharePayload);
     } catch (error) {
-      if ((error as { name?: string }).name === "AbortError") return;
+      if (error instanceof DOMException && error.name === "AbortError") return;
       setIsModalOpen(true);
     }
   };
@@ -203,7 +206,7 @@ export function ShareListingButton({
                 Email
               </button>
             </div>
-            <p className="mt-3 text-center text-xs text-slate-500">QR code sharing coming soon.</p>
+            {/* TODO: Add QR code share action in this sheet once QR generation is introduced. */}
           </section>
         </div>
       ) : null}

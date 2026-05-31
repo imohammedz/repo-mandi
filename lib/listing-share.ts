@@ -9,7 +9,7 @@ type ListingShareInput = {
 };
 
 const formatSharePrice = (price?: number | null) => {
-  if (typeof price !== "number" || Number.isNaN(price) || price <= 0) return "Price on request";
+  if (typeof price !== "number" || Number.isNaN(price) || price < 0) return "Price on request";
   return `₹${Math.round(price).toLocaleString("en-IN")}`;
 };
 

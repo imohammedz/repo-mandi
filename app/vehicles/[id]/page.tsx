@@ -36,9 +36,7 @@ import { resolveImageSrcForRender } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
-type VehicleRow = typeof vehiclesTable.$inferSelect;
-
-const getVehicleRow = async (id: string): Promise<VehicleRow | null> => {
+const getVehicleRow = async (id: string): Promise<typeof vehiclesTable.$inferSelect | null> => {
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
   if (!row || row.deletedAt) return null;
   return row;
