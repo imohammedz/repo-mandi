@@ -9,6 +9,7 @@ import {
   buildTelegramShareUrl,
   buildWhatsAppShareUrl,
 } from "@/lib/listing-share";
+import { SITE_CONFIG } from "@/lib/config/site";
 
 type Props = {
   listingId?: string;
@@ -67,10 +68,11 @@ export function ShareListingButton({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const toastTimerRef = useRef<number | null>(null);
-  const safeListingId = listingId?.trim() || "unknown";
+  const normalizedListingId = listingId?.trim() || "";
+  const safeListingId = normalizedListingId || "listing";
   const safeTitle = title?.trim() || "Commercial Vehicle Listing";
   const safeLocation = location?.trim() || "Location unavailable";
-  const safeUrl = url || buildListingPublicUrl(safeListingId);
+  const safeUrl = url || (normalizedListingId ? buildListingPublicUrl(safeListingId) : SITE_CONFIG.primaryDomain);
   const sharePayload = useMemo(
     () =>
       buildListingSharePayload({
