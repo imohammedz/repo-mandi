@@ -162,6 +162,7 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
             </div>
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
               Verify mileage ({typeof vehicle.kmDriven === "number" ? `${vehicle.kmDriven.toLocaleString("en-IN")} km` : "Unknown"}), condition: {formatDisplayLabel(vehicle.condition)}
+              {vehicle.engineCondition ? `, engine: ${formatDisplayLabel(vehicle.engineCondition)}` : ""}
             </p>
             {(vehicle.missingPhotos || vehicle.priceTooLow || vehicle.duplicateRegistration || vehicle.newSeller || vehicle.missingYardLocation) && (
               <div className="flex flex-wrap gap-2">

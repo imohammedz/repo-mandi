@@ -96,6 +96,7 @@ export default async function AdminPendingListingsPage() {
                   <p>Alternate number verified: {vehicle.alternateContactNumberVerified ? "Yes" : "No"}</p>
                   <p>Missing photos warning: {vehicle.missingPhotos ? "Yes" : "No"}</p>
                   <p>Videos uploaded: {vehicle.walkaroundVideo || vehicle.engineStartUpVideo ? "Yes" : "No"}</p>
+                  {vehicle.engineCondition ? <p>Engine condition: {formatDisplayLabel(vehicle.engineCondition)}</p> : null}
                   {(vehicle.insuranceValidity || vehicle.permitValidity || vehicle.fitnessStatus || vehicle.taxValidity || vehicle.parkingDue != null) ? (
                     <div className="mt-2 border-t border-slate-100 pt-2">
                       <p className="font-semibold text-slate-700">Documentation Details</p>

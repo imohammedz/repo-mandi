@@ -308,7 +308,7 @@ const fuelTypeOptions = ["Diesel", "CNG"];
 const bsNormOptions = ["BS3", "BS4", "BS6", "UNKNOWN"];
 const yesNoUnknownOptions = ["YES", "NO", "UNKNOWN"] as const;
 const yesNoOptions = ["YES", "NO"] as const;
-const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"];
+const engineConditionOptions = ["EXCELLENT", "GOOD", "UNKNOWN"];
 const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Other"];
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
 const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
@@ -898,6 +898,11 @@ export default function AddVehiclePage() {
       setUploadingField("");
       if (fileRefs[category].current) fileRefs[category].current.value = "";
     }
+  };
+
+  const deleteSinglePhoto = (category: UploadCategory) => {
+    update(category, "");
+    if (fileRefs[category].current) fileRefs[category].current.value = "";
   };
 
   const uploadAdditionalPhotos = async (files: File[]) => {
@@ -1654,7 +1659,7 @@ export default function AddVehiclePage() {
                 label="Description / Remarks"
                 value={form.description}
                 onChange={(value) => update("description", value)}
-                placeholder={"Example:\nEngine running.\nTyres around 50%.\nVehicle parked at Vijayawada yard.\nRC available.\nOpen NOC possible."}
+                placeholder="Add key condition, documents, or transfer notes."
               />
             </div>
           </details>
@@ -1689,14 +1694,27 @@ export default function AddVehiclePage() {
                   <p className="text-sm font-medium text-slate-700">
                     {item.label} {item.required ? <span className="text-rose-500">*</span> : <span className="text-slate-400">(Optional)</span>}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => fileRefs[item.key].current?.click()}
-                    disabled={uploadingField === item.key}
-                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
-                  >
-                    {uploadingField === item.key ? "Uploading..." : photoValue ? "Replace" : "Upload"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileRefs[item.key].current?.click()}
+                      disabled={uploadingField === item.key}
+                      className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+                    >
+                      {uploadingField === item.key ? "Uploading..." : photoValue ? "Replace" : "Upload"}
+                    </button>
+                    {photoValue ? (
+                      <button
+                        type="button"
+                        onClick={() => deleteSinglePhoto(item.key)}
+                        disabled={uploadingField === item.key}
+                        aria-label="Delete photo"
+                        className="inline-flex min-h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600"
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <input ref={fileRefs[item.key]} type="file" accept="image/*" className="hidden" onChange={(event) => uploadSinglePhoto(item.key, event.target.files?.[0] ?? null)} />
                 {photoValue ? <UploadPreviewImage src={photoValue} alt={item.label} /> : <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 text-center text-xs text-slate-400">No image uploaded</div>}
@@ -1743,10 +1761,10 @@ export default function AddVehiclePage() {
                   <button
                     type="button"
                     onClick={() => setAdditionalPhotos((previous) => previous.filter((_, i) => i !== index))}
-                    aria-label="Remove photo"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600"
+                    aria-label="Delete photo"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600"
                   >
-                    <X className="h-4 w-4" />
+                    Delete
                   </button>
                 </div>
                 <UploadPreviewImage src={photo.url} alt={`Additional photo ${index + 1}`} />

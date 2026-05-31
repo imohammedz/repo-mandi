@@ -150,6 +150,7 @@ export default function EditVehicleClient({ vehicle }: Props) {
             value={form.description}
             onChange={(e) => set("description")(e.target.value)}
             rows={3}
+            placeholder="Add key condition, documents, or transfer notes."
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none"
           />
         </div>

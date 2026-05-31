@@ -749,6 +749,7 @@ export async function POST(request: Request) {
         condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
         conditionNotes: description,
         engineCondition: (toSafeString(body.engineCondition).toUpperCase().replace(/\s+/g, "_") || null) as
+          | "EXCELLENT"
           | "GOOD"
           | "AVERAGE"
           | "NEEDS_WORK"

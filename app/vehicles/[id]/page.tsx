@@ -378,6 +378,7 @@ export default async function VehicleDetailPage({
       label: "Running Condition",
       value: showsRunning ? toReadableLabel(vehicle.runningCondition || vehicle.condition) : "",
     },
+    { label: "Engine Condition", value: vehicle.engineCondition ? toReadableLabel(vehicle.engineCondition) : "" },
     { label: "Tyres Included", value: vehicle.tyresIncluded ? toReadableLabel(vehicle.tyresIncluded) : "" },
     { label: "Rims Included", value: vehicle.rimsDiscsIncluded ? toReadableLabel(vehicle.rimsDiscsIncluded) : "" },
     { label: "Battery Included", value: vehicle.batteryIncluded ? toReadableLabel(vehicle.batteryIncluded) : "" },

@@ -145,6 +145,7 @@ export const runningConditionEnum = pgEnum("running_condition", [
 ]);
 
 export const engineConditionEnum = pgEnum("engine_condition", [
+  "EXCELLENT",
   "GOOD",
   "AVERAGE",
   "NEEDS_WORK",
