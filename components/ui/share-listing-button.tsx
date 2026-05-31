@@ -66,7 +66,7 @@ export function ShareListingButton({
 }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const sharePayload = useMemo(
     () =>
       buildListingSharePayload({
