@@ -301,7 +301,6 @@ const repoStatusOptions = [
 ];
 const fuelTypeOptions = ["Diesel", "CNG"];
 const bsNormOptions = ["BS3", "BS4", "BS6", "UNKNOWN"];
-const transmissionOptions = ["Manual", "Automatic", "Semi-Automatic", "Unknown"];
 const yesNoUnknownOptions = ["YES", "NO", "UNKNOWN"] as const;
 const runningConditionOptions = ["RUNNING", "NOT_RUNNING", "UNKNOWN"];
 const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"];
@@ -309,8 +308,6 @@ const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Oth
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
 const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
 const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
-const tyreMountStatusOptions = ["ON_DISC", "TYRES_ONLY", "NO_TYRES", "PARTIAL"];
-const tyreConditionOptions = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN"];
 const videoCategoryOptions = [
   { value: "WALKAROUND", label: "Walkaround Video" },
   { value: "ENGINE_STARTUP", label: "Engine Start Video" },
@@ -1170,6 +1167,8 @@ export default function AddVehiclePage() {
           totalTyres: form.totalTyres.replace(/\D/g, ""),
           tyreCount: form.totalTyres.replace(/\D/g, ""),
           currentTyreCount: form.currentTyreCount.replace(/\D/g, ""),
+          bodyType: form.bodyApplicationType || form.bodyType,
+          bodyLength: form.bodyDimensions || form.bodyLength,
           transferType: form.transferType,
           nocStatus:
             form.transferType === "RC_TRANSFER"
@@ -1507,13 +1506,11 @@ export default function AddVehiclePage() {
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Powertrain Details</summary>
               <div className="mt-4 space-y-3">
                 <SelectField label="Fuel Type" value={form.fuelType} options={fuelTypeOptions} onChange={(value) => update("fuelType", value)} />
-                <SelectField label="BS Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
-                <SelectField label="Transmission" value={form.transmission} options={transmissionOptions} onChange={(value) => update("transmission", value)} />
+                <SelectField label="BS Norm / Emission Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
+                <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
                 <SelectField label="Axle Configuration" value={form.axleConfiguration} options={axleConfigurationOptions} onChange={(value) => update("axleConfiguration", value)} />
                 <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
-                <TextField label="Horsepower" value={form.horsepower} onChange={(value) => update("horsepower", value.replace(/\D/g, ""))} type="tel" />
                 <TextField label="Odometer Reading" value={form.odometerReading} onChange={(value) => update("odometerReading", value.replace(/\D/g, ""))} type="tel" />
-                <TextField label="Hour Meter Reading" value={form.hourMeterReading} onChange={(value) => update("hourMeterReading", value.replace(/\D/g, ""))} type="tel" />
               </div>
             </details>
           ) : null}
@@ -1539,9 +1536,13 @@ export default function AddVehiclePage() {
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Body / Attachment Details</summary>
               <div className="mt-4 space-y-3">
-                <TextField label="Body Type" value={form.bodyType} onChange={(value) => update("bodyType", value)} placeholder="e.g. Open Body" />
-                <TextField label="Body Length" value={form.bodyLength} onChange={(value) => update("bodyLength", value)} placeholder="e.g. 20 ft" />
-                <TextField label="Payload Capacity" value={form.payloadCapacity} onChange={(value) => update("payloadCapacity", value)} placeholder="e.g. 16 tonnes" />
+                <div className="space-y-1.5">
+                  <span className="text-sm font-medium text-slate-700">Selected Body Type</span>
+                  <p className="min-h-12 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                    {form.bodyApplicationType || "Not selected"}
+                  </p>
+                </div>
+                <TextField label="Body Dimensions" value={form.bodyDimensions} onChange={(value) => update("bodyDimensions", value)} placeholder="e.g. 20 ft x 8 ft" />
                 <TextField label="GVW (Tonnes)" value={form.gvwTonnes} onChange={(value) => update("gvwTonnes", value)} />
                 {standaloneShowsSuspension ? (
                   <SelectField label="Suspension Type" value={form.suspensionType} options={trailerSuspensionOptions} onChange={(value) => update("suspensionType", value)} />
@@ -1551,23 +1552,6 @@ export default function AddVehiclePage() {
               </div>
             </details>
           ) : null}
-
-          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Included Accessories / Missing Parts</summary>
-            <div className="mt-4 space-y-3">
-              <TextField label="Total Tyres" value={form.totalTyres} onChange={(value) => update("totalTyres", value.replace(/\D/g, ""))} type="tel" />
-              <SelectField label="Tyres Included" value={form.tyresIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("tyresIncluded", value)} />
-              <SelectField label="Tyre Mount Status" value={form.tyreMountStatus} options={tyreMountStatusOptions} onChange={(value) => update("tyreMountStatus", value)} />
-              <SelectField label="Tyre Condition" value={form.tyreCondition} options={tyreConditionOptions} onChange={(value) => update("tyreCondition", value)} />
-              <SelectField label="Rims / Discs Included" value={form.rimsDiscsIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("rimsDiscsIncluded", value)} />
-              <SelectField label="Battery Included" value={form.batteryIncluded} options={[...yesNoUnknownOptions]} onChange={(value) => update("batteryIncluded", value)} />
-              <SelectField label="Key Available" value={form.keyAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("keyAvailable", value)} />
-              <SelectField label="Cabin Available" value={form.cabinAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("cabinAvailable", value)} />
-              <SelectField label="Engine Available" value={form.engineAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("engineAvailable", value)} />
-              <SelectField label="Documents Available" value={form.documentsAvailable} options={[...yesNoUnknownOptions]} onChange={(value) => update("documentsAvailable", value)} />
-              <TextAreaField label="Remarks" value={form.remarks} onChange={(value) => update("remarks", value)} placeholder="Example: without tyres, only horse available, trailer separate." />
-            </div>
-          </details>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4">
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Identifiers &amp; Compliance</summary>
