@@ -158,6 +158,12 @@ function parseTransferType(value: unknown) {
   return null;
 }
 
+function toLegacyNocStatus(transferType: (typeof VALID_TRANSFER_TYPES)[number] | null) {
+  if (transferType === "RC_TRANSFER") return "AVAILABLE" as const;
+  if (transferType === "RTO_NOC" || transferType === "OPEN_NOC") return "NOT_AVAILABLE" as const;
+  return "UNKNOWN" as const;
+}
+
 function parseTyreMountStatus(value: unknown) {
   const normalized = toSafeString(value)
     .toUpperCase()
@@ -481,6 +487,7 @@ export async function POST(request: Request) {
     if (expectedPrice === null) alwaysRequiredMissing.push("expectedPrice");
     // vehicleOrYardLocation remains a strict required field in MVP1.
     if (!location) alwaysRequiredMissing.push("vehicleOrYardLocation");
+    if (!transferType) alwaysRequiredMissing.push("transferType");
     if (!description) alwaysRequiredMissing.push("description");
 
     if (alwaysRequiredMissing.length > 0) {
@@ -489,6 +496,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const requiredTransferType = transferType as (typeof VALID_TRANSFER_TYPES)[number];
 
     // Validate and cap additional photos.
     const additionalPhotoItems = additionalPhotosRaw
@@ -731,12 +739,8 @@ export async function POST(request: Request) {
         insuranceExpiry: toSafeString(body.insuranceExpiry),
         fitnessExpiry: toSafeString(body.fitnessExpiry),
         permitExpiry: toSafeString(body.permitExpiry),
-        transferType: transferType || null,
-        nocStatus: (toSafeString(body.nocStatus).toUpperCase().replace(/\s+/g, "_") || null) as
-          | "AVAILABLE"
-          | "NOT_AVAILABLE"
-          | "UNKNOWN"
-          | null,
+        transferType: requiredTransferType,
+        nocStatus: toLegacyNocStatus(requiredTransferType),
         machineSerialNumber: machineSerialNumber || null,
         engineNumber: toSafeString(body.engineNumber),
         chassisNumber: toSafeString(body.chassisNumber),

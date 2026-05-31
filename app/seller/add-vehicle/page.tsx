@@ -308,6 +308,18 @@ const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Oth
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
 const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
 const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
+const transferTypeLabels: Record<string, string> = {
+  RC_TRANSFER: "RC Transfer",
+  RTO_NOC: "RTO NOC",
+  OPEN_NOC: "Open NOC",
+  UNKNOWN: "Unknown",
+};
+const transferTypeDescriptions: Record<string, string> = {
+  RC_TRANSFER: "Vehicle can be transferred directly through RC transfer process.",
+  RTO_NOC: "Seller can provide RTO NOC for transfer.",
+  OPEN_NOC: "Vehicle is being sold with open NOC.",
+  UNKNOWN: "Seller is unsure.",
+};
 const tyreMountStatusOptions = [
   "ON_DISC",
   "WITH_TYRES",
@@ -395,7 +407,7 @@ const ALL_STEPS: number[] = [STEP_LISTING, STEP_BASICS, STEP_PRICING, STEP_REPO,
 const STEP_LABELS: Record<number, string> = {
   [STEP_LISTING]: "Listing Information",
   [STEP_BASICS]: "Asset Basics",
-  [STEP_PRICING]: "Pricing & Location",
+  [STEP_PRICING]: "Pricing & Ownership Information",
   [STEP_REPO]: "Repo Details",
   [STEP_TECHNICAL]: "Technical Details",
   [STEP_PHOTOS]: "Photos & Documents",
@@ -479,7 +491,7 @@ const emptyForm: FormData = {
   insuranceExpiry: "",
   fitnessExpiry: "",
   permitExpiry: "",
-  transferType: "",
+  transferType: "UNKNOWN",
   engineNumber: "",
   chassisNumber: "",
   gpsInstalled: "",
@@ -503,6 +515,7 @@ function SelectField({
   required = false,
   labelSuffix,
   helperText,
+  optionLabels,
 }: {
   label: string;
   value: string;
@@ -511,6 +524,7 @@ function SelectField({
   required?: boolean;
   labelSuffix?: ReactNode;
   helperText?: string;
+  optionLabels?: Record<string, string>;
 }) {
   return (
     <label className="space-y-1.5">
@@ -527,7 +541,7 @@ function SelectField({
         <option value="">Select</option>
         {options.map((option) => (
           <option key={option} value={option}>
-            {formatEnumLabel(option)}
+            {optionLabels?.[option] ?? formatEnumLabel(option)}
           </option>
         ))}
       </select>
@@ -802,6 +816,7 @@ export default function AddVehiclePage() {
     if (targetStep === STEP_PRICING) {
       if (!form.expectedPrice || Number(form.expectedPrice) <= 0) return "Expected price is required.";
       if (!form.vehicleOrYardLocation.trim()) return "Vehicle / yard location is required.";
+      if (!form.transferType) return "Transfer type is required.";
     }
 
     if (targetStep === STEP_REPO && form.listingType === "REPO") {
@@ -1458,9 +1473,18 @@ export default function AddVehiclePage() {
 
       {step === STEP_PRICING ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PRICING)}: Pricing &amp; Location</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PRICING)}: Pricing &amp; Ownership Information</h1>
           <TextField label="Expected Price" value={form.expectedPrice} onChange={(value) => update("expectedPrice", value.replace(/\D/g, ""))} required placeholder="₹5,00,000" type="tel" />
           <TextField label="Vehicle / Yard Location" value={form.vehicleOrYardLocation} onChange={(value) => update("vehicleOrYardLocation", value)} required placeholder="e.g. Kompally Yard, Hyderabad" />
+          <SelectField
+            label="Transfer Type"
+            value={form.transferType}
+            options={transferTypeOptions}
+            onChange={(value) => update("transferType", value)}
+            required
+            optionLabels={transferTypeLabels}
+            helperText={transferTypeDescriptions[form.transferType] ?? undefined}
+          />
         </section>
       ) : null}
 
@@ -1586,7 +1610,6 @@ export default function AddVehiclePage() {
               <TextField label="Insurance Expiry" value={form.insuranceExpiry} onChange={(value) => update("insuranceExpiry", value)} type="date" />
               <TextField label="Fitness Expiry" value={form.fitnessExpiry} onChange={(value) => update("fitnessExpiry", value)} type="date" />
               <TextField label="Permit Expiry" value={form.permitExpiry} onChange={(value) => update("permitExpiry", value)} type="date" />
-              <SelectField label="Transfer Type" value={form.transferType} options={transferTypeOptions} onChange={(value) => update("transferType", value)} />
               <SelectField label="GPS Installed" value={form.gpsInstalled} options={[...yesNoUnknownOptions]} onChange={(value) => update("gpsInstalled", value)} />
               <SelectField label="Fleet Management Software Available" value={form.fleetManagementSoftwareAvailable} options={[...availabilityOptions]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
             </div>

@@ -12,6 +12,18 @@ import { getAssetStructureLabel, getDetachableTypeLabel, getListingModeLabel } f
 
 export const dynamic = "force-dynamic";
 
+const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
+  const normalizedTransferType = (transferType || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
+  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
+  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
+  if (normalizedTransferType === "UNKNOWN") return "Unknown";
+
+  const normalizedNocStatus = (nocStatus || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
+  return "Unknown";
+};
+
 export default async function AdminPendingListingsPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect("/admin/login");
@@ -42,6 +54,9 @@ export default async function AdminPendingListingsPage() {
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
                 <p className="text-xs text-slate-500">{vehicle.city}, {vehicle.state}</p>
+                <p className="mt-1 text-xs font-medium text-slate-600">
+                  Transfer: {getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus)}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold">
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">{vehicle.listingType}</span>
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">{getListingModeLabel(vehicle.listingMode)}</span>

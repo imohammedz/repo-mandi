@@ -45,6 +45,18 @@ const toReadableLabel = (value: string | null | undefined) => {
   return formatEnumLabel(normalized) || normalized;
 };
 
+const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
+  const normalizedTransferType = normalizeText(transferType).replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
+  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
+  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
+  if (normalizedTransferType === "UNKNOWN") return "Unknown";
+
+  const normalizedNocStatus = normalizeText(nocStatus).replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
+  return "Unknown";
+};
+
 const dedupeLabels = (parts: Array<string | null | undefined>) => {
   const seen = new Set<string>();
   const unique: string[] = [];
@@ -284,6 +296,7 @@ export default async function VehicleDetailPage({
 
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
+  const transferTypeLabel = getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus);
   const showsRunning = hasEngineOrPowertrain({
     assetStructure: vehicle.assetStructure,
     detachableType: vehicle.detachableType,
@@ -453,6 +466,10 @@ export default async function VehicleDetailPage({
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <MapPin className="h-4 w-4" />
           <span>{displayLocation || "Location unavailable"}</span>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Transfer Type</p>
+          <p className="text-sm font-semibold text-slate-900">{transferTypeLabel}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">

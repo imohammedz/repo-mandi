@@ -12,6 +12,18 @@ type AdminDashboardClientProps = {
   stats: { label: string; value: string; hint?: string }[];
 };
 
+const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
+  const normalizedTransferType = (transferType || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
+  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
+  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
+  if (normalizedTransferType === "UNKNOWN") return "Unknown";
+
+  const normalizedNocStatus = (nocStatus || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
+  return "Unknown";
+};
+
 export default function AdminDashboardClient({ vehicleList, stats }: AdminDashboardClientProps) {
   const [vehicles, setVehicles] = useState(vehicleList);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -141,6 +153,9 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
                 <p className="text-xs text-slate-500">Seller: {vehicle.sellerName}</p>
+                <p className="mt-1 text-xs font-medium text-slate-600">
+                  Transfer: {getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus)}
+                </p>
               </div>
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}
             </div>
