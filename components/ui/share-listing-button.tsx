@@ -11,8 +11,8 @@ import {
 } from "@/lib/listing-share";
 
 type Props = {
-  listingId: string;
-  title: string;
+  listingId?: string;
+  title?: string;
   location?: string | null;
   price?: number | null;
   url?: string;
@@ -67,16 +67,20 @@ export function ShareListingButton({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const toastTimerRef = useRef<number | null>(null);
+  const safeListingId = listingId?.trim() || "unknown";
+  const safeTitle = title?.trim() || "Commercial Vehicle Listing";
+  const safeLocation = location?.trim() || "Location unavailable";
+  const safeUrl = url || buildListingPublicUrl(safeListingId);
   const sharePayload = useMemo(
     () =>
       buildListingSharePayload({
-        listingId,
-        title,
-        location,
+        listingId: safeListingId,
+        title: safeTitle,
+        location: safeLocation,
         price,
-        url: url || buildListingPublicUrl(listingId),
+        url: safeUrl,
       }),
-    [listingId, title, location, price, url]
+    [safeListingId, safeTitle, safeLocation, price, safeUrl]
   );
 
   const showToast = (message: string) => {
@@ -133,7 +137,7 @@ export function ShareListingButton({
 
   const openExternal = (target: "whatsapp" | "telegram" | "email") => {
     onShareClick?.();
-    const shareData = { listingId, title, location, price, url: sharePayload.url };
+    const shareData = { listingId: safeListingId, title: safeTitle, location: safeLocation, price, url: sharePayload.url };
     if (target === "email") {
       window.location.href = buildEmailShareUrl(shareData);
       return;
@@ -151,7 +155,7 @@ export function ShareListingButton({
         aria-label="Share listing"
         className={
           variant === "icon"
-            ? `inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm backdrop-blur transition hover:bg-white ${className}`
+            ? `inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 p-2 text-gray-800 shadow transition hover:bg-white ${className}`
             : `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 ${className}`
         }
       >
