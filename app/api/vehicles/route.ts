@@ -52,7 +52,13 @@ const VALID_RUNNING_CONDITIONS = ["RUNNING", "NOT_RUNNING", "UNKNOWN"] as const;
 type RunningCondition = (typeof VALID_RUNNING_CONDITIONS)[number];
 const VALID_AVAILABILITY_STATUS = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"] as const;
 const VALID_TRANSFER_TYPES = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"] as const;
-const VALID_TYRE_MOUNT_STATUS = ["ON_DISC", "TYRES_ONLY", "NO_TYRES", "PARTIAL"] as const;
+const VALID_TYRE_MOUNT_STATUS = [
+  "ON_DISC",
+  "WITH_TYRES",
+  "WITHOUT_DISC_AND_TYRES",
+  "PARTIAL",
+  "UNKNOWN",
+] as const;
 const VALID_TYRE_CONDITIONS = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN", "FAIR"] as const;
 
 const VALID_REPO_STATUS = [
@@ -157,6 +163,8 @@ function parseTyreMountStatus(value: unknown) {
   if (VALID_TYRE_MOUNT_STATUS.includes(normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number])) {
     return normalized as (typeof VALID_TYRE_MOUNT_STATUS)[number];
   }
+  if (normalized === "TYRES_ONLY") return "WITH_TYRES";
+  if (normalized === "NO_TYRES") return "WITHOUT_DISC_AND_TYRES";
   return null;
 }
 

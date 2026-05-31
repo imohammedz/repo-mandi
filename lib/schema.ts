@@ -175,9 +175,10 @@ export const tyreConditionEnum = pgEnum("tyre_condition", [
 
 export const tyreMountStatusEnum = pgEnum("tyre_mount_status", [
   "ON_DISC",
-  "TYRES_ONLY",
-  "NO_TYRES",
+  "WITH_TYRES",
+  "WITHOUT_DISC_AND_TYRES",
   "PARTIAL",
+  "UNKNOWN",
 ]);
 
 export const mediaTypeEnum = pgEnum("vehicle_media_type", [

@@ -308,6 +308,14 @@ const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Oth
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
 const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
 const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
+const tyreMountStatusOptions = [
+  "ON_DISC",
+  "WITH_TYRES",
+  "WITHOUT_DISC_AND_TYRES",
+  "PARTIAL",
+  "UNKNOWN",
+];
+const tyreConditionOptions = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN"];
 const videoCategoryOptions = [
   { value: "WALKAROUND", label: "Walkaround Video" },
   { value: "ENGINE_STARTUP", label: "Engine Start Video" },
@@ -378,22 +386,20 @@ const indiaStates = [
 
 const STEP_LISTING = 1;
 const STEP_BASICS = 2;
-const STEP_CONDITION = 3;
-const STEP_PRICING = 4;
-const STEP_REPO = 5;
-const STEP_TECHNICAL = 6;
-const STEP_PHOTOS = 7;
-const STEP_REVIEW = 8;
-const ALL_STEPS: number[] = [STEP_LISTING, STEP_BASICS, STEP_CONDITION, STEP_PRICING, STEP_REPO, STEP_TECHNICAL, STEP_PHOTOS, STEP_REVIEW];
+const STEP_PRICING = 3;
+const STEP_REPO = 4;
+const STEP_TECHNICAL = 5;
+const STEP_PHOTOS = 6;
+const STEP_REVIEW = 7;
+const ALL_STEPS: number[] = [STEP_LISTING, STEP_BASICS, STEP_PRICING, STEP_REPO, STEP_TECHNICAL, STEP_PHOTOS, STEP_REVIEW];
 const STEP_LABELS: Record<number, string> = {
-  [STEP_LISTING]: "Listing",
+  [STEP_LISTING]: "Listing Information",
   [STEP_BASICS]: "Asset Basics",
-  [STEP_CONDITION]: "Condition",
-  [STEP_PRICING]: "Pricing",
+  [STEP_PRICING]: "Pricing & Location",
   [STEP_REPO]: "Repo Details",
-  [STEP_TECHNICAL]: "Technical",
-  [STEP_PHOTOS]: "Photos",
-  [STEP_REVIEW]: "Review",
+  [STEP_TECHNICAL]: "Technical Details",
+  [STEP_PHOTOS]: "Photos & Documents",
+  [STEP_REVIEW]: "Seller Info & Review",
 };
 
 const emptyForm: FormData = {
@@ -793,13 +799,6 @@ export default function AddVehiclePage() {
       }
     }
 
-    if (targetStep === STEP_CONDITION) {
-      if (poweredAsset) {
-        if (!form.runningCondition) return "Running condition is required.";
-      }
-      if (!form.conditionNotes.trim()) return "Condition notes are required.";
-    }
-
     if (targetStep === STEP_PRICING) {
       if (!form.expectedPrice || Number(form.expectedPrice) <= 0) return "Expected price is required.";
       if (!form.vehicleOrYardLocation.trim()) return "Vehicle / yard location is required.";
@@ -815,6 +814,12 @@ export default function AddVehiclePage() {
       if (!form.trailerType || !form.trailerLength.trim() || !form.numberOfAxles.trim()) {
         return "Trailer type, trailer length, and number of axles are required for trailer listings.";
       }
+    }
+    if (targetStep === STEP_TECHNICAL && poweredAsset && !form.runningCondition) {
+      return "Running condition is required.";
+    }
+    if (targetStep === STEP_TECHNICAL && !form.conditionNotes.trim()) {
+      return "Condition notes are required.";
     }
 
     return "";
@@ -1122,7 +1127,6 @@ export default function AddVehiclePage() {
     const stepError =
       validateStep(STEP_LISTING) ||
       validateStep(STEP_BASICS) ||
-      validateStep(STEP_CONDITION) ||
       validateStep(STEP_PRICING) ||
       validateStep(STEP_REPO) ||
       validateStep(STEP_TECHNICAL) ||
@@ -1256,7 +1260,7 @@ export default function AddVehiclePage() {
         </div>
       </div>
 
-      {step === 1 ? (
+      {step === STEP_LISTING ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 1: Listing Information</h1>
           <p className="text-sm text-slate-500">Choose the listing classification before entering asset details.</p>
@@ -1350,7 +1354,7 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 2 ? (
+      {step === STEP_BASICS ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step 2: Asset Basics</h1>
           <SelectField
@@ -1451,33 +1455,15 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 3 ? (
+      {step === STEP_PRICING ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 3: Condition &amp; Usage</h1>
-          {poweredAsset ? (
-            <>
-              <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
-              <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
-            </>
-          ) : (
-            <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Engine, running, and KM fields are hidden for trailer-only listings.
-            </p>
-          )}
-          <TextAreaField label="Condition Notes" value={form.conditionNotes} onChange={(value) => update("conditionNotes", value)} required placeholder="Example: Engine running. Cabin work needed. Tyres missing." />
-          <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
-        </section>
-      ) : null}
-
-      {step === 4 ? (
-        <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 4: Pricing &amp; Location</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PRICING)}: Pricing &amp; Location</h1>
           <TextField label="Expected Price" value={form.expectedPrice} onChange={(value) => update("expectedPrice", value.replace(/\D/g, ""))} required placeholder="₹5,00,000" type="tel" />
           <TextField label="Vehicle / Yard Location" value={form.vehicleOrYardLocation} onChange={(value) => update("vehicleOrYardLocation", value)} required placeholder="e.g. Kompally Yard, Hyderabad" />
         </section>
       ) : null}
 
-      {step === 5 ? (
+      {step === STEP_REPO ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_REPO)}: Repo Details</h1>
           {form.listingType !== "REPO" ? (
@@ -1497,7 +1483,7 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 6 ? (
+      {step === STEP_TECHNICAL ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_TECHNICAL)}: Technical Details</h1>
 
@@ -1505,12 +1491,14 @@ export default function AddVehiclePage() {
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Powertrain Details</summary>
               <div className="mt-4 space-y-3">
+                <SelectField label="Running Condition" value={form.runningCondition} options={runningConditionOptions} onChange={(value) => update("runningCondition", value as FormData["runningCondition"])} required />
+                <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
                 <SelectField label="Fuel Type" value={form.fuelType} options={fuelTypeOptions} onChange={(value) => update("fuelType", value)} />
                 <SelectField label="BS Norm / Emission Norm" value={form.bsNorm} options={bsNormOptions} onChange={(value) => update("bsNorm", value)} />
-                <SelectField label="Engine Condition" value={form.engineCondition} options={engineConditionOptions} onChange={(value) => update("engineCondition", value)} />
                 <SelectField label="Axle Configuration" value={form.axleConfiguration} options={axleConfigurationOptions} onChange={(value) => update("axleConfiguration", value)} />
-                <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
                 <TextField label="Odometer Reading" value={form.odometerReading} onChange={(value) => update("odometerReading", value.replace(/\D/g, ""))} type="tel" />
+                <SelectField label="AC Cabin" value={form.acCabin} options={[...yesNoUnknownOptions]} onChange={(value) => update("acCabin", value)} />
+                <SelectField label="Needs Towing" value={form.needsTowing} options={[...yesNoUnknownOptions]} onChange={(value) => update("needsTowing", value)} />
               </div>
             </details>
           ) : null}
@@ -1537,7 +1525,7 @@ export default function AddVehiclePage() {
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">Body / Attachment Details</summary>
               <div className="mt-4 space-y-3">
                 <div className="space-y-1.5">
-                  <span className="text-sm font-medium text-slate-700">Selected Body Type</span>
+                  <span className="text-sm font-medium text-slate-700">Body Type</span>
                   <p className="min-h-12 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
                     {form.bodyApplicationType || "Not selected"}
                   </p>
@@ -1552,6 +1540,31 @@ export default function AddVehiclePage() {
               </div>
             </details>
           ) : null}
+
+          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Tyre Information</summary>
+            <div className="mt-4 space-y-3">
+              <TextField
+                label="Total Tyres"
+                value={form.totalTyres}
+                onChange={(value) => update("totalTyres", value.replace(/\D/g, ""))}
+                placeholder="e.g. 4, 6, 10, 12, 18, 22"
+                type="tel"
+              />
+              <SelectField
+                label="Tyre Mount Status"
+                value={form.tyreMountStatus}
+                options={tyreMountStatusOptions}
+                onChange={(value) => update("tyreMountStatus", value)}
+              />
+              <SelectField
+                label="Tyre Condition"
+                value={form.tyreCondition}
+                options={tyreConditionOptions}
+                onChange={(value) => update("tyreCondition", value)}
+              />
+            </div>
+          </details>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4">
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">Identifiers &amp; Compliance</summary>
@@ -1569,10 +1582,23 @@ export default function AddVehiclePage() {
               <SelectField label="Fleet Management Software Available" value={form.fleetManagementSoftwareAvailable} options={[...availabilityOptions]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
             </div>
           </details>
+
+          <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Condition Notes</summary>
+            <div className="mt-4">
+              <TextAreaField
+                label="Condition Notes"
+                value={form.conditionNotes}
+                onChange={(value) => update("conditionNotes", value)}
+                required
+                placeholder="Example: Engine running. Cabin work needed. Tyres missing."
+              />
+            </div>
+          </details>
         </section>
       ) : null}
 
-      {step === 7 ? (
+      {step === STEP_PHOTOS ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_PHOTOS)}: Photos &amp; Documents</h1>
           <p className="text-sm text-slate-500">Photos are optional for now. Listings with photos get more buyer trust and leads.</p>
@@ -1776,7 +1802,7 @@ export default function AddVehiclePage() {
         </section>
       ) : null}
 
-      {step === 8 ? (
+      {step === STEP_REVIEW ? (
         <section className="space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">Step {getVisibleStepNumber(STEP_REVIEW)}: Seller Info &amp; Review</h1>
           <p className="text-sm text-slate-500">Profile data is auto-filled and read-only. Review before submitting.</p>
@@ -1818,7 +1844,7 @@ export default function AddVehiclePage() {
       {error ? <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
       <div className="flex gap-3">
-        {step > 1 ? (
+        {step > STEP_LISTING ? (
           <button
             type="button"
             onClick={back}

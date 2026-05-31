@@ -9,7 +9,12 @@ export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 export type TyreCondition = "NEW" | "GOOD" | "FAIR" | "AROUND_50" | "POOR" | "MIXED" | "UNKNOWN";
 export type AvailabilityStatus = "AVAILABLE" | "NOT_AVAILABLE" | "UNKNOWN";
 export type TransferType = "RC_TRANSFER" | "RTO_NOC" | "OPEN_NOC" | "UNKNOWN";
-export type TyreMountStatus = "ON_DISC" | "TYRES_ONLY" | "NO_TYRES" | "PARTIAL";
+export type TyreMountStatus =
+  | "ON_DISC"
+  | "WITH_TYRES"
+  | "WITHOUT_DISC_AND_TYRES"
+  | "PARTIAL"
+  | "UNKNOWN";
 export type AssetStructure = "STANDALONE" | "DETACHABLE" | "EQUIPMENT";
 export type DetachableType = "PRIME_MOVER" | "TRAILER";
 export type AssetConfiguration =
