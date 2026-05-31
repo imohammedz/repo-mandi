@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CalendarDays,
   CircleCheck,
-  FileBadge,
   FileText,
   MapPin,
   ShieldCheck,
@@ -160,12 +159,22 @@ const formatDate = (value: Date | string | null | undefined) => {
   return parsed.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const getFileNameFromUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    return decodeURIComponent(parts[parts.length - 1] || "document");
+  } catch {
+    return "document";
+  }
+};
+
 const DOCUMENT_LABELS: Record<string, string> = {
   RC: "RC",
   INSURANCE: "Insurance",
   FITNESS: "Fitness",
   PERMIT: "Permit",
-  INSPECTION_REPORT: "Evaluation Report",
+  INSPECTION_REPORT: "Inspection Report",
 };
 
 const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
@@ -323,6 +332,13 @@ export default async function VehicleDetailPage({
     .from(vehicleMedia)
     .where(and(eq(vehicleMedia.vehicleId, vehicle.id), eq(vehicleMedia.type, "DOCUMENT")))
     .orderBy(desc(vehicleMedia.createdAt));
+  const documentCategorySummary = dedupeLabels(
+    documentRows.map((doc) => {
+      if (doc.category === "OTHER") return toReadableLabel(doc.customName) || "Other";
+      return DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.category);
+    })
+  );
+  const canDownloadDocuments = currentUser?.accountType === "ADMIN";
 
   const trustTags = dedupeLabels([
     vehicle.sellerVerified ? "Verified Seller" : "",
@@ -576,34 +592,63 @@ export default async function VehicleDetailPage({
 
           {documentRows.length ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900">Documents</h2>
-              <div className="mt-3 space-y-2">
-                {documentRows.map((doc) => {
-                  const label = DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.customName) || "Document";
-                  const isVerified =
-                    (doc.category === "RC" && vehicle.rcVerified) ||
-                    (doc.category === "INSPECTION_REPORT" && vehicle.yardVerified);
-                  return (
-                    <a
-                      key={doc.id}
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        {doc.category === "RC" ? <FileBadge className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                        {label}
-                      </span>
-                      {isVerified ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
-                          <ShieldCheck className="h-3.5 w-3.5" />
-                          Verified
+              <h2 className="text-base font-semibold text-slate-900">Documents Uploaded</h2>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                {documentCategorySummary.map((label) => (
+                  <li key={label} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ul>
+              {canDownloadDocuments ? (
+                <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin Document Access</p>
+                  {documentRows.map((doc) => {
+                    const label =
+                      doc.category === "OTHER"
+                        ? `Other: ${toReadableLabel(doc.customName) || "Other"}`
+                        : DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.category) || "Document";
+                    const isVerified =
+                      (doc.category === "RC" && vehicle.rcVerified) ||
+                      (doc.category === "INSPECTION_REPORT" && vehicle.yardVerified);
+                    const fileName = doc.originalFileName || getFileNameFromUrl(doc.url);
+                    return (
+                      <a
+                        key={doc.id}
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-medium text-slate-800">{label}</span>
+                          <span className="block truncate text-xs text-slate-500">{fileName}</span>
                         </span>
-                      ) : null}
-                    </a>
-                  );
-                })}
+                        <span className="inline-flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          {isVerified ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              Verified
+                            </span>
+                          ) : null}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {!canDownloadDocuments ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  Document files are only available to admins during verification.
+                </p>
+              ) : null}
+              {!documentCategorySummary.length ? (
+                <p className="mt-3 text-sm text-slate-500">No documents uploaded.</p>
+              ) : null}
+              <div className="mt-3 text-xs text-slate-500">
+                {documentRows.length} {documentRows.length === 1 ? "file" : "files"} uploaded.
               </div>
             </section>
           ) : null}

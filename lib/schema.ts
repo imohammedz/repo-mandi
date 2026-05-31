@@ -411,6 +411,7 @@ export const vehicleMedia = pgTable("vehicle_media", {
   category: mediaCategoryEnum("category").notNull(),
   customName: text("custom_name"),
   url: text("url").notNull(),
+  originalFileName: text("original_file_name").notNull().default(""),
   mimeType: text("mime_type").notNull().default(""),
   sizeBytes: integer("size_bytes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

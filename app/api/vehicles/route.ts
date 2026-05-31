@@ -80,6 +80,16 @@ const LEGACY_RUNNING_MAP: Record<string, RunningCondition> = {
 const MIN_REASONABLE_PRICE = 100000; // INR threshold for low-price risk flagging in admin review.
 const MIN_VEHICLE_YEAR = 2000;
 const MAX_PHOTOS = 20;
+const MAX_DOCUMENTS = 15;
+const MAX_DOCUMENTS_PER_GROUP = 4;
+const VALID_DOCUMENT_CATEGORIES = new Set([
+  "RC",
+  "INSURANCE",
+  "FITNESS",
+  "PERMIT",
+  "INSPECTION_REPORT",
+  "OTHER",
+]);
 
 // Categories sellers can assign to additional (non-required) photos.
 const VALID_ADDITIONAL_PHOTO_CATEGORIES = new Set([
@@ -467,6 +477,7 @@ export async function POST(request: Request) {
     const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto);
     const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : [];
     const videosRaw = Array.isArray(body.videos) ? (body.videos as unknown[]) : [];
+    const documentsRaw = Array.isArray(body.documents) ? (body.documents as unknown[]) : [];
     const registrationNumber = normalizeRegNumber(toSafeString(body.vehicleRegistrationNumber));
 
     const providedYear = Number(body.year);
@@ -555,6 +566,43 @@ export async function POST(request: Request) {
       .filter((item) => Boolean(item.url))
       .slice(0, 3);
 
+    const documentItems = documentsRaw
+      .map((item) => {
+        const it = item as Record<string, unknown>;
+        const categoryRaw = toSafeString(it?.category).toUpperCase();
+        const category = VALID_DOCUMENT_CATEGORIES.has(categoryRaw) ? categoryRaw : "OTHER";
+        const customName = toSafeString(it?.customName);
+        return {
+          url: sanitizeSupabaseMediaUrl(it?.url),
+          category,
+          customName: category === "OTHER" ? customName : "",
+          mimeType: toSafeString(it?.mimeType),
+          sizeBytes: toNumberOrNull(it?.sizeBytes),
+          originalFileName: toSafeString(it?.originalFileName),
+        };
+      })
+      .filter((item) => Boolean(item.url))
+      .slice(0, MAX_DOCUMENTS);
+
+    const legacyDocumentRows: Array<{ value: string; category: string }> = [
+      { value: toSafeString(body.inspectionReport), category: "INSPECTION_REPORT" },
+      { value: toSafeString(body.rcDocument), category: "RC" },
+      { value: toSafeString(body.insuranceDocument), category: "INSURANCE" },
+      { value: toSafeString(body.fitnessDocument), category: "FITNESS" },
+      { value: toSafeString(body.permitDocument), category: "PERMIT" },
+    ];
+    for (const legacyRow of legacyDocumentRows) {
+      if (!legacyRow.value) continue;
+      documentItems.push({
+        url: sanitizeSupabaseMediaUrl(legacyRow.value),
+        category: legacyRow.category,
+        customName: "",
+        mimeType: "application/pdf",
+        sizeBytes: null,
+        originalFileName: "",
+      });
+    }
+
     const requiredPhotoCount = [
       frontPhoto,
       backPhoto,
@@ -567,6 +615,19 @@ export async function POST(request: Request) {
     }
     if (videoItems.length > 3) {
       return Response.json({ message: "Maximum 3 videos allowed." }, { status: 400 });
+    }
+    if (documentItems.length > MAX_DOCUMENTS) {
+      return Response.json({ message: `Maximum ${MAX_DOCUMENTS} document files allowed per listing.` }, { status: 400 });
+    }
+    const documentGroupCounts = new Map<string, number>();
+    for (const item of documentItems) {
+      const groupKey = item.category === "OTHER" ? `OTHER:${item.customName.trim().toUpperCase() || "OTHER"}` : item.category;
+      const current = documentGroupCounts.get(groupKey) ?? 0;
+      const next = current + 1;
+      if (next > MAX_DOCUMENTS_PER_GROUP) {
+        return Response.json({ message: "Maximum 4 files allowed for this document type." }, { status: 400 });
+      }
+      documentGroupCounts.set(groupKey, next);
     }
 
     if (!VALID_TYPES.includes(vehicleType)) {
@@ -827,6 +888,8 @@ export async function POST(request: Request) {
       url: string;
       mimeType?: string;
       sizeBytes?: number | null;
+      customName?: string | null;
+      originalFileName?: string;
     };
     const mediaRows: MediaRow[] = [];
     if (frontPhoto) mediaRows.push({ type: "PHOTO", category: "FRONT", url: frontPhoto });
@@ -848,19 +911,16 @@ export async function POST(request: Request) {
       });
     }
 
-    const documentRows: Array<{ value: string; category: MediaRow["category"] }> = [
-      { value: toSafeString(body.inspectionReport), category: "INSPECTION_REPORT" },
-      { value: toSafeString(body.rcDocument), category: "RC" },
-      { value: toSafeString(body.insuranceDocument), category: "INSURANCE" },
-      { value: toSafeString(body.fitnessDocument), category: "FITNESS" },
-      { value: toSafeString(body.permitDocument), category: "PERMIT" },
-    ];
-    for (const documentRow of documentRows) {
-      if (!documentRow.value) continue;
+    for (const documentRow of documentItems) {
+      if (!documentRow.url) continue;
       mediaRows.push({
         type: "DOCUMENT",
-        category: documentRow.category,
-        url: documentRow.value,
+        category: documentRow.category as MediaRow["category"],
+        url: documentRow.url,
+        mimeType: documentRow.mimeType || "application/pdf",
+        sizeBytes: documentRow.sizeBytes,
+        customName: documentRow.category === "OTHER" ? documentRow.customName || null : null,
+        originalFileName: documentRow.originalFileName,
       });
     }
 
@@ -885,7 +945,8 @@ export async function POST(request: Request) {
           url: item.url,
           mimeType: item.mimeType || "",
           sizeBytes: item.sizeBytes ?? null,
-          customName: null,
+          customName: item.customName ?? null,
+          originalFileName: item.originalFileName ?? "",
         }))
       );
     }

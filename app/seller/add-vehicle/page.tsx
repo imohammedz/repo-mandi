@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
-import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   ASSET_STRUCTURE_LABELS,
@@ -19,7 +18,6 @@ import {
   type DetachableType,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel } from "@/lib/formatting";
-import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
@@ -65,6 +63,15 @@ type UploadCategory =
 
 type AdditionalPhoto = { url: string; category: string };
 type UploadedVideo = { url: string; category: string; mimeType: string; sizeBytes: number };
+type DocumentCategory = "RC" | "INSURANCE" | "FITNESS" | "PERMIT" | "INSPECTION_REPORT" | "OTHER";
+type UploadedDocument = {
+  url: string;
+  category: DocumentCategory;
+  customName: string;
+  mimeType: string;
+  sizeBytes: number;
+  originalFileName: string;
+};
 
 function getString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -244,11 +251,6 @@ type FormData = {
   fitnessStatus: string;
   taxValidity: string;
   parkingDue: string;
-  inspectionReport: string;
-  rcDocument: string;
-  insuranceDocument: string;
-  fitnessDocument: string;
-  permitDocument: string;
   alternateContactNumber: string;
   alternateContactNumberVerified: boolean;
   gstin: string;
@@ -341,6 +343,16 @@ const videoCategoryOptions = [
 
 const MAX_PHOTOS = 20;
 const MAX_VIDEOS = 3;
+const MAX_DOCUMENTS = 15;
+const MAX_DOCUMENTS_PER_GROUP = 4;
+const DOCUMENT_CATEGORIES: Array<{ value: DocumentCategory; label: string }> = [
+  { value: "RC", label: "RC" },
+  { value: "INSURANCE", label: "Insurance" },
+  { value: "FITNESS", label: "Fitness" },
+  { value: "PERMIT", label: "Permit" },
+  { value: "INSPECTION_REPORT", label: "Inspection Report" },
+  { value: "OTHER", label: "Other" },
+];
 
 const ADDITIONAL_PHOTO_CATEGORIES: { value: string; label: string }[] = [
   { value: "TYRES", label: "Tyres" },
@@ -506,11 +518,6 @@ const emptyForm: FormData = {
   fitnessStatus: "",
   taxValidity: "",
   parkingDue: "0",
-  inspectionReport: "",
-  rcDocument: "",
-  insuranceDocument: "",
-  fitnessDocument: "",
-  permitDocument: "",
   alternateContactNumber: "",
   alternateContactNumberVerified: false,
   gstin: "",
@@ -640,6 +647,16 @@ function UploadPreviewImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+function documentGroupKey(item: Pick<UploadedDocument, "category" | "customName">) {
+  if (item.category !== "OTHER") return item.category;
+  return `OTHER:${item.customName.trim().toUpperCase() || "OTHER"}`;
+}
+
+function getDocumentGroupCount(documents: UploadedDocument[], item: Pick<UploadedDocument, "category" | "customName">) {
+  const key = documentGroupKey(item);
+  return documents.filter((doc) => documentGroupKey(doc) === key).length;
+}
+
 export default function AddVehiclePage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -652,10 +669,14 @@ export default function AddVehiclePage() {
   const [submitted, setSubmitted] = useState(false);
   const [additionalPhotos, setAdditionalPhotos] = useState<AdditionalPhoto[]>([]);
   const [videos, setVideos] = useState<UploadedVideo[]>([]);
+  const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [pendingAdditionalAction, setPendingAdditionalAction] = useState<"new" | number>("new");
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [pendingVideoAction, setPendingVideoAction] = useState<"new" | number>("new");
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
+  const [selectedDocumentCategory, setSelectedDocumentCategory] = useState<DocumentCategory>("RC");
+  const [selectedOtherDocumentName, setSelectedOtherDocumentName] = useState("");
   const [verifyingAlternatePhone, setVerifyingAlternatePhone] = useState(false);
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
@@ -666,6 +687,7 @@ export default function AddVehiclePage() {
   };
   const additionalFileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
+  const documentFileRef = useRef<HTMLInputElement>(null);
 
   const update = <T extends keyof FormData>(key: T, value: FormData[T]) => {
     setForm((previous) => {
@@ -779,6 +801,14 @@ export default function AddVehiclePage() {
   const totalPhotosCount = uploadedRequiredPhotoCount + (form.interiorPhoto ? 1 : 0) + additionalPhotos.length;
   const canAddMorePhotos = totalPhotosCount < MAX_PHOTOS;
   const canAddMoreVideos = videos.length < MAX_VIDEOS;
+  const selectedDocumentTemplate = {
+    category: selectedDocumentCategory,
+    customName: selectedDocumentCategory === "OTHER" ? selectedOtherDocumentName : "",
+  };
+  const selectedDocumentGroupCount = getDocumentGroupCount(documents, selectedDocumentTemplate);
+  const canAddMoreDocumentsTotal = documents.length < MAX_DOCUMENTS;
+  const canAddMoreDocumentsInGroup = selectedDocumentGroupCount < MAX_DOCUMENTS_PER_GROUP;
+  const documentUploadCounterClass = documents.length >= MAX_DOCUMENTS ? "text-rose-600" : "text-slate-900";
   const standaloneShowsSuspension =
     isStandalone &&
     (!form.bodyApplicationType ||
@@ -1075,6 +1105,73 @@ export default function AddVehiclePage() {
     }
   };
 
+  const uploadDocuments = async (files: File[]) => {
+    if (!files.length) return;
+    const customName = selectedDocumentCategory === "OTHER" ? selectedOtherDocumentName.trim() : "";
+    if (selectedDocumentCategory === "OTHER" && !customName) {
+      setError("Document name is required for Other documents.");
+      return;
+    }
+
+    setUploadingDocuments(true);
+    setError("");
+    const results: UploadedDocument[] = [];
+
+    for (const file of files) {
+      const nextTemplate = { category: selectedDocumentCategory, customName };
+      const groupCount = getDocumentGroupCount([...documents, ...results], nextTemplate);
+      if (documents.length + results.length >= MAX_DOCUMENTS) {
+        setError(`Maximum ${MAX_DOCUMENTS} document files allowed per listing.`);
+        break;
+      }
+      if (groupCount >= MAX_DOCUMENTS_PER_GROUP) {
+        setError("Maximum 4 files allowed for this document type.");
+        break;
+      }
+
+      try {
+        const payload = new FormData();
+        payload.append("files", file);
+        payload.append("mediaType", "document");
+        const response = await fetch("/api/uploads", { method: "POST", body: payload });
+        const data = (await response.json()) as {
+          files?: Array<{ url: string; mimeType: string; sizeBytes: number; originalFileName?: string }>;
+          message?: string;
+        };
+        const uploaded = data.files?.[0];
+        if (!response.ok || !uploaded?.url) {
+          setError(data.message ?? "Failed to upload document.");
+          break;
+        }
+        results.push({
+          url: uploaded.url,
+          category: selectedDocumentCategory,
+          customName,
+          mimeType: uploaded.mimeType,
+          sizeBytes: uploaded.sizeBytes,
+          originalFileName: uploaded.originalFileName || file.name,
+        });
+      } catch {
+        setError("Failed to upload document.");
+        break;
+      }
+    }
+
+    if (results.length) {
+      setDocuments((previous) => [...previous, ...results]);
+    }
+    setUploadingDocuments(false);
+    if (documentFileRef.current) {
+      documentFileRef.current.value = "";
+    }
+  };
+
+  const handleDocumentFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    await uploadDocuments(Array.from(files));
+  };
+
   const handleVerifyAlternatePhone = async () => {
     const phone = form.alternateContactNumber.replace(/\D/g, "").slice(0, 10);
     if (phone.length !== 10) {
@@ -1189,6 +1286,14 @@ export default function AddVehiclePage() {
             mimeType: video.mimeType,
             sizeBytes: video.sizeBytes,
           })),
+          documents: documents.map((document) => ({
+            url: document.url,
+            category: document.category,
+            customName: document.category === "OTHER" ? document.customName : null,
+            mimeType: document.mimeType,
+            sizeBytes: document.sizeBytes,
+            originalFileName: document.originalFileName,
+          })),
           expectedPrice: form.expectedPrice.replace(/\D/g, ""),
           reservePrice: form.reservePrice.replace(/\D/g, ""),
           parkingDue: form.parkingDue.replace(/\D/g, ""),
@@ -1256,6 +1361,7 @@ export default function AddVehiclePage() {
               setStep(1);
               setAdditionalPhotos([]);
               setVideos([]);
+              setDocuments([]);
               setForm({
                 ...emptyForm,
                 listingType: form.listingType,
@@ -1869,17 +1975,129 @@ export default function AddVehiclePage() {
             <input ref={videoFileRef} type="file" accept="video/*" multiple className="hidden" onChange={handleVideoFileChange} />
           </div>
 
-          <details className="rounded-xl border border-slate-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documents (optional URLs)</summary>
-            <div className="mt-4 space-y-3">
-              <TextField label="Inspection Report" value={form.inspectionReport} onChange={(value) => update("inspectionReport", value)} />
-              <SupportContactInline prompt="Questions about inspections?" subject={SUPPORT_SUBJECTS.inspection} />
-              <TextField label="RC" value={form.rcDocument} onChange={(value) => update("rcDocument", value)} />
-              <TextField label="Insurance" value={form.insuranceDocument} onChange={(value) => update("insuranceDocument", value)} />
-              <TextField label="Fitness" value={form.fitnessDocument} onChange={(value) => update("fitnessDocument", value)} />
-              <TextField label="Permit" value={form.permitDocument} onChange={(value) => update("permitDocument", value)} />
+          <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-slate-800">Documents Uploads (Optional)</h2>
+              <p className="text-xs text-slate-500">
+                Upload RC, insurance, fitness, permit or inspection documents as PDF or images.
+              </p>
+              <p className="text-xs text-slate-500">Allowed: PDF, JPG, JPEG, PNG, WEBP</p>
             </div>
-          </details>
+
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+              <span className="text-sm text-slate-600">Documents uploaded</span>
+              <span className={`text-sm font-semibold ${documentUploadCounterClass}`}>
+                {documents.length} / {MAX_DOCUMENTS}
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Document Type</span>
+                <select
+                  value={selectedDocumentCategory}
+                  onChange={(event) => setSelectedDocumentCategory(event.target.value as DocumentCategory)}
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                >
+                  {DOCUMENT_CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Document Name (for Other)</span>
+                <input
+                  type="text"
+                  value={selectedOtherDocumentName}
+                  onChange={(event) => setSelectedOtherDocumentName(event.target.value)}
+                  disabled={selectedDocumentCategory !== "OTHER"}
+                  placeholder="e.g. NOC Letter"
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => documentFileRef.current?.click()}
+                disabled={!canAddMoreDocumentsTotal || !canAddMoreDocumentsInGroup || uploadingDocuments}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              >
+                {uploadingDocuments ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+
+            <div
+              className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                void uploadDocuments(Array.from(event.dataTransfer.files || []));
+              }}
+            >
+              Drag & drop files here or use Upload.
+            </div>
+
+            {documents.length ? (
+              <div className="space-y-2">
+                {documents.map((document, index) => (
+                  <div key={`${document.url}-${index}`} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                    {document.mimeType.startsWith("image/") ? (
+                      <SafeImage
+                        src={document.url}
+                        alt={document.originalFileName || "Document image"}
+                        width={72}
+                        height={72}
+                        className="h-14 w-14 rounded-md object-cover"
+                        logContext={{ component: "AddVehicleDocuments" }}
+                      />
+                    ) : (
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                        {document.mimeType === "application/pdf" ? <FileText className="h-5 w-5" /> : <FileImage className="h-5 w-5" />}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-700">
+                        {document.category === "OTHER" ? `Other: ${document.customName || "Other"}` : formatEnumLabel(document.category)}
+                      </p>
+                      <p className="truncate text-sm text-slate-800">{document.originalFileName || "Document file"}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDocuments((previous) => previous.filter((_, docIndex) => docIndex !== index))}
+                      className="inline-flex min-h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500">No documents uploaded.</p>
+            )}
+
+            {!canAddMoreDocumentsInGroup ? (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Maximum 4 files allowed for this document type.
+              </p>
+            ) : null}
+            {!canAddMoreDocumentsTotal ? (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Maximum 15 document files allowed per listing.
+              </p>
+            ) : null}
+
+            <input
+              ref={documentFileRef}
+              type="file"
+              accept=".pdf,image/jpeg,image/jpg,image/png,image/webp"
+              multiple
+              className="hidden"
+              onChange={handleDocumentFileChange}
+            />
+          </section>
         </section>
       ) : null}
 
@@ -1937,7 +2155,9 @@ export default function AddVehiclePage() {
         <button
           type="button"
           onClick={canSubmit ? handleSubmit : next}
-          disabled={submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || verifyingAlternatePhone}
+          disabled={
+            submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || uploadingDocuments || verifyingAlternatePhone
+          }
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
           {canSubmit ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}

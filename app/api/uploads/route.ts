@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
+const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const MAX_FILES_PER_REQUEST = 10;
 
 function detectImageExtension(buffer: Buffer): string | null {
@@ -60,6 +61,17 @@ function detectImageExtension(buffer: Buffer): string | null {
   return null;
 }
 
+function isPdfFile(buffer: Buffer): boolean {
+  return (
+    buffer.length >= 5 &&
+    buffer[0] === 0x25 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x44 &&
+    buffer[3] === 0x46 &&
+    buffer[4] === 0x2d
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -69,7 +81,7 @@ export async function POST(request: Request) {
       .filter((value): value is File => value instanceof File);
 
     if (files.length === 0) {
-      return Response.json({ message: "No image files provided." }, { status: 400 });
+      return Response.json({ message: "No files provided." }, { status: 400 });
     }
 
     if (files.length > MAX_FILES_PER_REQUEST) {
@@ -80,21 +92,47 @@ export async function POST(request: Request) {
     }
 
     const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "vehicle-images";
-    const uploadedFiles: Array<{ url: string; mimeType: string; sizeBytes: number }> = [];
+    const uploadedFiles: Array<{ url: string; mimeType: string; sizeBytes: number; originalFileName: string }> = [];
     const supabaseAdmin = getSupabaseAdmin();
 
     for (const file of files) {
       const isVideo = mediaType === "video";
-      if (isVideo ? !file.type.startsWith("video/") : !file.type.startsWith("image/")) {
+      const isDocument = mediaType === "document";
+      if (!isVideo && !isDocument && mediaType !== "image") {
+        return Response.json({ message: "Invalid media type." }, { status: 400 });
+      }
+
+      if (isVideo && !file.type.startsWith("video/")) {
         return Response.json(
-          { message: isVideo ? "Only video files are allowed." : "Only image files are allowed." },
+          { message: "Only video files are allowed." },
           { status: 400 }
         );
       }
 
-      if (file.size > (isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES)) {
+      if (isDocument && !(file.type.startsWith("image/") || file.type === "application/pdf")) {
         return Response.json(
-          { message: isVideo ? "Each video must be 100MB or smaller." : "Each image must be 5MB or smaller." },
+          { message: "Only PDF, JPG, JPEG, PNG, or WEBP files are allowed for documents." },
+          { status: 400 }
+        );
+      }
+
+      const maxSize = isVideo
+        ? MAX_VIDEO_SIZE_BYTES
+        : isDocument
+          ? file.type === "application/pdf"
+            ? MAX_PDF_SIZE_BYTES
+            : MAX_IMAGE_SIZE_BYTES
+          : MAX_IMAGE_SIZE_BYTES;
+
+      if (file.size > maxSize) {
+        return Response.json(
+          {
+            message: isVideo
+              ? "Each video must be 100MB or smaller."
+              : isDocument && file.type === "application/pdf"
+                ? "Each PDF must be 10MB or smaller."
+                : "Each image must be 5MB or smaller.",
+          },
           { status: 400 }
         );
       }
@@ -103,16 +141,28 @@ export async function POST(request: Request) {
       const fileBuffer = Buffer.from(arrayBuffer);
       const extension = isVideo
         ? file.name.split(".").pop()?.toLowerCase() || "mp4"
-        : detectImageExtension(fileBuffer);
+        : isDocument
+          ? (() => {
+              if (isPdfFile(fileBuffer)) return "pdf";
+              const imageExt = detectImageExtension(fileBuffer);
+              return imageExt && ["jpg", "jpeg", "png", "webp"].includes(imageExt) ? imageExt : null;
+            })()
+          : detectImageExtension(fileBuffer);
 
       if (!extension) {
         return Response.json(
-          { message: isVideo ? "Invalid video file." : "Invalid image file content." },
+          {
+            message: isVideo
+              ? "Invalid video file."
+              : isDocument
+                ? "Invalid document file content. Only PDF, JPG, JPEG, PNG, or WEBP are allowed."
+                : "Invalid image file content.",
+          },
           { status: 400 }
         );
       }
 
-      const filePath = `vehicles/${isVideo ? "videos" : "images"}/${randomUUID()}.${extension}`;
+      const filePath = `vehicles/${isVideo ? "videos" : isDocument ? "documents" : "images"}/${randomUUID()}.${extension}`;
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)
@@ -123,14 +173,14 @@ export async function POST(request: Request) {
 
       if (error) {
         console.error("Supabase storage upload error", filePath, error);
-        return Response.json({ message: "Failed to upload image." }, { status: 500 });
+        return Response.json({ message: "Failed to upload file." }, { status: 500 });
       }
 
       const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
       if (!isSupabasePublicStorageUrl(publicUrl)) {
         console.error("Supabase upload returned non-public storage URL", { filePath, publicUrl });
-        return Response.json({ message: "Failed to generate public image URL." }, { status: 500 });
+        return Response.json({ message: "Failed to generate public file URL." }, { status: 500 });
       }
 
       if (shouldLogMediaDebug()) {
@@ -140,6 +190,7 @@ export async function POST(request: Request) {
         url: publicUrl,
         mimeType: file.type,
         sizeBytes: file.size,
+        originalFileName: file.name,
       });
     }
 
