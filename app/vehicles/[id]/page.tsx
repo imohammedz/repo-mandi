@@ -371,18 +371,6 @@ export default async function VehicleDetailPage({
       label: "RC Available",
       value: vehicle.documentsAvailable ? toReadableLabel(vehicle.documentsAvailable) : "",
     },
-    {
-      label: "Fitness Valid",
-      value: vehicle.fitnessExpiry ? `Valid till ${vehicle.fitnessExpiry}` : "",
-    },
-    {
-      label: "Insurance",
-      value: vehicle.insuranceExpiry ? `Valid till ${vehicle.insuranceExpiry}` : "",
-    },
-    {
-      label: "Permit",
-      value: vehicle.permitExpiry ? `Valid till ${vehicle.permitExpiry}` : "",
-    },
   ].filter((item) => item.value);
 
   const conditionSpecs = [
@@ -405,6 +393,36 @@ export default async function VehicleDetailPage({
     },
     { label: "Axles", value: toSpecValue(vehicle.numberOfAxles) },
     { label: "Body Dimensions", value: toSpecValue(vehicle.bodyDimensions) },
+  ].filter((item) => item.value);
+
+  const validityLabel = (v: string | null | undefined) => {
+    if (!v) return "";
+    if (v === "VALID") return "Valid";
+    if (v === "EXPIRED") return "Expired";
+    if (v === "UNKNOWN") return "Unknown";
+    return toReadableLabel(v);
+  };
+  const taxValidityLabel = (v: string | null | undefined) => {
+    if (!v) return "";
+    if (v === "PAID") return "Paid";
+    if (v === "DUE") return "Due";
+    if (v === "UNKNOWN") return "Unknown";
+    return toReadableLabel(v);
+  };
+  const parkingDueLabel = (v: string | null | undefined) => {
+    if (!v) return "";
+    if (v === "NO_DUE") return "No Due";
+    if (v === "DUE") return "Due";
+    if (v === "UNKNOWN") return "Unknown";
+    return toReadableLabel(v);
+  };
+
+  const documentationSpecs = [
+    { label: "Insurance", value: validityLabel(vehicle.insuranceValidity) || (vehicle.insuranceExpiry ? `Valid till ${vehicle.insuranceExpiry}` : "") },
+    { label: "Permit", value: validityLabel(vehicle.permitValidity) || (vehicle.permitExpiry ? `Valid till ${vehicle.permitExpiry}` : "") },
+    { label: "Fitness", value: validityLabel(vehicle.fitnessStatus) || (vehicle.fitnessExpiry ? `Valid till ${vehicle.fitnessExpiry}` : "") },
+    { label: "Tax", value: taxValidityLabel(vehicle.taxValidity) },
+    { label: "Parking Due", value: parkingDueLabel(vehicle.parkingDue) },
   ].filter((item) => item.value);
 
   const description = (vehicle.description ?? vehicle.conditionNotes ?? "").trim();
@@ -524,6 +542,7 @@ export default async function VehicleDetailPage({
             {renderSpecGroup("Registration & Compliance", registrationSpecs)}
             {renderSpecGroup("Condition & Usage", conditionSpecs)}
             {renderSpecGroup("Trailer / Body Details", trailerSpecs)}
+            {renderSpecGroup("Documentation Details", documentationSpecs)}
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

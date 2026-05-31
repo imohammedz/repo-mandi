@@ -73,6 +73,16 @@ export default async function AdminPendingListingsPage() {
                   <p>Alternate number verified: {vehicle.alternateContactNumberVerified ? "Yes" : "No"}</p>
                   <p>Missing photos warning: {vehicle.missingPhotos ? "Yes" : "No"}</p>
                   <p>Videos uploaded: {vehicle.walkaroundVideo || vehicle.engineStartUpVideo ? "Yes" : "No"}</p>
+                  {(vehicle.insuranceValidity || vehicle.permitValidity || vehicle.fitnessStatus || vehicle.taxValidity || vehicle.parkingDue) ? (
+                    <div className="mt-2 border-t border-slate-100 pt-2">
+                      <p className="font-semibold text-slate-700">Documentation Details</p>
+                      {vehicle.insuranceValidity ? <p>Insurance Validity: {vehicle.insuranceValidity}</p> : null}
+                      {vehicle.permitValidity ? <p>Permit Validity: {vehicle.permitValidity}</p> : null}
+                      {vehicle.fitnessStatus ? <p>Fitness Status: {vehicle.fitnessStatus}</p> : null}
+                      {vehicle.taxValidity ? <p>Tax Validity: {vehicle.taxValidity}</p> : null}
+                      {vehicle.parkingDue ? <p>Parking Due: {vehicle.parkingDue}</p> : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
               {vehicle.listingStatus ? <StatusBadge status={vehicle.listingStatus} /> : null}

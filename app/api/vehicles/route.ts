@@ -761,6 +761,11 @@ export async function POST(request: Request) {
           | "NOT_AVAILABLE"
           | "UNKNOWN"
           | null,
+        insuranceValidity: (toSafeString(body.insuranceValidity).toUpperCase() || null) as "VALID" | "EXPIRED" | "UNKNOWN" | null,
+        permitValidity: (toSafeString(body.permitValidity).toUpperCase() || null) as "VALID" | "EXPIRED" | "UNKNOWN" | null,
+        fitnessStatus: (toSafeString(body.fitnessStatus).toUpperCase() || null) as "VALID" | "EXPIRED" | "UNKNOWN" | null,
+        taxValidity: (toSafeString(body.taxValidity).toUpperCase() || null) as "PAID" | "DUE" | "UNKNOWN" | null,
+        parkingDue: (toSafeString(body.parkingDue).toUpperCase().replace(/\s+/g, "_") || null) as "NO_DUE" | "DUE" | "UNKNOWN" | null,
         verifiedBadges: [],
         inspectionNotes: [],
         listingStatus: autoApprove ? "VERIFIED" : "PENDING",

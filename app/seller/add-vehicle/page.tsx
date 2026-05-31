@@ -239,6 +239,11 @@ type FormData = {
   gpsInstalled: string;
   abs: string;
   fleetManagementSoftwareAvailable: string;
+  insuranceValidity: string;
+  permitValidity: string;
+  fitnessStatus: string;
+  taxValidity: string;
+  parkingDue: string;
   inspectionReport: string;
   rcDocument: string;
   insuranceDocument: string;
@@ -306,7 +311,6 @@ const yesNoOptions = ["YES", "NO"] as const;
 const engineConditionOptions = ["GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"];
 const axleConfigurationOptions = ["4x2", "6x2", "6x4", "8x4", "Multi Axle", "Other"];
 const bodyConditionOptions = ["GOOD", "AVERAGE", "NEEDS_REPAIR", "UNKNOWN"];
-const availabilityOptions = ["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"];
 const transferTypeOptions = ["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"];
 const transferTypeLabels: Record<string, string> = {
   RC_TRANSFER: "RC Transfer",
@@ -497,6 +501,11 @@ const emptyForm: FormData = {
   gpsInstalled: "",
   abs: "",
   fleetManagementSoftwareAvailable: "",
+  insuranceValidity: "",
+  permitValidity: "",
+  fitnessStatus: "",
+  taxValidity: "",
+  parkingDue: "",
   inspectionReport: "",
   rcDocument: "",
   insuranceDocument: "",
@@ -1592,18 +1601,44 @@ export default function AddVehiclePage() {
           </details>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Identifiers &amp; Compliance</summary>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Documentation Details</summary>
+            <p className="mt-1 text-xs text-slate-500">Optional information about vehicle paperwork and compliance.</p>
             <div className="mt-4 space-y-3">
-              <TextField label="Engine Number" value={form.engineNumber} onChange={(value) => update("engineNumber", value)} />
-              <TextField label="Chassis Number" value={form.chassisNumber} onChange={(value) => update("chassisNumber", value)} />
-              {isEquipment ? <TextField label="Machine Serial Number" value={form.machineSerialNumber} onChange={(value) => update("machineSerialNumber", value)} /> : null}
-              <TextField label="Tax Due" value={form.taxDue} onChange={(value) => update("taxDue", value)} />
-              <TextField label="Challans" value={form.challans} onChange={(value) => update("challans", value)} />
-              <TextField label="Insurance Expiry" value={form.insuranceExpiry} onChange={(value) => update("insuranceExpiry", value)} type="date" />
-              <TextField label="Fitness Expiry" value={form.fitnessExpiry} onChange={(value) => update("fitnessExpiry", value)} type="date" />
-              <TextField label="Permit Expiry" value={form.permitExpiry} onChange={(value) => update("permitExpiry", value)} type="date" />
-              <SelectField label="GPS Installed" value={form.gpsInstalled} options={[...yesNoUnknownOptions]} onChange={(value) => update("gpsInstalled", value)} />
-              <SelectField label="Fleet Management Software Available" value={form.fleetManagementSoftwareAvailable} options={[...availabilityOptions]} onChange={(value) => update("fleetManagementSoftwareAvailable", value)} />
+              <SelectField
+                label="Insurance Validity"
+                value={form.insuranceValidity}
+                options={["VALID", "EXPIRED", "UNKNOWN"]}
+                optionLabels={{ VALID: "Valid", EXPIRED: "Expired", UNKNOWN: "Unknown" }}
+                onChange={(value) => update("insuranceValidity", value)}
+              />
+              <SelectField
+                label="Permit Validity"
+                value={form.permitValidity}
+                options={["VALID", "EXPIRED", "UNKNOWN"]}
+                optionLabels={{ VALID: "Valid", EXPIRED: "Expired", UNKNOWN: "Unknown" }}
+                onChange={(value) => update("permitValidity", value)}
+              />
+              <SelectField
+                label="Fitness Status"
+                value={form.fitnessStatus}
+                options={["VALID", "EXPIRED", "UNKNOWN"]}
+                optionLabels={{ VALID: "Valid", EXPIRED: "Expired", UNKNOWN: "Unknown" }}
+                onChange={(value) => update("fitnessStatus", value)}
+              />
+              <SelectField
+                label="Tax Validity"
+                value={form.taxValidity}
+                options={["PAID", "DUE", "UNKNOWN"]}
+                optionLabels={{ PAID: "Paid", DUE: "Due", UNKNOWN: "Unknown" }}
+                onChange={(value) => update("taxValidity", value)}
+              />
+              <SelectField
+                label="Parking Due"
+                value={form.parkingDue}
+                options={["NO_DUE", "DUE", "UNKNOWN"]}
+                optionLabels={{ NO_DUE: "No Due", DUE: "Due", UNKNOWN: "Unknown" }}
+                onChange={(value) => update("parkingDue", value)}
+              />
             </div>
           </details>
 

@@ -234,6 +234,24 @@ export const availabilityStatusEnum = pgEnum("availability_status", [
   "UNKNOWN",
 ]);
 
+export const validityStatusEnum = pgEnum("validity_status", [
+  "VALID",
+  "EXPIRED",
+  "UNKNOWN",
+]);
+
+export const taxValidityStatusEnum = pgEnum("tax_validity_status", [
+  "PAID",
+  "DUE",
+  "UNKNOWN",
+]);
+
+export const parkingDueStatusEnum = pgEnum("parking_due_status", [
+  "NO_DUE",
+  "DUE",
+  "UNKNOWN",
+]);
+
 // ─── Tables ───────────────────────────────────────────────────────────────────
 
 export const users = pgTable("users", {
@@ -373,6 +391,11 @@ export const vehicles = pgTable("vehicles", {
   documentsAvailable: yesNoUnknownEnum("documents_available"),
   remarks: text("remarks"),
   fleetManagementSoftwareAvailable: availabilityStatusEnum("fleet_management_software_available"),
+  insuranceValidity: validityStatusEnum("insurance_validity"),
+  permitValidity: validityStatusEnum("permit_validity"),
+  fitnessStatus: validityStatusEnum("fitness_status"),
+  taxValidity: taxValidityStatusEnum("tax_validity"),
+  parkingDue: parkingDueStatusEnum("parking_due"),
   verifiedBadges: text("verified_badges").array().notNull().default([]),
   inspectionNotes: text("inspection_notes").array().notNull().default([]),
   inquiries: integer("inquiries").notNull().default(0),
