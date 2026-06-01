@@ -1505,6 +1505,20 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
       return;
     }
 
+    const normalizedDetachableType =
+      form.assetStructure === "DETACHABLE" &&
+      (form.detachableType === "PRIME_MOVER" || form.detachableType === "TRAILER")
+        ? form.detachableType
+        : null;
+    if (form.assetStructure === "DETACHABLE" && !normalizedDetachableType) {
+      setError("Detachable type is required for detachable assets.");
+      return;
+    }
+    const toNullableEnum = (value: string) => {
+      const normalized = value.trim();
+      return normalized ? normalized : null;
+    };
+
     setSubmitting(true);
     setError("");
     setSuccessMessage("");
@@ -1517,10 +1531,11 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          detachableType: normalizedDetachableType,
           conditionNotes: form.description,
           assetConfiguration: toLegacyAssetConfiguration(
             form.assetStructure as AssetStructure,
-            (form.detachableType || null) as DetachableType | null
+            normalizedDetachableType as DetachableType | null
           ),
           vehicleType: form.assetCategory,
           vehicleSubType: form.bodyApplicationType,
@@ -1554,7 +1569,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           currentTyreCount: form.currentTyreCount.replace(/\D/g, ""),
           bodyType: form.bodyApplicationType || form.bodyType,
           bodyLength: form.bodyDimensions || form.bodyLength,
-          transferType: form.transferType,
+          transferType: toNullableEnum(form.transferType),
           nocStatus:
             form.transferType === "RC_TRANSFER"
               ? "AVAILABLE"
@@ -1566,6 +1581,11 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           vehicleRegistrationNumber: form.vehicleRegistrationNumber.toUpperCase(),
           alternateContactNumber: form.alternateContactNumberVerified ? form.alternateContactNumber : "",
           alternateContactNumberVerified: form.alternateContactNumberVerified,
+          repoStatus: form.listingType === "REPO" ? toNullableEnum(form.repoStatus) : null,
+          bodyAttached: toNullableEnum(form.bodyAttached),
+          needsTowing: toNullableEnum(form.needsTowing),
+          abs: toNullableEnum(form.abs),
+          acCabin: toNullableEnum(form.acCabin),
         }),
       });
 
