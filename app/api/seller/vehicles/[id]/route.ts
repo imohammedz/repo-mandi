@@ -58,7 +58,7 @@ const VALID_REPO_STATUSES = new Set([
   "Ready For Sale",
   "Under Settlement",
 ] as const);
-const VALID_LEGACY_VEHICLE_TYPES = new Set([
+const LEGACY_VEHICLE_TYPES = [
   "Mini Truck",
   "LCV (Light Commercial Vehicle)",
   "MCV (Medium Commercial Vehicle)",
@@ -72,7 +72,8 @@ const VALID_LEGACY_VEHICLE_TYPES = new Set([
   "Trailer",
   "Tractor",
   "Equipment",
-] as const);
+] as const;
+const VALID_LEGACY_VEHICLE_TYPES = new Set(LEGACY_VEHICLE_TYPES);
 const VALID_TRANSFER_TYPES = new Set(["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"] as const);
 const VALID_AVAILABILITY_STATUSES = new Set(["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"] as const);
 const VALID_KM_METER_STATUSES = new Set(["WORKING", "NOT_WORKING", "UNKNOWN"] as const);
@@ -234,8 +235,11 @@ export async function PATCH(
     if ("assetCategory" in body) updates.assetCategory = toSafeString(body.assetCategory);
     if ("vehicleType" in body || "type" in body) {
       const rawLegacyType = toSafeString(body.vehicleType ?? body.type);
-      if (rawLegacyType && VALID_LEGACY_VEHICLE_TYPES.has(rawLegacyType as typeof vehicles.type._.data)) {
-        updates.type = rawLegacyType as typeof vehicles.type._.data;
+      const normalizedLegacyType = rawLegacyType
+        ? LEGACY_VEHICLE_TYPES.find((value) => value.toUpperCase() === rawLegacyType.toUpperCase()) ?? null
+        : null;
+      if (normalizedLegacyType && VALID_LEGACY_VEHICLE_TYPES.has(normalizedLegacyType)) {
+        updates.type = normalizedLegacyType as typeof vehicles.type._.data;
       }
     }
     if ("bodyApplicationType" in body || "vehicleSubType" in body) {
