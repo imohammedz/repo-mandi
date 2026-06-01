@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles } from "@/lib/schema";
+import { platformSettings, vehicleMedia, vehicles } from "@/lib/schema";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 
 export const runtime = "nodejs";
@@ -466,17 +466,40 @@ export async function PATCH(
       }
     }
 
-    const sentForReverification = existing.isPublished || existing.listingStatus === "VERIFIED";
-    const forcePendingStatuses = new Set(["VERIFIED", "PENDING", "REJECTED", "BANK_PENDING_REVIEW"]);
-    if (forcePendingStatuses.has(existing.listingStatus || "") || existing.isPublished) {
-      updates.status = "PENDING";
-      updates.listingStatus = "PENDING";
-      updates.verificationStatus = "PENDING_VERIFICATION";
-      updates.isPublished = false;
-      updates.rejectionReason = "";
-      updates.verifiedBy = null;
-      updates.verifiedAt = null;
+    const needsStatusUpdate =
+      new Set(["VERIFIED", "PENDING", "REJECTED", "BANK_PENDING_REVIEW"]).has(existing.listingStatus || "") ||
+      existing.isPublished;
+
+    let autoApproved = false;
+    if (needsStatusUpdate) {
+      const [autoApproveRow] = await db
+        .select()
+        .from(platformSettings)
+        .where(eq(platformSettings.key, "AUTO_APPROVE_LISTINGS"));
+      const autoApprove = autoApproveRow?.value === "true";
+      const now = new Date();
+
+      if (autoApprove) {
+        updates.status = "VERIFIED";
+        updates.listingStatus = "VERIFIED";
+        updates.verificationStatus = "VERIFIED";
+        updates.isPublished = true;
+        updates.rejectionReason = "";
+        updates.verifiedBy = null;
+        updates.verifiedAt = now;
+        autoApproved = true;
+      } else {
+        updates.status = "PENDING";
+        updates.listingStatus = "PENDING";
+        updates.verificationStatus = "PENDING_VERIFICATION";
+        updates.isPublished = false;
+        updates.rejectionReason = "";
+        updates.verifiedBy = null;
+        updates.verifiedAt = null;
+      }
     }
+
+    const sentForReverification = needsStatusUpdate && !autoApproved;
 
     const mediaRows: Array<{
       vehicleId: string;
@@ -557,10 +580,13 @@ export async function PATCH(
 
     return Response.json({
       vehicle: updated,
-      message: sentForReverification
-        ? "Your edited listing has been sent for re-verification."
-        : "Listing updated successfully.",
+      message: autoApproved
+        ? "Listing updated and approved automatically."
+        : sentForReverification
+          ? "Your updated listing has been sent for re-verification."
+          : "Listing updated successfully.",
       sentForReverification,
+      autoApproved,
     });
   } catch (error) {
     console.error("PATCH /api/seller/vehicles/[id] failed", error);
