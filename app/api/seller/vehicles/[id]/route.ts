@@ -156,7 +156,7 @@ export async function PATCH(
     }
     if ("state" in body) updates.state = toSafeString(body.state);
     if ("city" in body) updates.city = toSafeString(body.city);
-    if ("fuelType" in body) updates.fuelType = toSafeString(body.fuelType) || "Diesel";
+    if ("fuelType" in body) updates.fuelType = (toSafeString(body.fuelType) || "Diesel") as typeof vehicles.fuelType._.data;
     if ("bsNorm" in body) updates.bsNorm = toSafeString(body.bsNorm) || null;
     if ("transmission" in body) updates.transmission = toSafeString(body.transmission) || null;
     if ("axleConfiguration" in body) updates.axleConfiguration = toSafeString(body.axleConfiguration) || null;
