@@ -259,8 +259,8 @@ export async function PATCH(
     }
     if ("runningCondition" in body || "condition" in body) {
       const raw = toSafeString(body.runningCondition ?? body.condition).toUpperCase();
-      const value = raw ? LEGACY_RUNNING_CONDITION_MAP[raw] : "UNKNOWN";
-      if (!value) {
+      const value = raw ? (LEGACY_RUNNING_CONDITION_MAP[raw] ?? null) : "UNKNOWN";
+      if (value === null) {
         return Response.json({ message: "Invalid runningCondition." }, { status: 400 });
       }
       updates.runningCondition = value;

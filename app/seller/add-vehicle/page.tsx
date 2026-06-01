@@ -707,6 +707,7 @@ const toKmMeterStatusValue = (value: unknown): KmMeterStatus => {
 
 const toRunningConditionValue = (value: unknown): FormData["runningCondition"] => {
   const normalized = toStringValue(value).trim().toUpperCase();
+  if (normalized === "NON-RUNNING") return "NOT_RUNNING";
   if (normalized === "RUNNING" || normalized === "NOT_RUNNING") return normalized;
   return "UNKNOWN";
 };
@@ -727,6 +728,49 @@ const toBooleanAsYesNo = (value: unknown): FormData["isRegistered"] => {
   if (value === false) return "NO";
   const normalized = toStringValue(value).trim().toUpperCase();
   if (normalized === "YES" || normalized === "NO") return normalized;
+  return "";
+};
+
+const deriveAssetCategoryFromLegacyType = (
+  legacyType: string,
+  assetStructure: FormData["assetStructure"],
+  detachableType: FormData["detachableType"],
+  allowedCategories: string[]
+) => {
+  if (!legacyType || allowedCategories.length === 0) return "";
+
+  if (assetStructure === "DETACHABLE" && detachableType === "PRIME_MOVER") {
+    return allowedCategories.includes("Prime Mover") ? "Prime Mover" : "";
+  }
+  if (assetStructure === "DETACHABLE" && detachableType === "TRAILER") {
+    return allowedCategories.includes("Trailer") ? "Trailer" : "";
+  }
+  if (assetStructure === "EQUIPMENT") {
+    return allowedCategories[0] ?? "";
+  }
+
+  if (["MINI TRUCK", "PICKUP", "LCV (LIGHT COMMERCIAL VEHICLE)"].includes(legacyType)) {
+    return allowedCategories.includes("SCV / LCV") ? "SCV / LCV" : "";
+  }
+  if (
+    [
+      "MCV (MEDIUM COMMERCIAL VEHICLE)",
+      "HCV (HEAVY COMMERCIAL VEHICLE)",
+      "CONTAINER TRUCK",
+      "TANKER",
+      "TRUCK",
+      "TIPPER",
+    ].includes(legacyType)
+  ) {
+    return allowedCategories.includes("Rigid Trucks") ? "Rigid Trucks" : "";
+  }
+  if (legacyType === "BUS") {
+    return allowedCategories.includes("Bus / Passenger Commercial") ? "Bus / Passenger Commercial" : "";
+  }
+  if (legacyType === "TRACTOR") {
+    return allowedCategories.includes("Prime Mover + Trailer") ? "Prime Mover + Trailer" : "";
+  }
+
   return "";
 };
 
@@ -858,13 +902,33 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
         }
 
         const editableData = data;
+        const parsedAssetStructure =
+          (toStringValue(editableData.assetStructure).toUpperCase() as FormData["assetStructure"]) || "";
+        const parsedDetachableType =
+          (toStringValue(editableData.detachableType).toUpperCase() as FormData["detachableType"]) || "";
+        const allowedAssetCategories =
+          parsedAssetStructure
+            ? getAssetCategoryOptions(
+                parsedAssetStructure,
+                parsedDetachableType || undefined
+              )
+            : [];
+        const providedAssetCategory = toStringValue(editableData.assetCategory);
+        const resolvedAssetCategory = allowedAssetCategories.includes(providedAssetCategory)
+          ? providedAssetCategory
+          : deriveAssetCategoryFromLegacyType(
+              toStringValue(editableData.type).trim().toUpperCase(),
+              parsedAssetStructure,
+              parsedDetachableType,
+              allowedAssetCategories
+            );
         setForm((previous) => ({
           ...previous,
           listingType: (toStringValue(editableData.listingType).toUpperCase() as FormData["listingType"]) || previous.listingType,
           listingMode: (toStringValue(editableData.listingMode).toUpperCase() as ListingMode) || "NORMAL",
-          assetStructure: (toStringValue(editableData.assetStructure).toUpperCase() as FormData["assetStructure"]) || "",
-          detachableType: (toStringValue(editableData.detachableType).toUpperCase() as FormData["detachableType"]) || "",
-          assetCategory: toStringValue(editableData.assetCategory || editableData.type),
+          assetStructure: parsedAssetStructure,
+          detachableType: parsedDetachableType,
+          assetCategory: resolvedAssetCategory,
           bodyApplicationType: toStringValue(
             editableData.bodyApplicationType || editableData.vehicleSubType || editableData.bodyType
           ),
