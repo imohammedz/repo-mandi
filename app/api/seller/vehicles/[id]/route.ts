@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { vehicleMedia, vehicles } from "@/lib/schema";
-import { sanitizeSupabaseMediaUrl } from "@/lib/media";
+import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -19,12 +19,31 @@ function toPositiveNumberOrNull(value: unknown) {
 
 const MAX_DOCUMENTS = 15;
 const MAX_DOCUMENTS_PER_GROUP = 4;
+const MAX_PHOTOS = 20;
+const MAX_VIDEOS = 3;
 const VALID_DOCUMENT_CATEGORIES = new Set([
   "RC",
   "INSURANCE",
   "FITNESS",
   "PERMIT",
   "INSPECTION_REPORT",
+  "OTHER",
+]);
+const VALID_VIDEO_CATEGORIES = new Set(["WALKAROUND", "ENGINE_STARTUP", "DAMAGE", "OTHER"]);
+const VALID_ADDITIONAL_PHOTO_CATEGORIES = new Set([
+  "TYRES",
+  "ENGINE",
+  "CABIN",
+  "CHASSIS",
+  "SUSPENSION",
+  "AXLES",
+  "DASHBOARD",
+  "RC",
+  "INSURANCE",
+  "DAMAGE",
+  "TRAILER_BODY",
+  "LOAD_BODY",
+  "HYDRAULIC_SYSTEM",
   "OTHER",
 ]);
 
@@ -64,6 +83,8 @@ export async function PATCH(
 
     const body = (await request.json()) as Record<string, unknown>;
     const documentsRaw = Array.isArray(body.documents) ? (body.documents as unknown[]) : null;
+    const additionalPhotosRaw = Array.isArray(body.additionalPhotos) ? (body.additionalPhotos as unknown[]) : null;
+    const videosRaw = Array.isArray(body.videos) ? (body.videos as unknown[]) : null;
     const expectedPrice = toPositiveNumberOrNull(body.expectedPrice ?? body.price);
     if (body.expectedPrice !== undefined || body.price !== undefined) {
       if (expectedPrice === null) {
@@ -74,6 +95,25 @@ export async function PATCH(
     const location = toSafeString(body.vehicleOrYardLocation ?? body.yardLocation);
     const updates: Partial<typeof vehicles.$inferInsert> = {
       updatedAt: new Date(),
+    };
+
+    const numberOrNull = (value: unknown) => {
+      const normalized = String(value ?? "").replace(/[^\d.-]/g, "");
+      if (!normalized) return null;
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    const normalizeRegNumber = (input: unknown) =>
+      toSafeString(input)
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s-]/g, "")
+        .replace(/\s+/g, " ")
+        .replace(/-+/g, "-")
+        .trim();
+    const yesNoUnknown = (value: unknown) => {
+      const normalized = toSafeString(value).toUpperCase();
+      if (normalized === "YES" || normalized === "NO" || normalized === "UNKNOWN") return normalized;
+      return null;
     };
 
     if ("title" in body) updates.title = toSafeString(body.title) || existing.title;
@@ -89,6 +129,125 @@ export async function PATCH(
       updates.conditionNotes = toSafeString(body.description ?? body.conditionNotes);
     }
     if ("auctionDate" in body) updates.auctionDate = toSafeString(body.auctionDate);
+    if ("listingType" in body) updates.listingType = toSafeString(body.listingType).toUpperCase() as typeof vehicles.listingType._.data;
+    if ("listingMode" in body) updates.listingMode = toSafeString(body.listingMode).toUpperCase() as typeof vehicles.listingMode._.data;
+    if ("assetConfiguration" in body) updates.assetConfiguration = toSafeString(body.assetConfiguration) as typeof vehicles.assetConfiguration._.data;
+    if ("assetStructure" in body) updates.assetStructure = toSafeString(body.assetStructure) as typeof vehicles.assetStructure._.data;
+    if ("detachableType" in body) updates.detachableType = toSafeString(body.detachableType) as typeof vehicles.detachableType._.data;
+    if ("assetCategory" in body) updates.assetCategory = toSafeString(body.assetCategory);
+    if ("vehicleType" in body || "type" in body) updates.type = toSafeString(body.vehicleType ?? body.type) as typeof vehicles.type._.data;
+    if ("bodyApplicationType" in body || "vehicleSubType" in body) {
+      const value = toSafeString(body.bodyApplicationType ?? body.vehicleSubType);
+      updates.bodyApplicationType = value || null;
+      updates.vehicleSubType = value || null;
+    }
+    if ("brand" in body) updates.brand = toSafeString(body.brand);
+    if ("model" in body) updates.model = toSafeString(body.model);
+    if ("year" in body) updates.year = numberOrNull(body.year) ?? existing.year;
+    if ("registrationState" in body) updates.registrationState = toSafeString(body.registrationState);
+    if ("vehicleRegistrationNumber" in body) updates.vehicleRegistrationNumber = normalizeRegNumber(body.vehicleRegistrationNumber);
+    if ("machineSerialNumber" in body) updates.machineSerialNumber = toSafeString(body.machineSerialNumber) || null;
+    if ("kmDriven" in body) updates.kmDriven = numberOrNull(body.kmDriven);
+    if ("kmMeterStatus" in body) updates.kmMeterStatus = toSafeString(body.kmMeterStatus).toUpperCase() as typeof vehicles.kmMeterStatus._.data;
+    if ("runningCondition" in body || "condition" in body) {
+      const value = toSafeString(body.runningCondition ?? body.condition).toUpperCase();
+      updates.runningCondition = (value || "UNKNOWN") as typeof vehicles.runningCondition._.data;
+      updates.condition = value === "RUNNING" ? "Running" : value === "NOT_RUNNING" ? "Non-running" : "Unknown";
+    }
+    if ("state" in body) updates.state = toSafeString(body.state);
+    if ("city" in body) updates.city = toSafeString(body.city);
+    if ("fuelType" in body) updates.fuelType = toSafeString(body.fuelType) || "Diesel";
+    if ("bsNorm" in body) updates.bsNorm = toSafeString(body.bsNorm) || null;
+    if ("transmission" in body) updates.transmission = toSafeString(body.transmission) || null;
+    if ("axleConfiguration" in body) updates.axleConfiguration = toSafeString(body.axleConfiguration) || null;
+    if ("horsepower" in body) updates.horsepower = numberOrNull(body.horsepower);
+    if ("odometerReading" in body) updates.odometerReading = numberOrNull(body.odometerReading);
+    if ("hourMeterReading" in body) updates.hourMeterReading = numberOrNull(body.hourMeterReading);
+    if ("financeCompany" in body) updates.financeCompany = toSafeString(body.financeCompany);
+    if ("repoStatus" in body) updates.repoStatus = toSafeString(body.repoStatus) as typeof vehicles.repoStatus._.data;
+    if ("yardName" in body) updates.yardName = toSafeString(body.yardName);
+    if ("yardContact" in body) updates.yardContact = toSafeString(body.yardContact);
+    if ("reservePrice" in body) updates.reservePrice = String(numberOrNull(body.reservePrice) ?? 0);
+    if ("numberOfAxles" in body) updates.numberOfAxles = numberOrNull(body.numberOfAxles);
+    if ("bodyDimensions" in body) updates.bodyDimensions = toSafeString(body.bodyDimensions) || null;
+    if ("trailerType" in body) updates.trailerType = toSafeString(body.trailerType) || null;
+    if ("trailerLength" in body) updates.trailerLength = toSafeString(body.trailerLength) || null;
+    if ("trailerManufacturer" in body) updates.trailerManufacturer = toSafeString(body.trailerManufacturer) || null;
+    if ("trailerManufacturingMonthYear" in body) updates.trailerManufacturingMonthYear = toSafeString(body.trailerManufacturingMonthYear) || null;
+    if ("suspensionType" in body) updates.suspensionType = toSafeString(body.suspensionType) || null;
+    if ("tyreInspectionReport" in body) updates.tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase() as typeof vehicles.tyreInspectionReport._.data;
+    if ("totalTyres" in body || "tyreCount" in body) updates.totalTyres = numberOrNull(body.totalTyres ?? body.tyreCount);
+    if ("tyreCount" in body || "totalTyres" in body) updates.tyreCount = numberOrNull(body.tyreCount ?? body.totalTyres);
+    if ("currentTyreCount" in body) updates.currentTyreCount = numberOrNull(body.currentTyreCount);
+    if ("tyreMountStatus" in body) updates.tyreMountStatus = toSafeString(body.tyreMountStatus).toUpperCase() as typeof vehicles.tyreMountStatus._.data;
+    if ("tyreCondition" in body) updates.tyreCondition = toSafeString(body.tyreCondition).toUpperCase() as typeof vehicles.tyreCondition._.data;
+    if ("trailerNumber" in body) updates.trailerNumber = toSafeString(body.trailerNumber);
+    if ("bodyType" in body) updates.bodyType = toSafeString(body.bodyType) || null;
+    if ("bodyLength" in body) updates.bodyLength = toSafeString(body.bodyLength) || null;
+    if ("payloadCapacity" in body) updates.payloadCapacity = toSafeString(body.payloadCapacity) || null;
+    if ("gvwTonnes" in body) updates.gvwTonnes = toSafeString(body.gvwTonnes);
+    if ("bodyAttached" in body) updates.bodyAttached = yesNoUnknown(body.bodyAttached) as typeof vehicles.bodyAttached._.data;
+    if ("bodyCondition" in body) updates.bodyCondition = toSafeString(body.bodyCondition) || null;
+    if ("tyresIncluded" in body) updates.tyresIncluded = yesNoUnknown(body.tyresIncluded) as typeof vehicles.tyresIncluded._.data;
+    if ("rimsDiscsIncluded" in body) updates.rimsDiscsIncluded = yesNoUnknown(body.rimsDiscsIncluded) as typeof vehicles.rimsDiscsIncluded._.data;
+    if ("batteryIncluded" in body) updates.batteryIncluded = yesNoUnknown(body.batteryIncluded) as typeof vehicles.batteryIncluded._.data;
+    if ("cabinAvailable" in body) updates.cabinAvailable = yesNoUnknown(body.cabinAvailable) as typeof vehicles.cabinAvailable._.data;
+    if ("engineAvailable" in body) updates.engineAvailable = yesNoUnknown(body.engineAvailable) as typeof vehicles.engineAvailable._.data;
+    if ("documentsAvailable" in body) updates.documentsAvailable = yesNoUnknown(body.documentsAvailable) as typeof vehicles.documentsAvailable._.data;
+    if ("remarks" in body) updates.remarks = toSafeString(body.remarks) || null;
+    if ("taxDue" in body) updates.taxDue = toSafeString(body.taxDue);
+    if ("challans" in body) updates.challans = toSafeString(body.challans);
+    if ("insuranceExpiry" in body) updates.insuranceExpiry = toSafeString(body.insuranceExpiry);
+    if ("fitnessExpiry" in body) updates.fitnessExpiry = toSafeString(body.fitnessExpiry);
+    if ("permitExpiry" in body) updates.permitExpiry = toSafeString(body.permitExpiry);
+    if ("transferType" in body) updates.transferType = toSafeString(body.transferType).toUpperCase() as typeof vehicles.transferType._.data;
+    if ("nocStatus" in body) updates.nocStatus = toSafeString(body.nocStatus).toUpperCase() as typeof vehicles.nocStatus._.data;
+    if ("engineNumber" in body) updates.engineNumber = toSafeString(body.engineNumber);
+    if ("chassisNumber" in body) updates.chassisNumber = toSafeString(body.chassisNumber);
+    if ("gpsInstalled" in body) updates.gpsInstalled = yesNoUnknown(body.gpsInstalled) as typeof vehicles.gpsInstalled._.data;
+    if ("abs" in body) updates.abs = yesNoUnknown(body.abs) as typeof vehicles.abs._.data;
+    if ("fleetManagementSoftwareAvailable" in body) updates.fleetManagementSoftwareAvailable = toSafeString(body.fleetManagementSoftwareAvailable).toUpperCase().replace(/\s+/g, "_") as typeof vehicles.fleetManagementSoftwareAvailable._.data;
+    if ("insuranceValidity" in body) updates.insuranceValidity = toSafeString(body.insuranceValidity) || null;
+    if ("permitValidity" in body) updates.permitValidity = toSafeString(body.permitValidity) || null;
+    if ("fitnessStatus" in body) updates.fitnessStatus = toSafeString(body.fitnessStatus) || null;
+    if ("taxValidity" in body) updates.taxValidity = toSafeString(body.taxValidity) || null;
+    if ("parkingDue" in body) updates.parkingDue = numberOrNull(body.parkingDue);
+    if ("alternateContactNumber" in body) {
+      updates.alternateContactNumber = toSafeString(body.alternateContactNumber).replace(/\D/g, "").slice(0, 10);
+      updates.alternateContactNumberVerified = body.alternateContactNumberVerified === true;
+    }
+    if ("gstin" in body) updates.gstin = toSafeString(body.gstin);
+    if ("engineCondition" in body) updates.engineCondition = toSafeString(body.engineCondition).toUpperCase().replace(/\s+/g, "_") as typeof vehicles.engineCondition._.data;
+    if ("needsTowing" in body) updates.needsTowing = toSafeString(body.needsTowing).toUpperCase() as typeof vehicles.needsTowing._.data;
+    if ("roadSafeStatus" in body) updates.roadSafeStatus = toSafeString(body.roadSafeStatus).toUpperCase().replace(/\s+/g, "_") as typeof vehicles.roadSafeStatus._.data;
+
+    const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto ?? existing.frontPhoto);
+    const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto ?? existing.backPhoto);
+    const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? body.sidePhoto ?? existing.leftSidePhoto ?? existing.sidePhoto);
+    const rightSidePhoto = sanitizeSupabaseMediaUrl(body.rightSidePhoto ?? existing.rightSidePhoto);
+    const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto ?? existing.interiorPhoto);
+    const normalizedRequiredPhotoCount = [frontPhoto, backPhoto, leftSidePhoto, rightSidePhoto, interiorPhoto].filter(Boolean).length;
+
+    const parsedAdditionalPhotos =
+      additionalPhotosRaw?.map((item) => {
+        const current = item as Record<string, unknown>;
+        const rawCategory = toSafeString(current.category).toUpperCase();
+        const category = VALID_ADDITIONAL_PHOTO_CATEGORIES.has(rawCategory) ? rawCategory : "OTHER";
+        return { url: sanitizeSupabaseMediaUrl(current.url), category };
+      }).filter((item) => Boolean(item.url)) ?? [];
+
+    const parsedVideos =
+      videosRaw?.map((item) => {
+        const current = item as Record<string, unknown>;
+        const rawCategory = toSafeString(current.category).toUpperCase();
+        const category = VALID_VIDEO_CATEGORIES.has(rawCategory) ? rawCategory : "OTHER";
+        return {
+          url: sanitizeSupabaseMediaUrl(current.url),
+          category,
+          mimeType: toSafeString(current.mimeType),
+          sizeBytes: numberOrNull(current.sizeBytes),
+        };
+      }).filter((item) => Boolean(item.url)) ?? [];
 
     const parsedDocuments =
       documentsRaw?.map((item) => {
@@ -111,6 +270,12 @@ export async function PATCH(
         };
       }).filter((item) => Boolean(item.url)) ?? null;
 
+    if (normalizedRequiredPhotoCount + parsedAdditionalPhotos.length > MAX_PHOTOS) {
+      return Response.json({ message: "Maximum 20 photos allowed." }, { status: 400 });
+    }
+    if (parsedVideos.length > MAX_VIDEOS) {
+      return Response.json({ message: "Maximum 3 videos allowed." }, { status: 400 });
+    }
     if (parsedDocuments) {
       if (parsedDocuments.length > MAX_DOCUMENTS) {
         return Response.json({ message: "Maximum 15 document files allowed per listing." }, { status: 400 });
@@ -126,8 +291,9 @@ export async function PATCH(
       }
     }
 
-    const needsReverification = existing.isPublished || existing.listingStatus === "VERIFIED";
-    if (needsReverification) {
+    const sentForReverification = existing.isPublished || existing.listingStatus === "VERIFIED";
+    const forcePendingStatuses = new Set(["VERIFIED", "PENDING", "REJECTED", "BANK_PENDING_REVIEW"]);
+    if (forcePendingStatuses.has(existing.listingStatus || "") || existing.isPublished) {
       updates.status = "PENDING";
       updates.listingStatus = "PENDING";
       updates.verificationStatus = "PENDING_VERIFICATION";
@@ -137,34 +303,89 @@ export async function PATCH(
       updates.verifiedAt = null;
     }
 
+    const mediaRows: Array<{
+      vehicleId: string;
+      type: typeof vehicleMedia.type._.data;
+      category: typeof vehicleMedia.category._.data;
+      url: string;
+      mimeType: string;
+      sizeBytes: number | null;
+      customName: string | null;
+      originalFileName: string;
+    }> = [];
+
+    if (frontPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "FRONT", url: frontPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (backPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "BACK", url: backPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (rightSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "SIDE", url: leftSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (interiorPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "INTERIOR", url: interiorPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    for (const photo of parsedAdditionalPhotos) {
+      mediaRows.push({
+        vehicleId: id,
+        type: "PHOTO",
+        category: photo.category as typeof vehicleMedia.category._.data,
+        url: photo.url,
+        mimeType: "",
+        sizeBytes: null,
+        customName: null,
+        originalFileName: "",
+      });
+    }
+    for (const video of parsedVideos) {
+      mediaRows.push({
+        vehicleId: id,
+        type: "VIDEO",
+        category: video.category as typeof vehicleMedia.category._.data,
+        url: video.url,
+        mimeType: video.mimeType || "",
+        sizeBytes: video.sizeBytes,
+        customName: null,
+        originalFileName: "",
+      });
+    }
+    for (const document of parsedDocuments ?? []) {
+      mediaRows.push({
+        vehicleId: id,
+        type: "DOCUMENT",
+        category: document.category,
+        url: document.url,
+        mimeType: document.mimeType || "application/pdf",
+        sizeBytes: document.sizeBytes ?? null,
+        customName: document.category === "OTHER" ? document.customName || null : null,
+        originalFileName: document.originalFileName || "",
+      });
+    }
+
+    updates.frontPhoto = frontPhoto;
+    updates.backPhoto = backPhoto;
+    updates.leftSidePhoto = leftSidePhoto;
+    updates.rightSidePhoto = rightSidePhoto;
+    updates.sidePhoto = leftSidePhoto;
+    updates.interiorPhoto = interiorPhoto;
+    updates.gallery = sanitizeSupabaseMediaArray([
+      ...[frontPhoto, backPhoto, leftSidePhoto, rightSidePhoto, interiorPhoto].filter(Boolean),
+      ...parsedAdditionalPhotos.map((item) => item.url),
+    ]);
+    updates.image = frontPhoto || backPhoto || leftSidePhoto || rightSidePhoto || interiorPhoto || existing.image;
+    updates.walkaroundVideo = parsedVideos.find((item) => item.category === "WALKAROUND")?.url || null;
+    updates.engineStartUpVideo = parsedVideos.find((item) => item.category === "ENGINE_STARTUP")?.url || null;
+
     const [updated] = await db.update(vehicles).set(updates).where(eq(vehicles.id, id)).returning();
 
-    if (parsedDocuments) {
+    if (documentsRaw || additionalPhotosRaw || videosRaw || "frontPhoto" in body || "backPhoto" in body || "leftSidePhoto" in body || "rightSidePhoto" in body || "interiorPhoto" in body || "sidePhoto" in body) {
       await db
         .delete(vehicleMedia)
-        .where(and(eq(vehicleMedia.vehicleId, id), eq(vehicleMedia.type, "DOCUMENT")));
-      if (parsedDocuments.length) {
-        await db.insert(vehicleMedia).values(
-          parsedDocuments.map((document) => ({
-            vehicleId: id,
-            type: "DOCUMENT" as const,
-            category: document.category,
-            customName: document.category === "OTHER" ? document.customName || null : null,
-            url: document.url,
-            originalFileName: document.originalFileName,
-            mimeType: document.mimeType || "application/pdf",
-            sizeBytes: document.sizeBytes ?? null,
-          }))
-        );
-      }
+        .where(and(eq(vehicleMedia.vehicleId, id), inArray(vehicleMedia.type, ["PHOTO", "VIDEO", "DOCUMENT"])));
+      if (mediaRows.length) await db.insert(vehicleMedia).values(mediaRows);
     }
 
     return Response.json({
       vehicle: updated,
-      message: needsReverification
+      message: sentForReverification
         ? "Your edited listing has been sent for re-verification."
         : "Listing updated successfully.",
-      sentForReverification: needsReverification,
+      sentForReverification,
     });
   } catch (error) {
     console.error("PATCH /api/seller/vehicles/[id] failed", error);

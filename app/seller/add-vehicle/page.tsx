@@ -657,9 +657,83 @@ function getDocumentGroupCount(documents: UploadedDocument[], item: Pick<Uploade
   return documents.filter((doc) => documentGroupKey(doc) === key).length;
 }
 
-export default function AddVehiclePage() {
+type VehicleFormMode = "create" | "edit";
+
+type VehicleFormPageProps = {
+  mode?: VehicleFormMode;
+  listingId?: string;
+};
+
+type VehicleDetailsResponse = {
+  id: string;
+  [key: string]: unknown;
+  media?: Array<{
+    type: string;
+    category: string;
+    url: string;
+    mimeType?: string;
+    sizeBytes?: number | null;
+    customName?: string | null;
+    originalFileName?: string | null;
+  }>;
+};
+
+const formatDateForInput = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  const raw = value.trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const yyyy = parsed.getFullYear();
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const toStringValue = (value: unknown) => (value === null || value === undefined ? "" : String(value));
+
+const toYesNoUnknownValue = (value: unknown) => {
+  const normalized = toStringValue(value).trim().toUpperCase();
+  if (normalized === "YES" || normalized === "NO" || normalized === "UNKNOWN") return normalized;
+  return "";
+};
+
+const toKmMeterStatusValue = (value: unknown): KmMeterStatus => {
+  const normalized = toStringValue(value).trim().toUpperCase();
+  if (normalized === "WORKING" || normalized === "NOT_WORKING") return normalized;
+  return "UNKNOWN";
+};
+
+const toRunningConditionValue = (value: unknown): FormData["runningCondition"] => {
+  const normalized = toStringValue(value).trim().toUpperCase();
+  if (normalized === "RUNNING" || normalized === "NOT_RUNNING") return normalized;
+  return "UNKNOWN";
+};
+
+const toTransferTypeValue = (transferType: unknown, nocStatus: unknown) => {
+  const normalizedTransferType = toStringValue(transferType).trim().toUpperCase();
+  if (["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"].includes(normalizedTransferType)) {
+    return normalizedTransferType;
+  }
+  const normalizedNocStatus = toStringValue(nocStatus).trim().toUpperCase();
+  if (normalizedNocStatus === "AVAILABLE") return "RC_TRANSFER";
+  if (normalizedNocStatus === "NOT_AVAILABLE") return "RTO_NOC";
+  return "UNKNOWN";
+};
+
+const toBooleanAsYesNo = (value: unknown): FormData["isRegistered"] => {
+  if (value === true) return "YES";
+  if (value === false) return "NO";
+  const normalized = toStringValue(value).trim().toUpperCase();
+  if (normalized === "YES" || normalized === "NO") return normalized;
+  return "";
+};
+
+export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageProps) {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
+  const [loadingEditData, setLoadingEditData] = useState(mode === "edit");
   const [user, setUser] = useState<SessionUser | null>(null);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(emptyForm);
@@ -678,6 +752,7 @@ export default function AddVehiclePage() {
   const [selectedDocumentCategory, setSelectedDocumentCategory] = useState<DocumentCategory>("RC");
   const [selectedOtherDocumentName, setSelectedOtherDocumentName] = useState("");
   const [verifyingAlternatePhone, setVerifyingAlternatePhone] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
@@ -745,14 +820,16 @@ export default function AddVehiclePage() {
           return;
         }
         setUser(sessionUser);
-        setForm((previous) => ({
-          ...previous,
-          listingType:
-            sessionUser.accountType === "BANK_PARTNER" || sessionUser.sellerRole === "RECOVERY_AGENT"
-              ? "REPO"
-              : "REGULAR",
-          listingMode: "NORMAL",
-        }));
+        if (mode === "create") {
+          setForm((previous) => ({
+            ...previous,
+            listingType:
+              sessionUser.accountType === "BANK_PARTNER" || sessionUser.sellerRole === "RECOVERY_AGENT"
+                ? "REPO"
+                : "REGULAR",
+            listingMode: "NORMAL",
+          }));
+        }
         setAuthChecked(true);
       } catch {
         router.replace("/auth/login");
@@ -760,7 +837,176 @@ export default function AddVehiclePage() {
     };
 
     loadSession();
-  }, [router]);
+  }, [mode, router]);
+
+  useEffect(() => {
+    if (!authChecked || mode !== "edit") return;
+    if (!listingId) {
+      router.replace("/seller/listings");
+      return;
+    }
+
+    const loadListing = async () => {
+      setLoadingEditData(true);
+      setError("");
+      try {
+        const response = await fetch(`/api/vehicles/${listingId}`);
+        const data = (await response.json()) as VehicleDetailsResponse & { message?: string };
+        if (!response.ok) {
+          setError(data.message ?? "Failed to load listing details.");
+          return;
+        }
+
+        const editableData = data;
+        setForm((previous) => ({
+          ...previous,
+          listingType: (toStringValue(editableData.listingType).toUpperCase() as FormData["listingType"]) || previous.listingType,
+          listingMode: (toStringValue(editableData.listingMode).toUpperCase() as ListingMode) || "NORMAL",
+          assetStructure: (toStringValue(editableData.assetStructure).toUpperCase() as FormData["assetStructure"]) || "",
+          detachableType: (toStringValue(editableData.detachableType).toUpperCase() as FormData["detachableType"]) || "",
+          assetCategory: toStringValue(editableData.assetCategory || editableData.type),
+          bodyApplicationType: toStringValue(
+            editableData.bodyApplicationType || editableData.vehicleSubType || editableData.bodyType
+          ),
+          brand: toStringValue(editableData.brand),
+          model: toStringValue(editableData.model),
+          year: toStringValue(editableData.year),
+          isRegistered: toBooleanAsYesNo(editableData.isRegistered),
+          registrationState: toStringValue(editableData.registrationState),
+          vehicleRegistrationNumber: toStringValue(editableData.vehicleRegistrationNumber),
+          machineSerialNumber: toStringValue(editableData.machineSerialNumber),
+          kmDriven: toStringValue(editableData.kmDriven),
+          kmMeterStatus: toKmMeterStatusValue(editableData.kmMeterStatus),
+          runningCondition: toRunningConditionValue(editableData.runningCondition),
+          expectedPrice: toStringValue(editableData.expectedPrice || editableData.price),
+          state: toStringValue(editableData.state),
+          city: toStringValue(editableData.city),
+          vehicleOrYardLocation: toStringValue(editableData.vehicleOrYardLocation || editableData.yardLocation),
+          description: toStringValue(editableData.conditionNotes || editableData.description),
+          engineCondition: toStringValue(editableData.engineCondition),
+          needsTowing: toStringValue(editableData.needsTowing),
+          roadSafeStatus: toStringValue(editableData.roadSafeStatus),
+          fuelType: toStringValue(editableData.fuelType || "Diesel"),
+          bsNorm: toStringValue(editableData.bsNorm),
+          transmission: toStringValue(editableData.transmission),
+          axleConfiguration: toStringValue(editableData.axleConfiguration),
+          horsepower: toStringValue(editableData.horsepower),
+          odometerReading: toStringValue(editableData.odometerReading),
+          hourMeterReading: toStringValue(editableData.hourMeterReading),
+          batteryAvailable: toYesNoUnknownValue(editableData.batteryAvailable),
+          keyAvailable: toYesNoUnknownValue(editableData.keyAvailable),
+          acCabin: toYesNoUnknownValue(editableData.acCabin),
+          frontPhoto: toStringValue(editableData.frontPhoto),
+          backPhoto: toStringValue(editableData.backPhoto),
+          leftSidePhoto: toStringValue(editableData.leftSidePhoto || editableData.sidePhoto),
+          rightSidePhoto: toStringValue(editableData.rightSidePhoto),
+          interiorPhoto: toStringValue(editableData.interiorPhoto),
+          financeCompany: toStringValue(editableData.financeCompany),
+          repoStatus: toStringValue(editableData.repoStatus),
+          yardName: toStringValue(editableData.yardName),
+          yardContact: toStringValue(editableData.yardContact),
+          reservePrice: toStringValue(editableData.reservePrice),
+          auctionDate: formatDateForInput(editableData.auctionDate),
+          numberOfAxles: toStringValue(editableData.numberOfAxles),
+          bodyDimensions: toStringValue(editableData.bodyDimensions),
+          trailerType: toStringValue(editableData.trailerType),
+          trailerLength: toStringValue(editableData.trailerLength),
+          trailerManufacturer: toStringValue(editableData.trailerManufacturer),
+          trailerManufacturingMonthYear: toStringValue(editableData.trailerManufacturingMonthYear),
+          suspensionType: toStringValue(editableData.suspensionType),
+          tyreInspectionReport: toStringValue(editableData.tyreInspectionReport),
+          totalTyres: toStringValue(editableData.totalTyres || editableData.tyreCount),
+          currentTyreCount: toStringValue(editableData.currentTyreCount),
+          tyreMountStatus: toStringValue(editableData.tyreMountStatus),
+          tyreCondition: toStringValue(editableData.tyreCondition),
+          trailerNumber: toStringValue(editableData.trailerNumber),
+          bodyType: toStringValue(editableData.bodyType),
+          bodyLength: toStringValue(editableData.bodyLength),
+          payloadCapacity: toStringValue(editableData.payloadCapacity),
+          gvwTonnes: toStringValue(editableData.gvwTonnes),
+          bodyAttached: toYesNoUnknownValue(editableData.bodyAttached),
+          bodyCondition: toStringValue(editableData.bodyCondition),
+          tyresIncluded: toYesNoUnknownValue(editableData.tyresIncluded),
+          rimsDiscsIncluded: toYesNoUnknownValue(editableData.rimsDiscsIncluded),
+          batteryIncluded: toYesNoUnknownValue(editableData.batteryIncluded),
+          cabinAvailable: toYesNoUnknownValue(editableData.cabinAvailable),
+          engineAvailable: toYesNoUnknownValue(editableData.engineAvailable),
+          documentsAvailable: toYesNoUnknownValue(editableData.documentsAvailable),
+          remarks: toStringValue(editableData.remarks),
+          taxDue: toStringValue(editableData.taxDue),
+          challans: toStringValue(editableData.challans),
+          insuranceExpiry: toStringValue(editableData.insuranceExpiry),
+          fitnessExpiry: toStringValue(editableData.fitnessExpiry),
+          permitExpiry: toStringValue(editableData.permitExpiry),
+          transferType: toTransferTypeValue(editableData.transferType, editableData.nocStatus),
+          engineNumber: toStringValue(editableData.engineNumber),
+          chassisNumber: toStringValue(editableData.chassisNumber),
+          gpsInstalled: toYesNoUnknownValue(editableData.gpsInstalled),
+          abs: toYesNoUnknownValue(editableData.abs),
+          fleetManagementSoftwareAvailable: toStringValue(editableData.fleetManagementSoftwareAvailable),
+          insuranceValidity: formatDateForInput(editableData.insuranceValidity),
+          permitValidity: formatDateForInput(editableData.permitValidity),
+          fitnessStatus: formatDateForInput(editableData.fitnessStatus),
+          taxValidity: formatDateForInput(editableData.taxValidity),
+          parkingDue: toStringValue(editableData.parkingDue),
+          alternateContactNumber: toStringValue(editableData.alternateContactNumber),
+          alternateContactNumberVerified: editableData.alternateContactNumberVerified === true,
+          gstin: toStringValue(editableData.gstin),
+        }));
+
+        const media = Array.isArray(editableData.media) ? editableData.media : [];
+        const normalizedRequiredPhotoUrls = new Set(
+          [
+            toStringValue(editableData.frontPhoto),
+            toStringValue(editableData.backPhoto),
+            toStringValue(editableData.leftSidePhoto || editableData.sidePhoto),
+            toStringValue(editableData.rightSidePhoto),
+            toStringValue(editableData.interiorPhoto),
+          ].filter(Boolean)
+        );
+
+        setAdditionalPhotos(
+          media
+            .filter((item) => item.type === "PHOTO")
+            .map((item) => ({
+              url: toStringValue(item.url),
+              category: toStringValue(item.category || "OTHER"),
+            }))
+            .filter((item) => item.url && !normalizedRequiredPhotoUrls.has(item.url))
+        );
+        setVideos(
+          media
+            .filter((item) => item.type === "VIDEO")
+            .map((item) => ({
+              url: toStringValue(item.url),
+              category: toStringValue(item.category || "OTHER"),
+              mimeType: toStringValue(item.mimeType),
+              sizeBytes: Number(item.sizeBytes || 0),
+            }))
+            .filter((item) => item.url)
+        );
+        setDocuments(
+          media
+            .filter((item) => item.type === "DOCUMENT")
+            .map((item) => ({
+              url: toStringValue(item.url),
+              category: (toStringValue(item.category || "OTHER").toUpperCase() as DocumentCategory) || "OTHER",
+              customName: toStringValue(item.customName),
+              mimeType: toStringValue(item.mimeType),
+              sizeBytes: Number(item.sizeBytes || 0),
+              originalFileName: toStringValue(item.originalFileName),
+            }))
+            .filter((item) => item.url)
+        );
+      } catch {
+        setError("Failed to load listing details.");
+      } finally {
+        setLoadingEditData(false);
+      }
+    };
+
+    void loadListing();
+  }, [authChecked, listingId, mode, router]);
 
   const roleRules = useMemo(() => {
     if (!user) return { canRegular: false, canRepo: false };
@@ -1261,10 +1507,13 @@ export default function AddVehiclePage() {
 
     setSubmitting(true);
     setError("");
+    setSuccessMessage("");
 
     try {
-      const response = await fetch("/api/vehicles", {
-        method: "POST",
+      const response = await fetch(
+        mode === "edit" && listingId ? `/api/seller/vehicles/${listingId}` : "/api/vehicles",
+        {
+        method: mode === "edit" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -1322,13 +1571,21 @@ export default function AddVehiclePage() {
 
       if (!response.ok) {
         const data = (await response.json()) as { message?: string };
-        setError(data.message ?? "Failed to submit listing.");
+        setError(data.message ?? (mode === "edit" ? "Failed to update listing." : "Failed to submit listing."));
         return;
       }
 
+      const data = (await response.json()) as { message?: string; sentForReverification?: boolean };
+      if (mode === "edit") {
+        setSuccessMessage(
+          data.sentForReverification
+            ? "Your updated listing has been sent for re-verification."
+            : "Listing updated successfully."
+        );
+      }
       setSubmitted(true);
     } catch {
-      setError("Failed to submit listing.");
+      setError(mode === "edit" ? "Failed to update listing." : "Failed to submit listing.");
     } finally {
       setSubmitting(false);
     }
@@ -1342,12 +1599,26 @@ export default function AddVehiclePage() {
     );
   }
 
+  if (mode === "edit" && loadingEditData) {
+    return (
+      <main className="flex min-h-[calc(100dvh-80px)] items-center justify-center px-4 text-sm text-slate-500">
+        Loading listing details...
+      </main>
+    );
+  }
+
   if (submitted) {
     return (
       <main className="flex min-h-[calc(100dvh-80px)] flex-col items-center justify-center px-4 py-10 text-center">
         <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-        <h1 className="mt-4 text-2xl font-semibold text-slate-900">Vehicle Submitted for Verification</h1>
-        <p className="mt-2 text-sm text-slate-500">Our team will review your listing before it goes live.</p>
+        <h1 className="mt-4 text-2xl font-semibold text-slate-900">
+          {mode === "edit" ? "Listing Updated Successfully" : "Vehicle Submitted for Verification"}
+        </h1>
+        <p className="mt-2 text-sm text-slate-500">
+          {mode === "edit"
+            ? successMessage || "Listing updated successfully."
+            : "Our team will review your listing before it goes live."}
+        </p>
         <div className="mt-8 w-full max-w-sm space-y-3">
           <Link
             href="/seller/listings"
@@ -1357,6 +1628,10 @@ export default function AddVehiclePage() {
           </Link>
           <button
             onClick={() => {
+              if (mode === "edit") {
+                router.push("/seller/listings");
+                return;
+              }
               setSubmitted(false);
               setStep(1);
               setAdditionalPhotos([]);
@@ -1370,7 +1645,7 @@ export default function AddVehiclePage() {
             }}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
           >
-            Add Another Vehicle
+            {mode === "edit" ? "Back to Listings" : "Add Another Vehicle"}
           </button>
         </div>
       </main>
@@ -1395,7 +1670,9 @@ export default function AddVehiclePage() {
 
       {step === STEP_LISTING ? (
         <section className="space-y-4">
-          <h1 className="text-xl font-semibold text-slate-900">Step 1: Listing Information</h1>
+          <h1 className="text-xl font-semibold text-slate-900">
+            {mode === "edit" ? "Edit Listing: Listing Information" : "Step 1: Listing Information"}
+          </h1>
           <p className="text-sm text-slate-500">Choose the listing classification before entering asset details.</p>
 
           <div className="space-y-2">
@@ -2160,9 +2437,21 @@ export default function AddVehiclePage() {
           }
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {canSubmit ? (submitting ? "Submitting..." : "Submit Listing") : "Next"}
+          {canSubmit
+            ? submitting
+              ? mode === "edit"
+                ? "Saving..."
+                : "Submitting..."
+              : mode === "edit"
+                ? "Save Changes"
+                : "Submit Listing"
+            : "Next"}
         </button>
       </div>
     </main>
   );
+}
+
+export default function AddVehiclePage() {
+  return <VehicleFormPage mode="create" />;
 }

@@ -1,10 +1,9 @@
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
-import { dbToVehicle } from "@/lib/mappers";
 import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import EditVehicleClient from "@/app/seller/edit-vehicle/[id]/edit-client";
 import { getCurrentUser } from "@/lib/auth";
+import { VehicleFormPage } from "@/app/seller/add-vehicle/page";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +20,8 @@ export default async function EditSellerListingPage({
   const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
   if (!row || row.deletedAt) notFound();
   if (currentUser.accountType !== "ADMIN" && row.sellerId !== currentUser.id) {
-    notFound();
+    redirect("/seller/listings");
   }
 
-  return <EditVehicleClient vehicle={dbToVehicle(row)} />;
+  return <VehicleFormPage mode="edit" listingId={id} />;
 }

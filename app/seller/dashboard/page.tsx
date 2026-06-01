@@ -87,7 +87,7 @@ export default async function SellerDashboardPage() {
                   View
                 </Link>
                 <Link
-                  href={`/seller/edit-vehicle/${vehicle.id}`}
+                  href={`/seller/listings/${vehicle.id}/edit`}
                   className="min-h-10 rounded-lg border border-slate-200 px-3 font-medium text-slate-700 inline-flex items-center"
                 >
                   Edit
