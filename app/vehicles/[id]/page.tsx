@@ -536,14 +536,6 @@ export default async function VehicleDetailPage({
         >
           <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
-        {isOwner ? (
-          <Link
-            href={`/seller/listings/${vehicle.id}/edit`}
-            className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700"
-          >
-            Edit listing
-          </Link>
-        ) : null}
       </div>
 
       <div className="relative">

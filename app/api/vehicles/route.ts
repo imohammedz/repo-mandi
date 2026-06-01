@@ -11,10 +11,10 @@ import {
   getAssetCategoryOptions,
   getBodyApplicationOptions,
   hasEngineOrPowertrain,
+  mapAssetCategoryToLegacyVehicleType,
   normalizeClassification,
   normalizeListingMode,
   toLegacyAssetConfiguration,
-  toLegacyVehicleType,
   type AssetStructure,
   type ListingMode,
 } from "@/lib/vehicle-classification";
@@ -32,6 +32,7 @@ const VALID_TYPES = [
   "Container Truck",
   "Tipper",
   "Bus",
+  "Equipment",
   // Backward compatibility
   "Truck",
   "Tractor",
@@ -60,6 +61,8 @@ const VALID_TYRE_MOUNT_STATUS = [
   "UNKNOWN",
 ] as const;
 const VALID_TYRE_CONDITIONS = ["NEW", "GOOD", "AROUND_50", "POOR", "MIXED", "UNKNOWN", "FAIR"] as const;
+const VALID_ENGINE_CONDITIONS = ["EXCELLENT", "GOOD", "AVERAGE", "NEEDS_WORK", "NOT_CHECKED", "UNKNOWN"] as const;
+const VALID_ROAD_SAFE_STATUSES = ["ROAD_SAFE", "NOT_ROAD_SAFE", "UNKNOWN"] as const;
 
 const VALID_REPO_STATUS = [
   "Bank Seized",
@@ -233,6 +236,12 @@ function parseTyreCondition(value: unknown) {
     return normalized as (typeof VALID_TYRE_CONDITIONS)[number];
   }
   return null;
+}
+
+function parseUpperSnakeEnum<T extends string>(value: unknown, validValues: readonly T[]) {
+  const normalized = toSafeString(value).toUpperCase().replace(/\s+/g, "_");
+  if (!normalized) return null;
+  return validValues.includes(normalized as T) ? (normalized as T) : null;
 }
 
 // ── GET /api/vehicles?type=&state=&q= ─────────────────────────────────────────
@@ -456,7 +465,11 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid bodyApplicationType." }, { status: 400 });
     }
 
-    const vehicleType = toLegacyVehicleType(assetCategory, assetStructure, detachableType) as VehicleType;
+    const vehicleType = mapAssetCategoryToLegacyVehicleType(
+      assetStructure,
+      assetCategory,
+      detachableType
+    ) as VehicleType;
     const brand = toSafeString(body.brand);
     const model = toSafeString(body.model);
     const registrationState = toSafeString(body.registrationState);
@@ -497,9 +510,14 @@ export async function POST(request: Request) {
     const transferType = parseTransferType(body.transferType ?? body.nocStatus);
     const tyreMountStatus = parseTyreMountStatus(body.tyreMountStatus);
     const totalTyres = toNumberOrNull(body.totalTyres ?? body.tyreCount);
-    const abs = toSafeString(body.abs).toUpperCase() as "YES" | "NO" | "UNKNOWN" | "";
+    const abs = parseYesNoUnknown(body.abs);
     const tyreInspectionReport = toSafeString(body.tyreInspectionReport).toUpperCase();
     const tyreCondition = parseTyreCondition(body.tyreCondition);
+    const engineCondition = parseUpperSnakeEnum(body.engineCondition, VALID_ENGINE_CONDITIONS);
+    const roadSafeStatus = parseUpperSnakeEnum(body.roadSafeStatus, VALID_ROAD_SAFE_STATUSES);
+    const fleetManagementSoftwareAvailable = parseUpperSnakeEnum(body.fleetManagementSoftwareAvailable, VALID_AVAILABILITY_STATUS);
+    const needsTowing = parseYesNoUnknown(body.needsTowing);
+    const gpsInstalled = parseYesNoUnknown(body.gpsInstalled);
     const normalizedInteriorPhoto = interiorPhoto;
 
     const financeCompany = toSafeString(body.financeCompany);
@@ -513,7 +531,6 @@ export async function POST(request: Request) {
     const alwaysRequiredMissing: string[] = [];
     if (!listingMode) alwaysRequiredMissing.push("listingMode");
     if (!assetStructure) alwaysRequiredMissing.push("assetStructure");
-    if (assetStructure === "DETACHABLE" && !detachableType) alwaysRequiredMissing.push("detachableType");
     if (!assetCategory) alwaysRequiredMissing.push("assetCategory");
     if ((assetStructure === "STANDALONE" || detachableType === "PRIME_MOVER" || assetStructure === "EQUIPMENT") && !brand) {
       alwaysRequiredMissing.push("brand");
@@ -538,6 +555,20 @@ export async function POST(request: Request) {
         { message: `Missing required fields: ${alwaysRequiredMissing.join(", ")}.` },
         { status: 400 }
       );
+    }
+
+    if (assetStructure === "DETACHABLE" && !detachableType) {
+      return Response.json({ message: "Detachable type is required for detachable assets." }, { status: 400 });
+    }
+
+    if (toSafeString(body.engineCondition) && !engineCondition) {
+      return Response.json({ message: "Invalid engineCondition." }, { status: 400 });
+    }
+    if (toSafeString(body.roadSafeStatus) && !roadSafeStatus) {
+      return Response.json({ message: "Invalid roadSafeStatus." }, { status: 400 });
+    }
+    if (toSafeString(body.fleetManagementSoftwareAvailable) && !fleetManagementSoftwareAvailable) {
+      return Response.json({ message: "Invalid fleetManagementSoftwareAvailable." }, { status: 400 });
     }
     const requiredTransferType = transferType as (typeof VALID_TRANSFER_TYPES)[number];
 
@@ -809,7 +840,7 @@ export async function POST(request: Request) {
         gstin: toSafeString(body.gstin),
         condition: runningCondition === "RUNNING" ? "Running" : runningCondition === "NOT_RUNNING" ? "Non-running" : "Unknown",
         conditionNotes: description,
-        engineCondition: (toSafeString(body.engineCondition).toUpperCase().replace(/\s+/g, "_") || null) as
+        engineCondition: engineCondition as
           | "EXCELLENT"
           | "GOOD"
           | "AVERAGE"
@@ -817,12 +848,8 @@ export async function POST(request: Request) {
           | "NOT_CHECKED"
           | "UNKNOWN"
           | null,
-        needsTowing: (toSafeString(body.needsTowing).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
-        roadSafeStatus: (toSafeString(body.roadSafeStatus).toUpperCase().replace(/\s+/g, "_") || null) as
-          | "ROAD_SAFE"
-          | "NOT_ROAD_SAFE"
-          | "UNKNOWN"
-          | null,
+        needsTowing: needsTowing as "YES" | "NO" | "UNKNOWN" | null,
+        roadSafeStatus: roadSafeStatus as "ROAD_SAFE" | "NOT_ROAD_SAFE" | "UNKNOWN" | null,
         accidentNotes: toSafeString(body.accidentNotes),
         auctionDate: toSafeString(body.auctionDate),
         yardName: listingType === "REPO" ? yardName : "",
@@ -840,8 +867,8 @@ export async function POST(request: Request) {
         chassisNumber: toSafeString(body.chassisNumber),
         trailerNumber: toSafeString(body.trailerNumber),
         gvwTonnes: toSafeString(body.gvwTonnes),
-        gpsInstalled: (toSafeString(body.gpsInstalled).toUpperCase() || null) as "YES" | "NO" | "UNKNOWN" | null,
-        abs: (abs || null) as "YES" | "NO" | "UNKNOWN" | null,
+        gpsInstalled: gpsInstalled as "YES" | "NO" | "UNKNOWN" | null,
+        abs: abs as "YES" | "NO" | "UNKNOWN" | null,
         batteryAvailable: parseYesNoUnknown(body.batteryAvailable),
         keyAvailable: parseYesNoUnknown(body.keyAvailable),
         acCabin: parseYesNoUnknown(body.acCabin),
@@ -852,7 +879,7 @@ export async function POST(request: Request) {
         engineAvailable: parseYesNoUnknown(body.engineAvailable),
         documentsAvailable: parseYesNoUnknown(body.documentsAvailable),
         remarks: toSafeString(body.remarks) || null,
-        fleetManagementSoftwareAvailable: (toSafeString(body.fleetManagementSoftwareAvailable).toUpperCase().replace(/\s+/g, "_") || null) as
+        fleetManagementSoftwareAvailable: fleetManagementSoftwareAvailable as
           | "AVAILABLE"
           | "NOT_AVAILABLE"
           | "UNKNOWN"

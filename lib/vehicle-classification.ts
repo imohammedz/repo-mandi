@@ -237,9 +237,9 @@ export function isValidBodyApplicationType(
   return options.length === 0 || options.includes(bodyApplicationType);
 }
 
-export function toLegacyVehicleType(
-  assetCategory: string,
+export function mapAssetCategoryToLegacyVehicleType(
   assetStructure: AssetStructure,
+  assetCategory: string,
   detachableType?: DetachableType | null
 ) {
   if (assetStructure === "EQUIPMENT") return "Equipment";
@@ -252,12 +252,20 @@ export function toLegacyVehicleType(
     case "Rigid Trucks":
       return "HCV (Heavy Commercial Vehicle)";
     case "Prime Mover + Trailer":
-      return "Tractor";
+      return "HCV (Heavy Commercial Vehicle)";
     case "Bus / Passenger Commercial":
       return "Bus";
     default:
       return "Truck";
   }
+}
+
+export function toLegacyVehicleType(
+  assetCategory: string,
+  assetStructure: AssetStructure,
+  detachableType?: DetachableType | null
+) {
+  return mapAssetCategoryToLegacyVehicleType(assetStructure, assetCategory, detachableType);
 }
 
 export function getAssetStructureLabel(value: string | null | undefined) {
