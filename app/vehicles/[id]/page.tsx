@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -10,9 +12,9 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles as vehiclesTable } from "@/lib/schema";
+import { vehicleMedia, vehicles as vehiclesTable, users as usersTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { eq, ne, desc, and, isNull, asc } from "drizzle-orm";
+import { eq, ne, desc, and, isNull, asc, count } from "drizzle-orm";
 import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
@@ -20,7 +22,9 @@ import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { getCurrentUser } from "@/lib/auth";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
+import { FinanceEstimateCard } from "@/components/ui/finance-estimate-card";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
@@ -29,9 +33,16 @@ import {
   normalizeClassification,
 } from "@/lib/vehicle-classification";
 import { formatDisplayLabel } from "@/lib/formatting";
-import { SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { resolveImageSrcForRender } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
+
+const getVehicleRow = cache(async (id: string): Promise<typeof vehiclesTable.$inferSelect | null> => {
+  const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
+  if (!row || row.deletedAt) return null;
+  return row;
+});
 
 const normalizeText = (value: string | null | undefined) => {
   if (!value) return "";
@@ -201,6 +212,49 @@ const getMediaDisplayPriority = (item: GalleryMediaItem) =>
     ? VIDEO_DISPLAY_PRIORITY
     : PHOTO_DISPLAY_PRIORITY[item.category || "OTHER"] || DEFAULT_PHOTO_DISPLAY_PRIORITY;
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const row = await getVehicleRow(id);
+  if (!row) {
+    return {
+      title: `${SITE_CONFIG.name} Listing`,
+      description: `Commercial vehicle listing on ${SITE_CONFIG.name}.`,
+    };
+  }
+
+  const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
+  if (!isPublicLive) {
+    return {
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const vehicle = dbToVehicle(row);
+  const shareTitle = buildHeroTitle(vehicle);
+  const sharePrice = formatCurrency(vehicle.expectedPrice ?? vehicle.price);
+  const shareLocation = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
+  const description = `${shareLocation || "India"} • ${sharePrice} • Verified commercial vehicle listing on ${SITE_CONFIG.name}.`;
+  const image = resolveImageSrcForRender(vehicle.image || vehicle.gallery[0]);
+  const canonical = `/vehicles/${vehicle.id}`;
+
+  return {
+    title: shareTitle,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: shareTitle,
+      description,
+      url: canonical,
+      images: image ? [{ url: image, alt: shareTitle }] : undefined,
+      type: "website",
+    },
+  };
+}
+
 export default async function VehicleDetailPage({
   params,
 }: {
@@ -209,8 +263,8 @@ export default async function VehicleDetailPage({
   const { id } = await params;
   const currentUser = await getCurrentUser();
 
-  const [row] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
-  if (!row || row.deletedAt) notFound();
+  const row = await getVehicleRow(id);
+  if (!row) notFound();
   const isPublicLive = row.isPublished && row.listingStatus === "VERIFIED";
   const isOwner = Boolean(currentUser?.id && row.sellerId === currentUser.id);
   const canViewPrivate = currentUser?.accountType === "ADMIN" || isOwner;
@@ -340,6 +394,33 @@ export default async function VehicleDetailPage({
   );
   const canDownloadDocuments = currentUser?.accountType === "ADMIN";
 
+  // Seller stats
+  let memberSinceYear: string | undefined;
+  let trucksSold = 0;
+  if (vehicle.sellerId) {
+    const [sellerRow] = await db
+      .select({ joinedSince: usersTable.joinedSince })
+      .from(usersTable)
+      .where(eq(usersTable.id, vehicle.sellerId));
+    if (sellerRow?.joinedSince) {
+      const joinedAt = new Date(sellerRow.joinedSince);
+      if (!Number.isNaN(joinedAt.getTime())) {
+        memberSinceYear = String(joinedAt.getFullYear());
+      }
+    }
+    const [soldResult] = await db
+      .select({ count: count() })
+      .from(vehiclesTable)
+      .where(
+        and(
+          eq(vehiclesTable.sellerId, vehicle.sellerId),
+          eq(vehiclesTable.listingStatus, "SOLD"),
+          isNull(vehiclesTable.deletedAt)
+        )
+      );
+    trucksSold = soldResult?.count ?? 0;
+  }
+
   const trustTags = dedupeLabels([
     vehicle.sellerVerified ? "Verified Seller" : "",
     vehicle.photosVerified ? "Photos Verified" : "",
@@ -467,6 +548,14 @@ export default async function VehicleDetailPage({
 
       <div className="relative">
         <ImageGallery media={orderedGalleryMedia} title={heroTitle} />
+        <ShareListingButton
+          listingId={vehicle.id}
+          title={heroTitle}
+          location={displayLocation}
+          price={vehicle.expectedPrice ?? vehicle.price}
+          variant="icon"
+          className="absolute right-14 top-3 z-20"
+        />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
@@ -497,7 +586,6 @@ export default async function VehicleDetailPage({
         </div>
 
         <p className="text-3xl font-bold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
-
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <MapPin className="h-4 w-4" />
           <span>{displayLocation || "Location unavailable"}</span>
@@ -535,6 +623,12 @@ export default async function VehicleDetailPage({
         </section>
       ) : null}
 
+      <FinanceEstimateCard
+        vehicleId={vehicle.id}
+        vehicleTitle={heroTitle}
+        listingPrice={vehicle.expectedPrice ?? vehicle.price ?? null}
+      />
+
       <div className="space-y-5">
         <SellerCard
           id="seller-contact-card"
@@ -542,13 +636,14 @@ export default async function VehicleDetailPage({
           role={vehicle.sellerRole}
           phone={vehicle.sellerPhone}
           vehicleTitle={heroTitle}
-          vehicleId={vehicle.id}
           sellerId={vehicle.sellerId ?? undefined}
           city={displayLocation}
           sellerVerified={vehicle.sellerVerified ?? false}
           photosVerified={vehicle.photosVerified ?? false}
           rcVerified={vehicle.rcVerified ?? false}
           yardVerified={vehicle.yardVerified ?? false}
+          trucksSold={trucksSold}
+          memberSinceYear={memberSinceYear}
           className="h-fit w-full"
         />
 
@@ -665,7 +760,6 @@ export default async function VehicleDetailPage({
       </div>
 
       <VehicleStickyContactCta
-        sellerCardId="seller-contact-card"
         vehicleId={vehicle.id}
         sellerPhone={vehicle.sellerPhone}
         vehicleTitle={heroTitle}

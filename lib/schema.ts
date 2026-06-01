@@ -10,6 +10,7 @@ import {
   serial,
   boolean,
   uniqueIndex,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -102,6 +103,13 @@ export const buyerContactMethodEnum = pgEnum("buyer_contact_method", [
   "EXISTING_CONTACT",
   "REQUEST_DETAILS",
   "OTHER",
+]);
+
+export const financeInquiryStatusEnum = pgEnum("finance_inquiry_status", [
+  "NEW",
+  "CONTACTED",
+  "CLOSED",
+  "REJECTED",
 ]);
 
 export const timeToSellEnum = pgEnum("time_to_sell", [
@@ -448,6 +456,42 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const financeInquiries = pgTable("finance_inquiries", {
+  id: serial("id").primaryKey(),
+  vehicleId: varchar("vehicle_id", { length: 100 }).notNull(),
+  sellerId: integer("seller_id"),
+  buyerName: text("buyer_name").notNull(),
+  buyerPhone: varchar("buyer_phone", { length: 20 }).notNull(),
+  phoneVerified: boolean("phone_verified").notNull().default(false),
+  requirementText: text("requirement_text").notNull(),
+  listingTitle: text("listing_title").notNull(),
+  listingPrice: integer("listing_price"),
+  estimatedEmi: integer("estimated_emi"),
+  loanAmount: integer("loan_amount"),
+  downPaymentAmount: integer("down_payment_amount"),
+  interestRate: numeric("interest_rate", { precision: 5, scale: 2 }).notNull().default("12.00"),
+  tenureMonths: integer("tenure_months").notNull().default(36),
+  vehicleSnapshot: jsonb("vehicle_snapshot")
+    .$type<{
+      title: string;
+      brand: string | null;
+      model: string | null;
+      year: number | null;
+      listingType: string | null;
+      assetStructure: string | null;
+      assetCategory: string | null;
+      bodyApplicationType: string | null;
+      price: number | null;
+      location: string | null;
+      sellerName: string | null;
+      sellerPhone: string | null;
+    }>()
+    .notNull(),
+  status: financeInquiryStatusEnum("status").notNull().default("NEW"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const vehicleSaleFeedback = pgTable("vehicle_sale_feedback", {
   id: serial("id").primaryKey(),
   vehicleId: varchar("vehicle_id", { length: 100 })
@@ -513,6 +557,8 @@ export type DbUser = typeof users.$inferSelect;
 export type DbUserInsert = typeof users.$inferInsert;
 export type DbLead = typeof leads.$inferSelect;
 export type DbLeadInsert = typeof leads.$inferInsert;
+export type DbFinanceInquiry = typeof financeInquiries.$inferSelect;
+export type DbFinanceInquiryInsert = typeof financeInquiries.$inferInsert;
 export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
 export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;

@@ -111,6 +111,12 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
           >
             Settings
           </a>
+          <a
+            href="/admin/finance-inquiries"
+            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
+          >
+            Finance Inquiries
+          </a>
         </div>
       </div>
 

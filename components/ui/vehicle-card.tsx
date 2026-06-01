@@ -7,6 +7,7 @@ import { formatCurrency } from "@/data/vehicles";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
+import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { resolveImageSrcForRender } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
 import { formatEnumLabel } from "@/lib/formatting";
@@ -230,7 +231,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           className={compact ? "h-40 w-full object-cover" : "h-52 w-full object-cover"}
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
-        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3" />
+        <ShareListingButton
+          listingId={vehicle.id}
+          title={title}
+          location={displayLocation}
+          price={vehicle.expectedPrice ?? vehicle.price}
+          variant="icon"
+          className="absolute right-14 top-3 z-20"
+        />
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
       <div className="space-y-3 p-4">

@@ -26,7 +26,7 @@ export function SaveHeartButton({ vehicleId, vehicle, className = "" }: Props) {
   const pending = isPending(vehicleId);
 
   const iconClass = useMemo(
-    () => (saved ? "text-[#FF3B30]" : "text-slate-600"),
+    () => (saved ? "text-[#FF3B30]" : "text-gray-800"),
     [saved]
   );
 
@@ -49,7 +49,7 @@ export function SaveHeartButton({ vehicleId, vehicle, className = "" }: Props) {
       whileTap={{ scale: 0.86 }}
       disabled={pending}
       aria-label={saved ? "Remove from saved listings" : "Save listing"}
-      className={`rounded-full bg-white/90 p-2 shadow-sm backdrop-blur transition disabled:opacity-60 ${className}`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow transition hover:bg-white disabled:opacity-60 ${className}`}
     >
       <span className="relative block">
         <motion.span
@@ -60,7 +60,7 @@ export function SaveHeartButton({ vehicleId, vehicle, className = "" }: Props) {
           className="block"
         >
           <Heart
-            className={`h-4 w-4 ${iconClass}`}
+            className={`h-5 w-5 ${iconClass}`}
             fill={saved ? "#FF3B30" : "none"}
             strokeWidth={2}
           />

@@ -11,7 +11,8 @@ export function StickyWhatsAppCTA() {
     pathname.startsWith("/admin") ||
     pathname.startsWith("/seller") ||
     pathname.startsWith("/bank") ||
-    pathname === "/sell"
+    pathname === "/sell" ||
+    pathname.startsWith("/vehicles/")
   ) {
     return null;
   }
