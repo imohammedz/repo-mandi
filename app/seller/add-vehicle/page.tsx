@@ -1537,7 +1537,6 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
             form.assetStructure as AssetStructure,
             normalizedDetachableType as DetachableType | null
           ),
-          vehicleType: form.assetCategory,
           vehicleSubType: form.bodyApplicationType,
           isRegistered: null,
           leftSidePhoto: form.leftSidePhoto,

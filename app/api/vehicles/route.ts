@@ -11,10 +11,10 @@ import {
   getAssetCategoryOptions,
   getBodyApplicationOptions,
   hasEngineOrPowertrain,
+  mapAssetCategoryToLegacyVehicleType,
   normalizeClassification,
   normalizeListingMode,
   toLegacyAssetConfiguration,
-  toLegacyVehicleType,
   type AssetStructure,
   type ListingMode,
 } from "@/lib/vehicle-classification";
@@ -32,6 +32,7 @@ const VALID_TYPES = [
   "Container Truck",
   "Tipper",
   "Bus",
+  "Equipment",
   // Backward compatibility
   "Truck",
   "Tractor",
@@ -464,7 +465,11 @@ export async function POST(request: Request) {
       return Response.json({ message: "Invalid bodyApplicationType." }, { status: 400 });
     }
 
-    const vehicleType = toLegacyVehicleType(assetCategory, assetStructure, detachableType) as VehicleType;
+    const vehicleType = mapAssetCategoryToLegacyVehicleType(
+      assetStructure,
+      assetCategory,
+      detachableType
+    ) as VehicleType;
     const brand = toSafeString(body.brand);
     const model = toSafeString(body.model);
     const registrationState = toSafeString(body.registrationState);

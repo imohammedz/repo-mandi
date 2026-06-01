@@ -58,6 +58,21 @@ const VALID_REPO_STATUSES = new Set([
   "Ready For Sale",
   "Under Settlement",
 ] as const);
+const VALID_LEGACY_VEHICLE_TYPES = new Set([
+  "Mini Truck",
+  "LCV (Light Commercial Vehicle)",
+  "MCV (Medium Commercial Vehicle)",
+  "HCV (Heavy Commercial Vehicle)",
+  "Container Truck",
+  "Tanker",
+  "Truck",
+  "Tipper",
+  "Pickup",
+  "Bus",
+  "Trailer",
+  "Tractor",
+  "Equipment",
+] as const);
 const VALID_TRANSFER_TYPES = new Set(["RC_TRANSFER", "RTO_NOC", "OPEN_NOC", "UNKNOWN"] as const);
 const VALID_AVAILABILITY_STATUSES = new Set(["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"] as const);
 const VALID_KM_METER_STATUSES = new Set(["WORKING", "NOT_WORKING", "UNKNOWN"] as const);
@@ -78,6 +93,12 @@ const VALID_ENGINE_CONDITIONS = new Set([
   "UNKNOWN",
 ] as const);
 const VALID_ROAD_SAFE_STATUSES = new Set(["ROAD_SAFE", "NOT_ROAD_SAFE", "UNKNOWN"] as const);
+const LEGACY_RUNNING_CONDITION_MAP: Record<string, typeof vehicles.runningCondition._.data> = {
+  RUNNING: "RUNNING",
+  "NON-RUNNING": "NOT_RUNNING",
+  NOT_RUNNING: "NOT_RUNNING",
+  UNKNOWN: "UNKNOWN",
+};
 
 async function getOwnedVehicle(id: string, sellerId: number) {
   const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, id));
@@ -211,7 +232,12 @@ export async function PATCH(
     if ("assetStructure" in body) updates.assetStructure = nextAssetStructure;
     if ("assetStructure" in body || "detachableType" in body) updates.detachableType = normalizedDetachableType;
     if ("assetCategory" in body) updates.assetCategory = toSafeString(body.assetCategory);
-    if ("vehicleType" in body || "type" in body) updates.type = toSafeString(body.vehicleType ?? body.type) as typeof vehicles.type._.data;
+    if ("vehicleType" in body || "type" in body) {
+      const rawLegacyType = toSafeString(body.vehicleType ?? body.type);
+      if (rawLegacyType && VALID_LEGACY_VEHICLE_TYPES.has(rawLegacyType as typeof vehicles.type._.data)) {
+        updates.type = rawLegacyType as typeof vehicles.type._.data;
+      }
+    }
     if ("bodyApplicationType" in body || "vehicleSubType" in body) {
       const value = toSafeString(body.bodyApplicationType ?? body.vehicleSubType);
       updates.bodyApplicationType = value || null;
@@ -232,8 +258,12 @@ export async function PATCH(
       if (value) updates.kmMeterStatus = value as typeof vehicles.kmMeterStatus._.data;
     }
     if ("runningCondition" in body || "condition" in body) {
-      const value = toSafeString(body.runningCondition ?? body.condition).toUpperCase();
-      updates.runningCondition = (value || "UNKNOWN") as typeof vehicles.runningCondition._.data;
+      const raw = toSafeString(body.runningCondition ?? body.condition).toUpperCase();
+      const value = raw ? LEGACY_RUNNING_CONDITION_MAP[raw] : "UNKNOWN";
+      if (!value) {
+        return Response.json({ message: "Invalid runningCondition." }, { status: 400 });
+      }
+      updates.runningCondition = value;
       updates.condition = value === "RUNNING" ? "Running" : value === "NOT_RUNNING" ? "Non-running" : "Unknown";
     }
     if ("state" in body) updates.state = toSafeString(body.state);
