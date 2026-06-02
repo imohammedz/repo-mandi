@@ -90,13 +90,21 @@ export default async function SellerDashboardPage() {
 
       <section id="your-listings" className="space-y-3">
         <h2 className="text-base font-semibold text-slate-900">Your Listings</h2>
-        {vehicleList.map((vehicle) => (
-          <article key={vehicle.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        {vehicleList.map((vehicle) => {
+          const featuredMeta = vehicle as typeof vehicle & {
+            isFeatured?: boolean;
+            featuredUntil?: string | null;
+          };
+          const isFeatured = Boolean(featuredMeta.isFeatured);
+          const featuredUntil = featuredMeta.featuredUntil ?? null;
+
+          return (
+            <article key={vehicle.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
-                {vehicle.isFeatured ? (
-                  <p className="mt-1 text-xs font-medium text-amber-700">{formatFeaturedLabel(vehicle.featuredUntil)}</p>
+                {isFeatured ? (
+                  <p className="mt-1 text-xs font-medium text-amber-700">{formatFeaturedLabel(featuredUntil)}</p>
                 ) : null}
                 <p className="mt-1 text-xs text-slate-500">{formatCurrency(vehicle.price)}</p>
               </div>
@@ -118,8 +126,8 @@ export default async function SellerDashboardPage() {
             <div className="mt-3 grid grid-cols-2 gap-2">
               <FeatureListingButton
                 listingId={vehicle.id}
-                isFeatured={vehicle.isFeatured}
-                featuredUntil={vehicle.featuredUntil ?? null}
+                isFeatured={isFeatured}
+                featuredUntil={featuredUntil}
                 className="w-full"
               />
               <Link
@@ -129,8 +137,9 @@ export default async function SellerDashboardPage() {
                 View Leads
               </Link>
             </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
 
       <SupportContactCard
