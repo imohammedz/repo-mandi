@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 
 interface FeatureListingButtonProps {
   listingId: string;
@@ -14,28 +12,29 @@ interface FeatureListingButtonProps {
 
 export function FeatureListingButton({ listingId, isFeatured, featuredUntil, className }: FeatureListingButtonProps) {
   const router = useRouter();
-  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const buttonClassName = [
+    "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
+    isFeatured
+      ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+      : "bg-amber-500 text-white hover:bg-amber-600",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <button
       type="button"
       disabled={isPending}
-      className={cn(
-        "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
-        isFeatured
-          ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-          : "bg-amber-500 text-white hover:bg-amber-600",
-        className,
-      )}
+      className={buttonClassName}
       onClick={() => {
         if (isFeatured) {
-          toast({
-            title: "Featured listing",
-            description: featuredUntil
+          window.alert(
+            featuredUntil
               ? "Your listing is already featured. Reach out to support if you need to update featured duration."
               : "Your listing is already featured.",
-          });
+          );
           return;
         }
 
@@ -58,18 +57,11 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
               if (apiMessage) message = apiMessage;
             } catch {}
 
-            toast({
-              title: "Unable to feature listing",
-              description: message,
-              variant: "destructive",
-            });
+            window.alert(`Unable to feature listing. ${message}`);
             return;
           }
 
-          toast({
-            title: "Listing featured",
-            description: "Your listing is now promoted to more buyers.",
-          });
+          window.alert("Listing featured. Your listing is now promoted to more buyers.");
           router.refresh();
         });
       }}

@@ -4,27 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { CheckCircle2, Edit, Eye, Loader2, MoreVertical, Share2, Trash2 } from "lucide-react";
-import { markVehicleSold, softDeleteVehicle } from "./[id]/actions";
-import { buildPublicListingUrl } from "@/lib/listing-url";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface ListingActionsMenuProps {
   vehicleId: string;
@@ -36,14 +15,15 @@ interface ListingActionsMenuProps {
 
 export function ListingActionsMenu({ vehicleId, title, price, location, canMarkSold }: ListingActionsMenuProps) {
   const router = useRouter();
-  const { toast } = useToast();
   const [isMarkingSold, startMarkSoldTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [isSharing, setIsSharing] = useState(false);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const listingPath = `/vehicles/${vehicleId}`;
+  const listingUrl =
+    typeof window === "undefined" ? listingPath : `${window.location.origin.replace(/\/$/, "")}${listingPath}`;
 
   const handleShare = async () => {
-    const listingUrl = buildPublicListingUrl(vehicleId, title, { absolute: true });
     const text = `${title} • ₹${price.toLocaleString("en-IN")}${location ? ` • ${location}` : ""}\n${listingUrl}`;
 
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -65,113 +45,125 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
     try {
       setIsSharing(true);
       await navigator.clipboard.writeText(text);
-      toast({
-        title: "Link copied",
-        description: "Listing details copied. Share with potential buyers.",
-      });
+      window.alert("Listing details copied. Share with potential buyers.");
     } catch {
-      toast({
-        title: "Unable to share",
-        description: "Please copy the listing URL manually from the browser.",
-        variant: "destructive",
-      });
+      window.alert("Unable to share. Please copy the listing URL manually from the browser.");
     } finally {
       setIsSharing(false);
     }
   };
 
+  const handleMarkSold = () => {
+    if (!window.confirm("Mark this listing as sold?")) return;
+    setMenuOpen(false);
+    startMarkSoldTransition(async () => {
+      try {
+        const response = await fetch(`/api/seller/vehicles/${vehicleId}/mark-sold`, { method: "PATCH" });
+        if (!response.ok) {
+          let message = "Please try again.";
+          try {
+            const body = (await response.json()) as { message?: string };
+            message = body.message?.trim() || message;
+          } catch {}
+          window.alert(`Unable to mark listing as sold. ${message}`);
+          return;
+        }
+        router.refresh();
+      } catch {
+        window.alert("Unable to mark listing as sold. Please try again.");
+      }
+    });
+  };
+
+  const handleDelete = () => {
+    if (!window.confirm("Are you sure you want to delete this listing?")) return;
+    setMenuOpen(false);
+    startDeleteTransition(async () => {
+      try {
+        const response = await fetch(`/api/seller/vehicles/${vehicleId}`, { method: "DELETE" });
+        if (!response.ok) {
+          let message = "Please try again.";
+          try {
+            const body = (await response.json()) as { message?: string };
+            message = body.message?.trim() || message;
+          } catch {}
+          window.alert(`Unable to delete listing. ${message}`);
+          return;
+        }
+        router.refresh();
+      } catch {
+        window.alert("Unable to delete listing. Please try again.");
+      }
+    });
+  };
+
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            aria-label="Listing actions"
+    <div className="relative">
+      <button
+        type="button"
+        className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-label="Listing actions"
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        <MoreVertical className="size-4" />
+      </button>
+
+      {menuOpen ? (
+        <div className="absolute right-0 z-20 mt-2 w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+          <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Manage listing</p>
+          <div className="h-px bg-slate-100" />
+          <Link
+            href={listingPath}
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => setMenuOpen(false)}
           >
-            <MoreVertical className="size-4" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuLabel>Manage listing</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href={buildPublicListingUrl(vehicleId, title)} className="flex items-center gap-2">
               <Eye className="size-4" />
               View Listing
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={`/seller/listings/${vehicleId}/edit`} className="flex items-center gap-2">
+          </Link>
+          <Link
+            href={`/seller/listings/${vehicleId}/edit`}
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => setMenuOpen(false)}
+          >
               <Edit className="size-4" />
               Edit Listing
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </Link>
+          <button
+            type="button"
             onClick={() => {
+              setMenuOpen(false);
               void handleShare();
             }}
             disabled={isSharing}
-            className="flex items-center gap-2"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
             <Share2 className="size-4" />
             {isSharing ? "Sharing..." : "Share Listing"}
-          </DropdownMenuItem>
+          </button>
           {canMarkSold ? (
-            <DropdownMenuItem
-              onClick={() => {
-                startMarkSoldTransition(async () => {
-                  await markVehicleSold(vehicleId);
-                  router.refresh();
-                });
-              }}
+            <button
+              type="button"
+              onClick={handleMarkSold}
               disabled={isMarkingSold}
-              className="flex items-center gap-2"
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
             >
               {isMarkingSold ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
               {isMarkingSold ? "Marking..." : "Mark Sold"}
-            </DropdownMenuItem>
+            </button>
           ) : null}
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={(event) => {
-              event.preventDefault();
-              setConfirmDeleteOpen(true);
-            }}
-            className="flex items-center gap-2"
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
           >
-            <Trash2 className="size-4" />
-            Delete Listing
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete listing?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. The listing will be removed from your active dashboard.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                startDeleteTransition(async () => {
-                  await softDeleteVehicle(vehicleId);
-                  setConfirmDeleteOpen(false);
-                  router.refresh();
-                });
-              }}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+            {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            {isDeleting ? "Deleting..." : "Delete Listing"}
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
