@@ -97,6 +97,7 @@ export default async function SellerDashboardPage() {
           };
           const isFeatured = Boolean(featuredMeta.isFeatured);
           const featuredUntil = featuredMeta.featuredUntil ?? null;
+          const views = (vehicle as typeof vehicle & { views?: number }).views ?? 0;
 
           return (
             <article key={vehicle.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -121,7 +122,7 @@ export default async function SellerDashboardPage() {
             </div>
             <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
               <span>{vehicle.inquiries} inquiries</span>
-              <span>{vehicle.views} views</span>
+              <span>{views} views</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <FeatureListingButton
