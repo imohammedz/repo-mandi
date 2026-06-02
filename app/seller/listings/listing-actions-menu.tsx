@@ -152,8 +152,7 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
-              onClick={(event) => {
-                event.preventDefault();
+              onClick={() => {
                 startDeleteTransition(async () => {
                   await softDeleteVehicle(vehicleId);
                   setConfirmDeleteOpen(false);
