@@ -107,7 +107,13 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
               Edit Listing
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void handleShare()} disabled={isSharing} className="flex items-center gap-2">
+          <DropdownMenuItem
+            onClick={() => {
+              void handleShare();
+            }}
+            disabled={isSharing}
+            className="flex items-center gap-2"
+          >
             <Share2 className="size-4" />
             {isSharing ? "Sharing..." : "Share Listing"}
           </DropdownMenuItem>
@@ -145,7 +151,7 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
           <AlertDialogHeader>
             <AlertDialogTitle>Delete listing?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The listing and related leads will be permanently removed.
+              This action cannot be undone. The listing will be removed from your active dashboard.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

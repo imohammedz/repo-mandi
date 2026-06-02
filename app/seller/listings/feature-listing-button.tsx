@@ -33,7 +33,7 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
           toast({
             title: "Featured listing",
             description: featuredUntil
-              ? "Your listing is already featured. Featured listing management will be available soon."
+              ? "Your listing is already featured. Reach out to support if you need to update featured duration."
               : "Your listing is already featured.",
           });
           return;
@@ -51,9 +51,16 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
           });
 
           if (!response.ok) {
+            let message = "Please try again.";
+            try {
+              const body = (await response.json()) as { message?: string };
+              const apiMessage = body.message?.trim();
+              if (apiMessage) message = apiMessage;
+            } catch {}
+
             toast({
               title: "Unable to feature listing",
-              description: "Please try again.",
+              description: message,
               variant: "destructive",
             });
             return;
