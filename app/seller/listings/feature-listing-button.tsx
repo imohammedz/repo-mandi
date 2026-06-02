@@ -61,7 +61,7 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
             return;
           }
 
-          window.alert("Listing featured. Your listing is now promoted to more buyers.");
+          window.alert("Listing featured successfully.");
           router.refresh();
         });
       }}
