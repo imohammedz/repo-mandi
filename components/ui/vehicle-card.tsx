@@ -157,7 +157,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           aria-hidden="true"
           fill
           sizes="(max-width: 768px) 38vw, 200px"
-          className="object-cover object-center opacity-60 blur-md scale-110"
+          className="transform object-cover object-center opacity-60 blur-md scale-110"
           loading="lazy"
           logContext={{ component: "VehicleCardBlur", vehicleId: vehicle.id }}
         />
