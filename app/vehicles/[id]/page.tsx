@@ -742,7 +742,7 @@ export default async function VehicleDetailPage({
 
           <section className="space-y-3">
             <h2 className="text-base font-semibold text-slate-900">Similar Vehicles</h2>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {similar.map((item) => (
                 <VehicleCard key={item.id} vehicle={item} compact />
               ))}

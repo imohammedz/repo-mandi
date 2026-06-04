@@ -1,33 +1,32 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatCurrency } from "@/data/vehicles";
+import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel, Truck } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { resolveImageSrcForRender } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
-import { formatEnumLabel } from "@/lib/formatting";
-import { normalizeClassification } from "@/lib/vehicle-classification";
+import { formatEnumLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
 
 type Props = {
   vehicle: Vehicle;
   compact?: boolean;
 };
 
-const SUSPENSION_PATTERN = /suspension/i;
-const TRAILER_ONLY_PATTERN = /trailer only/i;
-const PRIME_MOVER_ONLY_PATTERN = /(prime mover only|power\s*\/\s*horse\s*\/\s*tractor\s*\/\s*prime mover only)/i;
-const PRIME_WITH_TRAILER_PATTERN = /prime mover \+ trailer/i;
-const MAX_CHIPS_VISIBLE = 3;
+const COMPACT_CARD_CLASS = "min-h-[170px]";
+const REGULAR_CARD_CLASS = "min-h-[180px]";
+const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
   if (!value) return "";
   return formatEnumLabel(value) || value;
 };
+
+const toUpperLabel = (value: string | null | undefined) => toReadableLabel(value).toUpperCase();
 
 const toNormalizedToken = (value: string | null | undefined) =>
   value
@@ -36,134 +35,50 @@ const toNormalizedToken = (value: string | null | undefined) =>
     .replace(/[\s\-]+/g, "_")
     .toUpperCase() ?? "";
 
-const combineMetaParts = (parts: string[]) => {
-  const seen = new Set<string>();
-  return parts
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .filter((part) => {
-      const key = part.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .join(" • ");
-};
-
-const getUsageType = (vehicle: Vehicle, isTrailerOnly: boolean) => {
-  const assetConfiguration = vehicle.assetConfiguration || "";
-  if (PRIME_WITH_TRAILER_PATTERN.test(assetConfiguration)) return "Prime Mover + Trailer";
-  if (PRIME_MOVER_ONLY_PATTERN.test(assetConfiguration)) return "Prime Mover Only";
-  if (TRAILER_ONLY_PATTERN.test(assetConfiguration) || isTrailerOnly) return "Trailer Only";
-  return toReadableLabel(assetConfiguration) || "";
-};
-
-const getTitle = (vehicle: Vehicle, isTrailerOnly: boolean) => {
-  if (isTrailerOnly) {
-    const length = toReadableLabel(vehicle.trailerLength || vehicle.bodyLength);
-    const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
-    const trailerLabel = bodyType.toLowerCase().includes("trailer") ? bodyType : [bodyType, "Trailer"].filter(Boolean).join(" ");
-    const built = [length, trailerLabel].filter(Boolean).join(" ").trim();
-    return built || toReadableLabel(vehicle.title);
-  }
-
+const getTitle = (vehicle: Vehicle) => {
   const brand = toReadableLabel(vehicle.brand).replace(/\s+motors$/i, "");
-  const built = [
-    vehicle.year ? String(vehicle.year) : "",
-    brand,
-    toReadableLabel(vehicle.model),
-    toReadableLabel(vehicle.axleConfiguration || vehicle.axleType),
-  ]
+  const built = [vehicle.year ? String(vehicle.year) : "", brand, toReadableLabel(vehicle.model), toUpperLabel(vehicle.axleConfiguration)]
     .filter(Boolean)
     .join(" ")
     .trim();
-
   return built || toReadableLabel(vehicle.title);
 };
 
-const getSecondaryLines = (vehicle: Vehicle, isTrailerOnly: boolean) => {
-  const lines: string[] = [];
-  const usageType = getUsageType(vehicle, isTrailerOnly);
+const formatBodyLengthShort = (raw: string | null | undefined) => {
+  if (!raw) return "";
+  const cleaned = raw.trim().toUpperCase();
+  const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(?:FT|FEET|FOOT|')?/);
+  return match ? `${match[1]} FT` : cleaned;
+};
 
-  if (isTrailerOnly) {
-    if (typeof vehicle.numberOfAxles === "number" && vehicle.numberOfAxles > 0) {
-      lines.push(`${vehicle.numberOfAxles} ${vehicle.numberOfAxles === 1 ? "Axle" : "Axles"}`);
-    }
-    if (vehicle.suspensionType) {
-      const suspension = toReadableLabel(vehicle.suspensionType);
-      lines.push(SUSPENSION_PATTERN.test(suspension) ? suspension : `${suspension} Suspension`);
-    }
-    if (usageType) lines.push(usageType);
-    return lines;
+const getListingTypeTag = (vehicle: Vehicle) => (vehicle.listingType === "REPO" ? "REPO" : "NON REPO");
+
+const getTyreText = (vehicle: Vehicle) => {
+  const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
+  if (typeof total === "number" && total > 0) {
+    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
   }
-
-  const totalTyres = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
-  if (typeof totalTyres === "number" && totalTyres > 0) {
-    lines.push(`${totalTyres} ${totalTyres === 1 ? "Tyre" : "Tyres"}`);
-  }
-
-  const usageIsPrimeWithTrailer = usageType === "Prime Mover + Trailer";
-  const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.vehicleSubType || vehicle.bodyType);
-  const trailerLength = toReadableLabel(vehicle.trailerLength || vehicle.bodyLength);
-
-  if (usageIsPrimeWithTrailer) {
-    lines.push(combineMetaParts(["Body Trailer", trailerLength]));
-  } else if (bodyType || trailerLength) {
-    lines.push(combineMetaParts([bodyType, trailerLength]));
-  }
-
-  if (usageType) lines.push(usageType);
-  return lines.filter(Boolean);
+  return "";
 };
 
-const getTyreSummary = (vehicle: Vehicle) => {
-  const tyreMountStatusToken = toNormalizedToken(vehicle.tyreMountStatus);
-  const mountStatus =
-    tyreMountStatusToken === "ON_DISC"
-      ? "On Disc"
-      : tyreMountStatusToken === "WITH_TYRES" || tyreMountStatusToken === "TYRES_ONLY"
-        ? "With Tyres"
-        : tyreMountStatusToken === "WITHOUT_DISC_AND_TYRES" || tyreMountStatusToken === "NO_TYRES"
-          ? "Without Disc & Tyres"
-          : tyreMountStatusToken === "PARTIAL"
-            ? "Partial"
-            : tyreMountStatusToken === "UNKNOWN"
-              ? "Unknown"
-            : "";
-
-  const tyreConditionToken = toNormalizedToken(vehicle.tyreCondition);
-  const condition =
-    tyreConditionToken === "AROUND_50"
-      ? "50%"
-      : tyreConditionToken
-        ? toReadableLabel(tyreConditionToken)
-        : "";
-
-  if (!mountStatus && !condition) return "";
-  return `Tyre: ${[mountStatus || "Unknown", condition].filter(Boolean).join(" • ")}`;
+const getBodySizeLine = (vehicle: Vehicle) => {
+  if (vehicle.bodyLength) return formatBodyLengthShort(vehicle.bodyLength);
+  if (vehicle.trailerLength) return formatBodyLengthShort(vehicle.trailerLength);
+  if (vehicle.bodyDimensions) return formatBodyLengthShort(vehicle.bodyDimensions);
+  return "";
 };
 
-const getTransferType = (vehicle: Vehicle) => {
-  const transferToken = toNormalizedToken(vehicle.transferType);
-  if (transferToken === "RC_TRANSFER") return "RC Transfer";
-  if (transferToken === "RTO_NOC") return "RTO NOC";
-  if (transferToken === "OPEN_NOC") return "Open NOC";
-  if (transferToken === "UNKNOWN") return "Unknown";
-
-  const legacyNocToken = toNormalizedToken(vehicle.nocStatus);
-  if (legacyNocToken === "AVAILABLE") return "RC Transfer";
-  if (legacyNocToken === "NOT_AVAILABLE" || legacyNocToken === "UNKNOWN") return "Unknown";
-  return "Unknown";
+const getBodyTypeText = (vehicle: Vehicle) => {
+  const bodyLength = getBodySizeLine(vehicle);
+  const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
+  return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
 };
 
-const getDisplayLocation = (vehicle: Vehicle) => {
-  const location = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
-  const registration = vehicle.registrationState?.trim();
-  if (registration && location) return `${registration} • ${location}`;
-  return registration || location || "Location unavailable";
-};
+const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
 
-const buildCommercialChips = (vehicle: Vehicle) => {
+const getAssetConfiguration = (vehicle: Vehicle) => toUpperLabel(vehicle.assetConfiguration);
+
+const buildSpecChips = (vehicle: Vehicle): string[] => {
   const chips: string[] = [];
   const seen = new Set<string>();
   const addChip = (value: string) => {
@@ -175,118 +90,242 @@ const buildCommercialChips = (vehicle: Vehicle) => {
     chips.push(trimmed);
   };
 
-  if (vehicle.listingType === "REPO") addChip("Repo");
-  if (vehicle.listingType === "REPO" && vehicle.repoStatus) addChip(toReadableLabel(vehicle.repoStatus));
   if (vehicle.bsNorm) addChip(toReadableLabel(vehicle.bsNorm));
-  if (vehicle.photosVerified) addChip("Photos Verified");
-  if (vehicle.rcVerified) addChip("RC Verified");
-  if (vehicle.yardVerified) addChip("Yard Verified");
-  if (vehicle.sellerVerified) addChip("Verified Seller");
+  const transferToken = toNormalizedToken(vehicle.transferType);
+  if (transferToken === "RC_TRANSFER") addChip("RC Transfer");
+  else if (transferToken === "RTO_NOC") addChip("RTO NOC");
+  else if (transferToken === "OPEN_NOC") addChip("Open NOC");
+  const gvw = String(vehicle.gvwTonnes ?? "").trim();
+  if (gvw) addChip(/\bton(?:ne|nes)?\b/i.test(gvw) ? `${gvw} GVW` : `${gvw} Ton GVW`);
+  if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
+  if (vehicle.suspensionType) addChip(toReadableLabel(vehicle.suspensionType));
 
   return chips;
 };
 
-const getChipClass = (chip: string) => {
-  if (chip === "Repo") return "bg-amber-50 text-amber-700";
-  if (chip.includes("Verified")) return "bg-emerald-50 text-emerald-700";
-  return "bg-slate-100 text-slate-700";
+const getSellerRoleChip = (vehicle: Vehicle) => {
+  const roleToken = toNormalizedToken(vehicle.sellerRole);
+  if (roleToken.includes("BROKER")) return "BROKER";
+  if (roleToken.includes("DEALER")) return "DEALER";
+  if (roleToken.includes("FLEET")) return "FLEET OWNER";
+  if (roleToken.includes("BANK") || roleToken.includes("NBFC")) return "BANK PARTNER";
+  if (roleToken.includes("RECOVERY")) return "RECOVERY AGENT";
+  return "";
 };
 
 export function VehicleCard({ vehicle, compact = false }: Props) {
-  const classification = normalizeClassification({
-    assetStructure: vehicle.assetStructure,
-    detachableType: vehicle.detachableType,
-    assetConfiguration: vehicle.assetConfiguration,
-  });
-  const isTrailerOnly = classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER";
-  const title = getTitle(vehicle, isTrailerOnly);
-  const secondaryLines = getSecondaryLines(vehicle, isTrailerOnly);
-  const tyreSummary = getTyreSummary(vehicle);
-  const displayLocation = getDisplayLocation(vehicle);
-  const transferType = getTransferType(vehicle);
-  const kmLine =
-    typeof vehicle.kmDriven === "number" && vehicle.kmDriven > 0
-      ? `${vehicle.kmDriven.toLocaleString("en-IN")} KM`
-      : typeof vehicle.odometerReading === "number" && vehicle.odometerReading > 0
-        ? `${vehicle.odometerReading.toLocaleString("en-IN")} KM`
-        : "";
-  const chips = buildCommercialChips(vehicle);
-  const visibleChips = chips.slice(0, MAX_CHIPS_VISIBLE);
+  const title = getTitle(vehicle);
+  const listingTypeTag = getListingTypeTag(vehicle);
+  const secondLine = getSecondLine(vehicle);
+  const usageType = getAssetConfiguration(vehicle);
+  const price = vehicle.expectedPrice ?? vehicle.price;
+  const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
+  const kmLine = formatIndianKmShort(kmValue);
+  const chips = buildSpecChips(vehicle);
+  const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
+  const maxVisibleChips = 2;
+  const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
-  const preferredImage = resolveImageSrcForRender(vehicle.image || vehicle.gallery[0]);
+  const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
+  const sellerRoleChip = getSellerRoleChip(vehicle);
+  const listingTypeTagClass =
+    listingTypeTag === "REPO"
+      ? "border border-amber-200 bg-amber-50 text-[11px] font-semibold text-amber-800"
+      : "border border-blue-100 bg-blue-50 text-[10px] font-medium text-blue-700";
+  const sellerRoleChipClass =
+    sellerRoleChip === "BROKER"
+      ? "border border-amber-200 bg-amber-100 text-amber-800"
+      : sellerRoleChip === "DEALER"
+        ? "border border-blue-200 bg-blue-100 text-blue-800"
+        : sellerRoleChip === "FLEET OWNER"
+          ? "border border-green-200 bg-green-100 text-green-800"
+          : sellerRoleChip === "BANK PARTNER"
+            ? "border border-purple-200 bg-purple-100 text-purple-800"
+            : "border border-red-200 bg-red-100 text-red-800";
+  const images = useMemo(
+    () => {
+      const resolvedImages = [
+        vehicle.image,
+        vehicle.frontPhoto,
+        vehicle.leftSidePhoto,
+        vehicle.rightSidePhoto,
+        vehicle.backPhoto,
+        vehicle.sidePhoto,
+        ...(vehicle.gallery ?? []),
+      ]
+        .filter(isNonEmptyString)
+        .map((src) => resolveImageSrcForRender(src))
+        .filter(isNonEmptyString);
+
+      return Array.from(new Set(resolvedImages));
+    },
+    [vehicle.backPhoto, vehicle.frontPhoto, vehicle.gallery, vehicle.image, vehicle.leftSidePhoto, vehicle.rightSidePhoto, vehicle.sidePhoto]
+  );
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const safeImageIndex = images.length ? Math.min(selectedImageIndex, images.length - 1) : 0;
+  const selectedImage = images[safeImageIndex] ?? null;
+  const imageCount = images.length;
+  const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (images.length <= 1) return;
+    setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+  const onNextImage = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (images.length <= 1) return;
+    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+  };
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+      className={`flex ${cardClass} items-stretch gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm`}
     >
-      <div className="relative">
-        <SafeImage
-          src={preferredImage}
-          alt={vehicle.title}
-          width={1200}
-          height={800}
-          className={compact ? "h-40 w-full object-cover" : "h-52 w-full object-cover"}
-          logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
-        />
-        <ShareListingButton
-          listingId={vehicle.id}
-          title={title}
-          location={displayLocation}
-          price={vehicle.expectedPrice ?? vehicle.price}
-          variant="icon"
-          className="absolute right-14 top-3 z-20"
-        />
-        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
+      <div className="relative w-[38%] min-w-[130px] max-w-[180px] shrink-0 overflow-hidden rounded-xl bg-black/80">
+        {selectedImage ? (
+          <>
+            <SafeImage
+              src={selectedImage}
+              alt={vehicle.title}
+              fill
+              sizes="(max-width: 768px) 45vw, 240px"
+              className="scale-110 object-cover object-center blur-md opacity-40"
+              loading="lazy"
+              aria-hidden
+              logContext={{ component: "VehicleCard", vehicleId: vehicle.id, variant: "background" }}
+            />
+            <SafeImage
+              src={selectedImage}
+              alt={vehicle.title}
+              fill
+              sizes="(max-width: 768px) 45vw, 240px"
+              className="z-10 object-contain object-center p-0.5"
+              loading="lazy"
+              logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
+            />
+          </>
+        ) : (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center p-3 text-center text-xs font-medium text-white/90"
+            role="status"
+            aria-label="No vehicle photo available"
+          >
+            Photo not uploaded
+          </div>
+        )}
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-2 top-2 z-20" />
+        {imageCount > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={onPrevImage}
+              aria-label="Previous image"
+              className="absolute left-2 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onNextImage}
+              aria-label="Next image"
+              className="absolute right-2 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <span
+              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white"
+              aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
+            >
+              {safeImageIndex + 1} / {imageCount}
+            </span>
+          </>
+        ) : null}
       </div>
 
-      <div className="space-y-3 p-4">
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold leading-snug text-slate-900">{title}</h3>
-          {secondaryLines.map((line) => (
-            <p key={line} className="text-sm text-slate-600">
-              {line}
-            </p>
-          ))}
-        </div>
-
-        {kmLine ? <p className="text-sm text-slate-600">{kmLine}</p> : null}
-        {tyreSummary ? <p className="text-sm text-slate-600">{tyreSummary}</p> : null}
-
-        <div className="flex items-center gap-1 text-sm text-slate-600">
-          <MapPin className="h-4 w-4" />
-          {displayLocation}
-        </div>
-
-        <p className="text-sm text-slate-600">Transfer: {transferType}</p>
-
-        <p className="text-lg font-semibold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
-
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span
+          className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+          role="status"
+          aria-label={`Listing type: ${listingTypeTag}`}
+        >
+          {listingTypeTag}
+        </span>
+        <h3 className="line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
+          <Link href={`/vehicles/${vehicle.id}`} className="inline-block hover:text-slate-700">
+            {title}
+          </Link>
+        </h3>
+        <p className="truncate text-2xl font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+          {formatIndianPriceShort(price)}
+        </p>
+        {locationLine ? (
+          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{locationLine}</span>
+          </p>
+        ) : null}
+        {kmLine ? (
+          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
+            <Gauge className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{kmLine}</span>
+          </p>
+        ) : null}
+        {secondLine ? (
+          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
+            <ShipWheel className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{secondLine}</span>
+          </p>
+        ) : null}
+        {usageType ? (
+          <p className="flex items-center gap-1 truncate text-[12px] font-medium uppercase text-slate-700">
+            <Truck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{usageType}</span>
+          </p>
+        ) : null}
         {visibleChips.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             {visibleChips.map((chip) => (
-              <span key={chip} className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${getChipClass(chip)}`}>
+              <span key={chip} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
                 {chip}
               </span>
             ))}
             {extraChipCount > 0 ? (
-              <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
                 +{extraChipCount} More
               </span>
             ) : null}
           </div>
         ) : null}
-
-        <div className="grid grid-cols-2 gap-2">
-          <WhatsAppButton phone={vehicle.sellerPhone} text="WhatsApp" className="w-full" vehicleId={vehicle.id} />
+        {sellerRoleChip ? (
+          <span className={`inline-flex w-fit items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+            {sellerRoleChip}
+          </span>
+        ) : null}
+        <div className="mt-auto flex items-center gap-2 pt-1">
+          <WhatsAppButton
+            phone={vehicle.sellerPhone}
+            text="WhatsApp"
+            className="h-10 min-h-10 flex-1 items-center justify-center rounded-xl px-3 text-[13px] font-semibold"
+            vehicleId={vehicle.id}
+          />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"
+            className="inline-flex h-10 min-h-10 flex-1 items-center justify-center rounded-xl border border-slate-300 px-3 text-[13px] font-semibold text-slate-700"
           >
             View Details
           </Link>
+          <ShareListingButton
+            listingId={vehicle.id}
+            title={title}
+            location={locationLine}
+            price={price}
+            variant="icon"
+            className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+          />
         </div>
       </div>
     </motion.article>
