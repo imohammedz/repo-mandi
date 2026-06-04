@@ -102,13 +102,9 @@ export default async function SellerDashboardPage() {
       <section id="your-listings" className="space-y-3">
         <h2 className="text-base font-semibold text-slate-900">Your Listings</h2>
         {vehicleList.map((vehicle) => {
-          const featuredMeta = vehicle as typeof vehicle & {
-            isFeatured?: boolean;
-            featuredExpiresAt?: string | null;
-          };
-          const featuredUntil = featuredMeta.featuredExpiresAt ?? null;
+          const featuredUntil = vehicle.featuredExpiresAt ?? null;
           const featuredExpiry = featuredUntil ? new Date(featuredUntil) : null;
-          const isFeatured = Boolean(featuredMeta.isFeatured) && (!featuredExpiry || featuredExpiry > new Date());
+          const isFeatured = Boolean(vehicle.isFeatured) && (!featuredExpiry || featuredExpiry > new Date());
           const hasPendingRequest = pendingFeatureRequestVehicleIds.has(vehicle.id);
           const views = (vehicle as typeof vehicle & { views?: number }).views ?? 0;
 

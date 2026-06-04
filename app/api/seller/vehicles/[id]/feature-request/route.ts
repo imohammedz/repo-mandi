@@ -5,6 +5,7 @@ import { featureRequests, platformSettings, vehicles } from "@/lib/schema";
 
 export const runtime = "nodejs";
 const FEATURE_DURATION_DAYS = 7;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export async function POST(
   _request: Request,
@@ -81,7 +82,9 @@ export async function POST(
     const autoFeatureApprovalEnabled = autoFeatureApprovalRow?.value === "true";
 
     if (autoFeatureApprovalEnabled) {
-      const featuredExpiresAt = new Date(now.getTime() + FEATURE_DURATION_DAYS * 24 * 60 * 60 * 1000);
+      const featuredExpiresAt = new Date(
+        now.getTime() + FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
+      );
 
       await db
         .update(vehicles)
