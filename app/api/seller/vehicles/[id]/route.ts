@@ -3,18 +3,19 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platformSettings, vehicleMedia, vehicles } from "@/lib/schema";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
+import { normalizeRupeeAmount } from "@/lib/formatting";
 
 export const runtime = "nodejs";
+
+const MAX_PRICE = 999_999_999;
 
 function toSafeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
 function toPositiveNumberOrNull(value: unknown) {
-  const normalized = String(value ?? "").replace(/\D/g, "");
-  if (!normalized) return null;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  // Use normalizeRupeeAmount so "16000000.00" and "1,60,00,000" both resolve to 16000000
+  return normalizeRupeeAmount(value);
 }
 
 const MAX_DOCUMENTS = 15;
@@ -143,6 +144,9 @@ export async function PATCH(
     if (body.expectedPrice !== undefined || body.price !== undefined) {
       if (expectedPrice === null) {
         return Response.json({ message: "Expected price must be a positive number." }, { status: 400 });
+      }
+      if (expectedPrice > MAX_PRICE) {
+        return Response.json({ message: "Price is too high. Please enter a valid amount." }, { status: 400 });
       }
     }
 
@@ -294,7 +298,13 @@ export async function PATCH(
     }
     if ("yardName" in body) updates.yardName = toSafeString(body.yardName);
     if ("yardContact" in body) updates.yardContact = toSafeString(body.yardContact);
-    if ("reservePrice" in body) updates.reservePrice = String(numberOrNull(body.reservePrice) ?? 0);
+    if ("reservePrice" in body) {
+      const rp = normalizeRupeeAmount(body.reservePrice) ?? 0;
+      if (rp > MAX_PRICE) {
+        return Response.json({ message: "Price is too high. Please enter a valid amount." }, { status: 400 });
+      }
+      updates.reservePrice = String(rp);
+    }
     if ("numberOfAxles" in body) updates.numberOfAxles = numberOrNull(body.numberOfAxles);
     if ("bodyDimensions" in body) updates.bodyDimensions = toSafeString(body.bodyDimensions) || null;
     if ("trailerType" in body) updates.trailerType = toSafeString(body.trailerType) || null;
@@ -466,9 +476,22 @@ export async function PATCH(
       }
     }
 
+    // Detect whether any actual listing data changed (exclude updatedAt which is always set)
+    const dataUpdates = { ...updates };
+    delete dataUpdates.updatedAt;
+    const hasDataChanges = Object.keys(dataUpdates).length > 0 ||
+      documentsRaw !== null || additionalPhotosRaw !== null || videosRaw !== null ||
+      "frontPhoto" in body || "backPhoto" in body || "leftSidePhoto" in body ||
+      "rightSidePhoto" in body || "interiorPhoto" in body || "sidePhoto" in body;
+
+    // If nothing actually changed, return early without touching DB status or updatedAt
+    if (!hasDataChanges) {
+      return Response.json({ message: "No changes detected." });
+    }
+
     const needsStatusUpdate =
-      new Set(["VERIFIED", "PENDING", "REJECTED", "BANK_PENDING_REVIEW"]).has(existing.listingStatus || "") ||
-      existing.isPublished;
+      (new Set(["VERIFIED", "PENDING", "REJECTED", "BANK_PENDING_REVIEW"]).has(existing.listingStatus || "") ||
+      existing.isPublished) && hasDataChanges;
 
     let autoApproved = false;
     if (needsStatusUpdate) {

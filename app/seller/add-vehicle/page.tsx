@@ -17,7 +17,7 @@ import {
   type AssetStructure,
   type DetachableType,
 } from "@/lib/vehicle-classification";
-import { formatEnumLabel } from "@/lib/formatting";
+import { formatEnumLabel, normalizeRupeeAmount } from "@/lib/formatting";
 
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
@@ -797,6 +797,11 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
   const [selectedOtherDocumentName, setSelectedOtherDocumentName] = useState("");
   const [verifyingAlternatePhone, setVerifyingAlternatePhone] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  // Tracks the original form/media state loaded in edit mode for dirty detection
+  const [originalForm, setOriginalForm] = useState<FormData | null>(null);
+  const [originalPhotos, setOriginalPhotos] = useState<AdditionalPhoto[]>([]);
+  const [originalVideos, setOriginalVideos] = useState<UploadedVideo[]>([]);
+  const [originalDocuments, setOriginalDocuments] = useState<UploadedDocument[]>([]);
   const fileRefs = {
     frontPhoto: useRef<HTMLInputElement>(null),
     backPhoto: useRef<HTMLInputElement>(null),
@@ -922,9 +927,8 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
               parsedDetachableType,
               allowedAssetCategories
             );
-        setForm((previous) => ({
-          ...previous,
-          listingType: (toStringValue(editableData.listingType).toUpperCase() as FormData["listingType"]) || previous.listingType,
+        const loadedForm: Partial<FormData> = {
+          listingType: (toStringValue(editableData.listingType).toUpperCase() as FormData["listingType"]) || "REGULAR",
           listingMode: (toStringValue(editableData.listingMode).toUpperCase() as ListingMode) || "NORMAL",
           assetStructure: parsedAssetStructure,
           detachableType: parsedDetachableType,
@@ -942,7 +946,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           kmDriven: toStringValue(editableData.kmDriven),
           kmMeterStatus: toKmMeterStatusValue(editableData.kmMeterStatus),
           runningCondition: toRunningConditionValue(editableData.runningCondition),
-          expectedPrice: toStringValue(editableData.expectedPrice || editableData.price),
+          expectedPrice: String(normalizeRupeeAmount(editableData.expectedPrice || editableData.price) ?? ""),
           state: toStringValue(editableData.state),
           city: toStringValue(editableData.city),
           vehicleOrYardLocation: toStringValue(editableData.vehicleOrYardLocation || editableData.yardLocation),
@@ -969,7 +973,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           repoStatus: toStringValue(editableData.repoStatus),
           yardName: toStringValue(editableData.yardName),
           yardContact: toStringValue(editableData.yardContact),
-          reservePrice: toStringValue(editableData.reservePrice),
+          reservePrice: String(normalizeRupeeAmount(editableData.reservePrice) ?? ""),
           auctionDate: formatDateForInput(editableData.auctionDate),
           numberOfAxles: toStringValue(editableData.numberOfAxles),
           bodyDimensions: toStringValue(editableData.bodyDimensions),
@@ -1016,7 +1020,8 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           alternateContactNumber: toStringValue(editableData.alternateContactNumber),
           alternateContactNumberVerified: editableData.alternateContactNumberVerified === true,
           gstin: toStringValue(editableData.gstin),
-        }));
+        };
+        setForm((previous) => ({ ...previous, ...loadedForm }));
 
         const media = Array.isArray(editableData.media) ? editableData.media : [];
         const normalizedRequiredPhotoUrls = new Set(
@@ -1029,17 +1034,14 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           ].filter(Boolean)
         );
 
-        setAdditionalPhotos(
-          media
+        const loadedAdditionalPhotos = media
             .filter((item) => item.type === "PHOTO")
             .map((item) => ({
               url: toStringValue(item.url),
               category: toStringValue(item.category || "OTHER"),
             }))
-            .filter((item) => item.url && !normalizedRequiredPhotoUrls.has(item.url))
-        );
-        setVideos(
-          media
+            .filter((item) => item.url && !normalizedRequiredPhotoUrls.has(item.url));
+        const loadedVideos = media
             .filter((item) => item.type === "VIDEO")
             .map((item) => ({
               url: toStringValue(item.url),
@@ -1047,10 +1049,8 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
               mimeType: toStringValue(item.mimeType),
               sizeBytes: Number(item.sizeBytes || 0),
             }))
-            .filter((item) => item.url)
-        );
-        setDocuments(
-          media
+            .filter((item) => item.url);
+        const loadedDocuments = media
             .filter((item) => item.type === "DOCUMENT")
             .map((item) => ({
               url: toStringValue(item.url),
@@ -1060,8 +1060,17 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
               sizeBytes: Number(item.sizeBytes || 0),
               originalFileName: toStringValue(item.originalFileName),
             }))
-            .filter((item) => item.url)
-        );
+            .filter((item) => item.url);
+
+        setAdditionalPhotos(loadedAdditionalPhotos);
+        setVideos(loadedVideos);
+        setDocuments(loadedDocuments);
+
+        // Capture originals for dirty detection
+        setOriginalForm({ ...emptyForm, ...loadedForm } as FormData);
+        setOriginalPhotos(loadedAdditionalPhotos);
+        setOriginalVideos(loadedVideos);
+        setOriginalDocuments(loadedDocuments);
       } catch {
         setError("Failed to load listing details.");
       } finally {
@@ -1134,6 +1143,32 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
   const currentStepLabel = STEP_LABELS[step];
   const lastVisibleStep = visibleSteps[visibleSteps.length - 1] ?? STEP_REVIEW;
   const canSubmit = step === lastVisibleStep && !submitting;
+
+  // Dirty check: compare current form/media with originals loaded in edit mode
+  const isDirty = useMemo(() => {
+    if (mode !== "edit" || !originalForm) return true;
+    const orig = originalForm;
+    const normalizeVal = (v: unknown): string => {
+      if (v === null || v === undefined) return "";
+      return String(v).trim();
+    };
+    const formChanged = (Object.keys(emptyForm) as Array<keyof FormData>).some(
+      (key) => normalizeVal(form[key]) !== normalizeVal(orig[key])
+    );
+    if (formChanged) return true;
+    const photosChanged =
+      additionalPhotos.length !== originalPhotos.length ||
+      additionalPhotos.some((p, i) => p.url !== originalPhotos[i]?.url || p.category !== originalPhotos[i]?.category);
+    if (photosChanged) return true;
+    const videosChanged =
+      videos.length !== originalVideos.length ||
+      videos.some((v, i) => v.url !== originalVideos[i]?.url);
+    if (videosChanged) return true;
+    const documentsChanged =
+      documents.length !== originalDocuments.length ||
+      documents.some((d, i) => d.url !== originalDocuments[i]?.url || d.category !== originalDocuments[i]?.category);
+    return documentsChanged;
+  }, [mode, form, originalForm, additionalPhotos, originalPhotos, videos, originalVideos, documents, originalDocuments]);
   const getVisibleStepNumber = (stepId: number) => {
     const stepIndex = visibleSteps.indexOf(stepId);
     return stepIndex >= 0 ? stepIndex + 1 : stepId;
@@ -1202,6 +1237,9 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
 
   const back = () => {
     if (step === STEP_LISTING) {
+      if (mode === "edit" && isDirty) {
+        if (!window.confirm("You have unsaved changes. Leave without saving?")) return;
+      }
       router.back();
       return;
     }
@@ -1556,6 +1594,12 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
   };
 
   const handleSubmit = async () => {
+    // Guard: do not submit in edit mode if nothing has changed
+    if (mode === "edit" && !isDirty) {
+      setError("No changes to save.");
+      return;
+    }
+
     const stepError =
       validateStep(STEP_LISTING) ||
       validateStep(STEP_BASICS) ||
@@ -1621,8 +1665,8 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
             sizeBytes: document.sizeBytes,
             originalFileName: document.originalFileName,
           })),
-          expectedPrice: form.expectedPrice.replace(/\D/g, ""),
-          reservePrice: form.reservePrice.replace(/\D/g, ""),
+          expectedPrice: String(normalizeRupeeAmount(form.expectedPrice) ?? ""),
+          reservePrice: String(normalizeRupeeAmount(form.reservePrice) ?? 0),
           parkingDue: form.parkingDue.replace(/\D/g, ""),
           kmDriven: form.kmDriven.replace(/\D/g, ""),
           odometerReading: form.odometerReading.replace(/\D/g, ""),
@@ -2516,9 +2560,14 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           type="button"
           onClick={canSubmit ? handleSubmit : next}
           disabled={
-            submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || uploadingDocuments || verifyingAlternatePhone
+            submitting || uploadingField !== "" || uploadingAdditional || uploadingVideo || uploadingDocuments || verifyingAlternatePhone ||
+            (canSubmit && mode === "edit" && !isDirty)
           }
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
+          className={`inline-flex min-h-12 flex-1 items-center justify-center rounded-xl text-sm font-semibold text-white disabled:opacity-50 ${
+            canSubmit && mode === "edit" && !isDirty
+              ? "cursor-not-allowed bg-slate-400 opacity-60"
+              : "bg-slate-900"
+          }`}
         >
           {canSubmit
             ? submitting
