@@ -17,6 +17,9 @@ type Props = {
   compact?: boolean;
 };
 
+const CARD_HEIGHT_CLASS = "h-[142px]";
+const CHIP_MAX_WIDTH_CLASS = "max-w-[96px]";
+
 const toReadableLabel = (value: string | null | undefined) => {
   if (!value) return "";
   return formatEnumLabel(value) || value;
@@ -144,7 +147,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="flex h-[142px] overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm"
+      className={`flex ${CARD_HEIGHT_CLASS} overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm`}
     >
       <div className="relative w-[38%] shrink-0 self-stretch overflow-hidden bg-black">
         <SafeImage
@@ -205,7 +208,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
-              <span key={chip} className={`inline-flex max-w-[96px] truncate rounded px-1.5 py-0.5 text-[9px] font-medium ${getChipClass(chip)}`}>
+              <span key={chip} className={`inline-flex ${CHIP_MAX_WIDTH_CLASS} truncate rounded px-1.5 py-0.5 text-[9px] font-medium ${getChipClass(chip)}`}>
                 {chip}
               </span>
             ))}
