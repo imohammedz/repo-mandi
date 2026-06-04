@@ -126,4 +126,3 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
     </>
   );
 }
-

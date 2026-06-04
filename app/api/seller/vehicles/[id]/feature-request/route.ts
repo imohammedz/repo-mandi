@@ -48,17 +48,16 @@ export async function POST(
       );
     }
 
-    const [inserted] = await db
+    await db
       .insert(featureRequests)
       .values({
         vehicleId: id,
         sellerId: currentUser.id,
         status: "PENDING",
-      })
-      .returning({ id: featureRequests.id });
+      });
 
     return Response.json(
-      { success: true, requestId: inserted.id, message: "Feature request submitted. RepoMandi will review and feature your listing." },
+      { success: true, message: "Feature request submitted. RepoMandi will review and feature your listing." },
       { status: 201 }
     );
   } catch (error) {
