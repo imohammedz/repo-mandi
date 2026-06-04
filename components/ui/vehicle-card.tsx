@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Gauge, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gauge, MapPin, Truck } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -130,10 +130,18 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
-      ? "bg-amber-50 text-amber-800 border border-amber-100"
-      : "bg-blue-50 text-blue-700 border border-blue-100";
+      ? "border border-amber-200 bg-amber-50 text-[11px] font-semibold text-amber-800"
+      : "border border-blue-100 bg-blue-50 text-[10px] font-medium text-blue-700";
   const sellerRoleChipClass =
-    sellerRoleChip === "BROKER" ? "bg-slate-900 text-white" : "bg-amber-100 text-amber-800 border border-amber-200";
+    sellerRoleChip === "BROKER"
+      ? "border border-amber-200 bg-amber-100 text-amber-800"
+      : sellerRoleChip === "DEALER"
+        ? "border border-blue-200 bg-blue-100 text-blue-800"
+        : sellerRoleChip === "FLEET OWNER"
+          ? "border border-green-200 bg-green-100 text-green-800"
+          : sellerRoleChip === "BANK PARTNER"
+            ? "border border-purple-200 bg-purple-100 text-purple-800"
+            : "border border-red-200 bg-red-100 text-red-800";
   const imageSources = useMemo(
     () =>
       [
@@ -216,7 +224,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               <ChevronRight className="h-4 w-4" />
             </button>
             <span
-              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white"
+              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white"
               aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
             >
               {safeImageIndex + 1} / {imageCount}
@@ -227,18 +235,18 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span
-          className={`inline-flex w-fit rounded px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${listingTypeTagClass}`}
+          className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
           role="status"
           aria-label={`Listing type: ${listingTypeTag}`}
         >
           {listingTypeTag}
         </span>
-        <h3 className="line-clamp-2 text-[15px] font-bold uppercase leading-tight text-slate-900">
+        <h3 className="line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
           <Link href={`/vehicles/${vehicle.id}`} className="inline-block hover:text-slate-700">
             {title}
           </Link>
         </h3>
-        <p className="truncate text-xl font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+        <p className="truncate text-2xl font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
           {formatIndianPriceShort(price)}
         </p>
         {locationLine ? (
@@ -253,8 +261,18 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             <span className="truncate">{kmLine}</span>
           </p>
         ) : null}
-        {secondLine ? <p className="truncate text-[12px] text-slate-600">{secondLine}</p> : null}
-        {usageType ? <p className="truncate text-[12px] font-medium uppercase text-slate-700">{usageType}</p> : null}
+        {secondLine ? (
+          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
+            <Truck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{secondLine}</span>
+          </p>
+        ) : null}
+        {usageType ? (
+          <p className="flex items-center gap-1 truncate text-[12px] font-medium uppercase text-slate-700">
+            <Truck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{usageType}</span>
+          </p>
+        ) : null}
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             {visibleChips.map((chip) => (
