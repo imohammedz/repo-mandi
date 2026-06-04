@@ -211,7 +211,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : (
           <div
             className="absolute inset-0 z-10 flex items-center justify-center p-3 text-center text-xs font-medium text-white/90"
-            role="img"
+            role="status"
             aria-label="No vehicle photo available"
           >
             Photo not uploaded
