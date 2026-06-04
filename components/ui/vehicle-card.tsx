@@ -183,9 +183,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} items-stretch gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm`}
+      className={`flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
     >
-      <div className="relative w-[38%] min-w-[130px] max-w-[180px] shrink-0 overflow-hidden rounded-xl bg-black/80">
+      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
         {selectedImage ? (
           <>
             <SafeImage
@@ -254,8 +254,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         >
           {listingTypeTag}
         </span>
-        <h3 className="line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
-          <Link href={`/vehicles/${vehicle.id}`} className="inline-block hover:text-slate-700">
+        <h3 className="min-w-0 line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
+          <Link href={`/vehicles/${vehicle.id}`} className="inline-block min-w-0 hover:text-slate-700">
             {title}
           </Link>
         </h3>
@@ -287,14 +287,17 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           </p>
         ) : null}
         {visibleChips.length > 0 ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
             {visibleChips.map((chip) => (
-              <span key={chip} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+              <span
+                key={chip}
+                className="inline-flex max-w-full shrink items-center truncate rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700"
+              >
                 {chip}
               </span>
             ))}
             {extraChipCount > 0 ? (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+              <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
                 +{extraChipCount} More
               </span>
             ) : null}
@@ -305,16 +308,16 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {sellerRoleChip}
           </span>
         ) : null}
-        <div className="mt-auto flex items-center gap-2 pt-1">
+        <div className="mt-auto flex w-full min-w-0 items-center gap-1.5 pt-1">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-10 min-h-10 flex-1 items-center justify-center rounded-xl px-3 text-[13px] font-semibold"
+            className="h-10 min-h-10 min-w-0 flex-1 items-center justify-center rounded-xl px-2 text-sm font-semibold"
             vehicleId={vehicle.id}
           />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-10 min-h-10 flex-1 items-center justify-center rounded-xl border border-slate-300 px-3 text-[13px] font-semibold text-slate-700"
+            className="inline-flex h-10 min-h-10 min-w-0 flex-1 items-center justify-center truncate rounded-xl border border-slate-300 px-2 text-sm font-semibold text-slate-700"
           >
             View Details
           </Link>

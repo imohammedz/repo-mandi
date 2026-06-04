@@ -40,10 +40,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} antialiased`}>
-      <body className="bg-slate-50 font-sans text-slate-900">
+      <body className="overflow-x-hidden bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
-          <div className="mx-auto min-h-screen w-full max-w-xl pb-24 pt-14">{children}</div>
+          <div className="mx-auto min-h-screen w-full max-w-xl overflow-x-hidden pb-24 pt-14">{children}</div>
           <SiteFooter />
           <StickyWhatsAppCTA />
           <BottomNav />

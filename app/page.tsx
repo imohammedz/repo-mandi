@@ -160,8 +160,8 @@ export default async function HomePage() {
   }
 
   return (
-    <div>
-      <main className="space-y-10 px-4 pb-8 pt-6">
+    <div className="w-full max-w-full overflow-x-hidden">
+      <main className="w-full max-w-full space-y-10 overflow-x-hidden px-4 pb-8 pt-6">
         <section className="space-y-4">
           <h1 className="text-3xl font-semibold leading-tight text-slate-900">
             Verified Bank-Seized Commercial Vehicles
@@ -199,7 +199,7 @@ export default async function HomePage() {
               View all
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
             {featuredListingVehicles.length > 0 ? (
               featuredListingVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
@@ -227,7 +227,7 @@ export default async function HomePage() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
-          <div className="space-y-2">
+          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
             {recentVehicles.length > 0 ? (
               recentVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />

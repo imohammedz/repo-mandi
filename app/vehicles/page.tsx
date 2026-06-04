@@ -117,7 +117,7 @@ export default async function VehicleListingPage({
   const appVehicles = vehicleList.map(dbToVehicle);
 
   return (
-    <main className="space-y-4 px-4 pb-8 pt-4">
+    <main className="w-full max-w-full space-y-4 overflow-x-hidden px-4 pb-8 pt-4">
       <header className="sticky top-0 z-20 -mx-4 border-b border-slate-100 bg-slate-50 px-4 pb-3 pt-2">
         <SearchBar compact />
         <div className="mt-3 flex items-center justify-between gap-2">
@@ -126,7 +126,7 @@ export default async function VehicleListingPage({
         </div>
       </header>
 
-      <section className="space-y-2">
+      <section className="w-full max-w-full space-y-2 overflow-x-hidden">
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-600">
             <span className="font-semibold text-slate-900">{appVehicles.length}</span> listings found

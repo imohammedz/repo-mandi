@@ -7,6 +7,7 @@ export function StickyWhatsAppCTA() {
   const pathname = usePathname();
 
   if (
+    pathname === "/" ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/seller") ||
