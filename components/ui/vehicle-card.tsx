@@ -129,7 +129,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const imageSources = useMemo(
     () => [...new Set([vehicle.image, ...(vehicle.gallery || [])].filter(isNonEmptyString).map((src) => resolveImageSrcForRender(src)))],
-    [vehicle.gallery, vehicle.image, resolveImageSrcForRender]
+    [vehicle.gallery, vehicle.image]
   );
   const safeImageIndex = 0;
   const activeImage = imageSources[safeImageIndex] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
