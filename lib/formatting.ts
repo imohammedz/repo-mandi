@@ -68,6 +68,7 @@ export function formatEnumLabel(value: string | null | undefined) {
 /**
  * Formats a rupee amount using Indian short units (Lakhs / Cr).
  * Trailing zeros are removed from the fractional part.
+ * Returns an empty string for null, undefined, zero, or negative values.
  *
  * Examples:
  *   1_600_000  → "₹16 Lakhs"

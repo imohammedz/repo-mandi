@@ -12,7 +12,6 @@ import { normalizeClassification } from "@/lib/vehicle-classification";
 
 type Props = {
   vehicle: Vehicle;
-  compact?: boolean;
 };
 
 const TRAILER_ONLY_PATTERN = /trailer only/i;
@@ -79,7 +78,7 @@ const getSecondLine = (vehicle: Vehicle, isTrailerOnly: boolean) => {
 const getTyreLine = (vehicle: Vehicle) => {
   const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
   if (typeof total === "number" && total > 0) {
-    return `${total} ${total === 1 ? "Tyre" : "Tyre"}`;
+    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
   }
   return "";
 };
@@ -99,6 +98,7 @@ const getBadges = (vehicle: Vehicle): string[] => {
     if (vehicle.repoStatus === "Bank Seized") badges.push("BANK SEIZED");
   }
   if (vehicle.isFeatured) badges.push("FEATURED");
+  // Non-REPO listings with no other badge show a generic label so buyers always see a category.
   if (badges.length === 0 && vehicle.listingType !== "REPO") badges.push("USED VEHICLE");
   return badges.slice(0, 2);
 };
