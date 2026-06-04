@@ -166,22 +166,26 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-1.5 top-1 z-20" />
-        <button
-          type="button"
-          onClick={onPrevImage}
-          aria-label="Previous image"
-          className="absolute left-1 top-1/2 z-20 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
-        >
-          <ChevronLeft className="h-3 w-3" />
-        </button>
-        <button
-          type="button"
-          onClick={onNextImage}
-          aria-label="Next image"
-          className="absolute right-1 top-1/2 z-20 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
-        >
-          <ChevronRight className="h-3 w-3" />
-        </button>
+        {imageCount > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={onPrevImage}
+              aria-label="Previous image"
+              className="absolute left-1 top-1/2 z-20 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={onNextImage}
+              aria-label="Next image"
+              className="absolute right-1 top-1/2 z-20 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+            >
+              <ChevronRight className="h-3 w-3" />
+            </button>
+          </>
+        ) : null}
         <span
           className="absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-medium text-white"
           aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
