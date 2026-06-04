@@ -64,3 +64,26 @@ export function formatDisplayLabel(value: string | null | undefined) {
 export function formatEnumLabel(value: string | null | undefined) {
   return formatDisplayLabel(value);
 }
+
+/**
+ * Formats a rupee amount using Indian short units (Lakhs / Cr).
+ * Trailing zeros are removed from the fractional part.
+ *
+ * Examples:
+ *   1_600_000  → "₹16 Lakhs"
+ *   1_435_000  → "₹14.35 Lakhs"
+ *   2_800_000  → "₹28 Lakhs"
+ *  15_000_000  → "₹1.5 Cr"
+ */
+export function formatIndianShort(amount: number | null | undefined): string {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) return "";
+  if (amount >= 10_000_000) {
+    const cr = parseFloat((amount / 10_000_000).toFixed(2));
+    return `₹${cr} Cr`;
+  }
+  if (amount >= 100_000) {
+    const lakhs = parseFloat((amount / 100_000).toFixed(2));
+    return `₹${lakhs} Lakhs`;
+  }
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
