@@ -143,8 +143,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             ? "border border-purple-200 bg-purple-100 text-purple-800"
             : "border border-red-200 bg-red-100 text-red-800";
   const images = useMemo(
-    () =>
-      [
+    () => {
+      const resolvedImages = [
         vehicle.image,
         vehicle.frontPhoto,
         vehicle.leftSidePhoto,
@@ -155,8 +155,10 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       ]
         .filter(isNonEmptyString)
         .map((src) => resolveImageSrcForRender(src))
-        .filter(isNonEmptyString)
-        .filter((src, index, all) => all.indexOf(src) === index),
+        .filter(isNonEmptyString);
+
+      return Array.from(new Set(resolvedImages));
+    },
     [vehicle.backPhoto, vehicle.frontPhoto, vehicle.gallery, vehicle.image, vehicle.leftSidePhoto, vehicle.rightSidePhoto, vehicle.sidePhoto]
   );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -207,7 +209,11 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             />
           </>
         ) : (
-          <div className="absolute inset-0 z-10 flex items-center justify-center p-3 text-center text-xs font-medium text-white/90">
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center p-3 text-center text-xs font-medium text-white/90"
+            role="img"
+            aria-label="No vehicle photo available"
+          >
             Photo not uploaded
           </div>
         )}
