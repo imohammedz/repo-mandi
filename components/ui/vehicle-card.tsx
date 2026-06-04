@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, CircleDot, Gauge, MapPin, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel, Truck } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -263,7 +263,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : null}
         {secondLine ? (
           <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
-            <CircleDot className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <ShipWheel className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
