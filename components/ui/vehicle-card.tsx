@@ -8,7 +8,7 @@ import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
-import { resolveImageSrcForRender } from "@/lib/media";
+import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
 import { formatEnumLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
 
@@ -96,7 +96,7 @@ const buildChips = (vehicle: Vehicle): string[] => {
   else if (transferToken === "RTO_NOC") addChip("RTO NOC");
   else if (transferToken === "OPEN_NOC") addChip("Open NOC");
   const gvw = String(vehicle.gvwTonnes ?? "").trim();
-  if (gvw) addChip(gvw.toLowerCase().includes("ton") ? `${gvw} GVW` : `${gvw} Ton GVW`);
+  if (gvw) addChip(/\bton(?:ne|nes)?\b/i.test(gvw) ? `${gvw} GVW` : `${gvw} Ton GVW`);
   if (typeof vehicle.parkingDue === "number") addChip(vehicle.parkingDue > 0 ? "Parking Due" : "No Parking Due");
   if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
   if (vehicle.tyreCondition) addChip(toReadableLabel(vehicle.tyreCondition));
@@ -128,7 +128,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   );
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const safeImageIndex = imageSources.length ? Math.min(activeImageIndex, imageSources.length - 1) : 0;
-  const activeImage = imageSources[safeImageIndex] ?? resolveImageSrcForRender(vehicle.image || vehicle.gallery[0] || "");
+  const activeImage = imageSources[safeImageIndex] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
   const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
