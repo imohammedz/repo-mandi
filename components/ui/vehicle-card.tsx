@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Gauge, MapPin, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Disc, Gauge, MapPin, Truck } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -184,12 +184,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       viewport={{ once: true }}
       className={`flex ${cardClass} gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm`}
     >
-      <div className="relative h-40 w-[38%] min-w-[120px] max-w-[160px] shrink-0 overflow-hidden rounded-xl bg-black/80">
+      <div className="relative h-40 w-[43%] min-w-[140px] max-w-[190px] shrink-0 overflow-hidden rounded-xl bg-black/80">
         <SafeImage
           src={activeImage}
           alt={vehicle.title}
           fill
-          sizes="(max-width: 768px) 40vw, 220px"
+          sizes="(max-width: 768px) 45vw, 240px"
           className="scale-110 object-cover object-center blur-md opacity-40"
           loading="lazy"
           aria-hidden
@@ -199,8 +199,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           src={activeImage}
           alt={vehicle.title}
           fill
-          sizes="(max-width: 768px) 40vw, 220px"
-          className="z-10 object-contain object-center p-2"
+          sizes="(max-width: 768px) 45vw, 240px"
+          className="z-10 object-contain object-center p-1"
           loading="lazy"
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
@@ -263,7 +263,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : null}
         {secondLine ? (
           <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
-            <Truck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <Disc className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
