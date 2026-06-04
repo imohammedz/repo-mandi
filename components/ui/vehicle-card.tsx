@@ -291,9 +291,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {visibleChips.map((chip) => (
               <span
                 key={chip}
-                className="inline-flex max-w-full shrink items-center truncate rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700"
+                className="inline-flex max-w-full items-center overflow-hidden rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700"
               >
-                {chip}
+                <span className="truncate">{chip}</span>
               </span>
             ))}
             {extraChipCount > 0 ? (
