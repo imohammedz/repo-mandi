@@ -13,11 +13,10 @@ import {
 } from "lucide-react";
 import { SearchBar } from "@/components/ui/search-bar";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import { featuredVehicles } from "@/data/vehicles";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 import type { Vehicle } from "@/types/vehicle";
 import type { LucideIcon } from "lucide-react";
 
@@ -115,11 +114,33 @@ function buildVehicleHref(filters: VehicleFilterQuery) {
 export const revalidate = 60;
 
 export default async function HomePage() {
+  let featuredListingVehicles: Vehicle[] = [];
   let recentVehicles: Vehicle[] = [];
   if (!process.env.DATABASE_URL) {
     console.warn("Skipping homepage recent listings because DATABASE_URL is not configured.");
   } else {
     try {
+      const now = new Date();
+      const featuredListingsRows = await db
+        .select()
+        .from(vehiclesTable)
+        .where(
+          and(
+            eq(vehiclesTable.isFeatured, true),
+            eq(vehiclesTable.listingStatus, "VERIFIED"),
+            eq(vehiclesTable.isPublished, true),
+            ne(vehiclesTable.status, "SOLD"),
+            isNull(vehiclesTable.deletedAt),
+            or(
+              gt(vehiclesTable.featuredExpiresAt, now),
+              isNull(vehiclesTable.featuredExpiresAt),
+            ),
+          ),
+        )
+        .orderBy(desc(vehiclesTable.featuredAt), desc(vehiclesTable.updatedAt))
+        .limit(3);
+      featuredListingVehicles = featuredListingsRows.map(dbToVehicle);
+
       const recentListingsRows = await db
         .select()
         .from(vehiclesTable)
@@ -179,9 +200,13 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="space-y-4">
-            {featuredVehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
-            ))}
+            {featuredListingVehicles.length > 0 ? (
+              featuredListingVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No featured listings yet.</p>
+            )}
           </div>
         </section>
 

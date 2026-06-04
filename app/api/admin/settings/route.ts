@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-const ALLOWED_KEYS = ["AUTO_APPROVE_LISTINGS", "OTP_PROVIDER"] as const;
+const ALLOWED_KEYS = ["AUTO_APPROVE_LISTINGS", "AUTO_FEATURE_APPROVAL_ENABLED", "OTP_PROVIDER"] as const;
 type SettingKey = (typeof ALLOWED_KEYS)[number];
 
 const OTP_PROVIDER_VALUES = ["MSG91_SMS", "WHATSAPP", "TWILIO_SMS"] as const;
@@ -30,10 +30,12 @@ export async function GET() {
   }
 
   const autoApprove = await getSetting("AUTO_APPROVE_LISTINGS");
+  const autoFeatureApprove = await getSetting("AUTO_FEATURE_APPROVAL_ENABLED");
   const otpProvider = (await getSetting("OTP_PROVIDER")) ?? "MSG91_SMS";
 
   return Response.json({
     AUTO_APPROVE_LISTINGS: autoApprove === "true",
+    AUTO_FEATURE_APPROVAL_ENABLED: autoFeatureApprove === "true",
     OTP_PROVIDER: otpProvider,
   });
 }
@@ -80,6 +82,18 @@ export async function PATCH(request: Request) {
         set: { value: String(boolValue), updatedAt: new Date() },
       });
     results["AUTO_APPROVE_LISTINGS"] = boolValue;
+  }
+
+  if ("AUTO_FEATURE_APPROVAL_ENABLED" in body) {
+    const boolValue = Boolean(body["AUTO_FEATURE_APPROVAL_ENABLED"]);
+    await db
+      .insert(platformSettings)
+      .values({ key: "AUTO_FEATURE_APPROVAL_ENABLED", value: String(boolValue), updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: platformSettings.key,
+        set: { value: String(boolValue), updatedAt: new Date() },
+      });
+    results["AUTO_FEATURE_APPROVAL_ENABLED"] = boolValue;
   }
 
   // Handle OTP_PROVIDER

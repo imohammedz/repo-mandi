@@ -6,6 +6,7 @@ type OtpProvider = "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
 
 type AdminSettingsClientProps = {
   autoApproveListings: boolean;
+  autoFeatureApprovalEnabled: boolean;
   otpProvider: OtpProvider;
   initialWhatsAppEnvMissing: string[];
   initialTwilioEnvMissing: string[];
@@ -36,11 +37,13 @@ const TWILIO_ENV_VARS = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_VERI
 
 export default function AdminSettingsClient({
   autoApproveListings,
+  autoFeatureApprovalEnabled,
   otpProvider,
   initialWhatsAppEnvMissing,
   initialTwilioEnvMissing,
 }: AdminSettingsClientProps) {
   const [autoApprove, setAutoApprove] = useState(autoApproveListings);
+  const [autoFeatureApprove, setAutoFeatureApprove] = useState(autoFeatureApprovalEnabled);
   const [selectedOtpProvider, setSelectedOtpProvider] = useState<OtpProvider>(otpProvider);
 
   const [saving, setSaving] = useState(false);
@@ -98,6 +101,7 @@ export default function AdminSettingsClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           AUTO_APPROVE_LISTINGS: autoApprove,
+          AUTO_FEATURE_APPROVAL_ENABLED: autoFeatureApprove,
           OTP_PROVIDER: selectedOtpProvider,
         }),
       });
@@ -151,6 +155,40 @@ export default function AdminSettingsClient({
             <span
               className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
                 autoApprove ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-slate-900">Featured Listing Requests</p>
+            <p className="text-sm font-medium text-slate-800">Auto Approve Featured Listing Requests</p>
+            <p className="text-xs text-slate-500">
+              When enabled, seller requests to feature a listing will immediately mark the listing as featured.
+            </p>
+            <p className="text-xs text-slate-500">
+              Later this can be replaced with paid featured listing checkout.
+            </p>
+            <p className={`text-xs font-medium ${autoFeatureApprove ? "text-emerald-600" : "text-slate-400"}`}>
+              {autoFeatureApprove ? "Auto feature approval ON" : "Auto feature approval OFF"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAutoFeatureApprove((prev) => !prev)}
+            disabled={saving}
+            aria-pressed={autoFeatureApprove}
+            aria-label={`Auto approve featured listing requests is currently ${autoFeatureApprove ? "on" : "off"}. Click to ${autoFeatureApprove ? "disable" : "enable"}.`}
+            className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+              autoFeatureApprove ? "bg-emerald-600" : "bg-slate-200"
+            }`}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                autoFeatureApprove ? "translate-x-5" : "translate-x-0"
               }`}
             />
           </button>

@@ -162,6 +162,10 @@ export type Vehicle = {
   yardVerified?: boolean;
   sellerVerified?: boolean;
   isPublished?: boolean;
+  isFeatured?: boolean;
+  featuredAt?: string | null;
+  featuredExpiresAt?: string | null;
+  featuredBy?: number | null;
   verificationStatus?: "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED";
   rejectionReason?: string;
   verifiedBy?: number | null;

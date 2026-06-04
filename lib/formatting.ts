@@ -1,3 +1,26 @@
+/**
+ * Normalizes a rupee amount from any display format to a plain integer.
+ *
+ * Accepts:  16000000  |  "16000000"  |  "16000000.00"  |  "1,60,00,000"  |  "₹1,60,00,000"
+ * Returns:  16000000  (integer rupees, never paise, never extra zeros)
+ * Returns:  null for empty / null / non-positive values
+ *
+ * This is the single source of truth for price normalization on both
+ * client (prefill + submit) and server (PATCH validation).
+ */
+export function normalizeRupeeAmount(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const str = String(value)
+    .replace(/₹/g, "")
+    .replace(/,/g, "")
+    .trim();
+  if (!str) return null;
+  // parseFloat handles "16000000.00" → 16000000; Math.round removes fp noise
+  const parsed = parseFloat(str);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.round(parsed);
+}
+
 const SPECIAL_LABELS: Record<string, string> = {
   RC_TRANSFER: "RC Transfer",
   RTO_NOC: "RTO NOC",
