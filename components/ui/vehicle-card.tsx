@@ -189,6 +189,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         <span
           className="absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-medium text-white"
           aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
+          aria-live="polite"
         >
           {safeImageIndex + 1} / {imageCount}
         </span>
@@ -203,7 +204,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           {listingTypeTag}
         </span>
         <h3 className="truncate text-[11px] font-semibold uppercase leading-tight text-slate-900">
-          <Link href={`/vehicles/${vehicle.id}`} className="hover:text-slate-700">
+          <Link href={`/vehicles/${vehicle.id}`} className="inline-block py-0.5 hover:text-slate-700">
             {title}
           </Link>
         </h3>
@@ -215,17 +216,17 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
-              <span key={chip} className={`inline-flex ${CHIP_MAX_WIDTH_CLASS} truncate rounded bg-slate-100 px-1 py-0.5 text-[8px] font-medium text-slate-700`}>
+              <span key={chip} className={`inline-flex ${CHIP_MAX_WIDTH_CLASS} truncate rounded bg-slate-100 px-1 py-0.5 text-[9px] font-medium text-slate-700`}>
                 {chip}
               </span>
             ))}
             {extraChipCount > 0 ? (
-              <span className="inline-flex shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[8px] font-medium text-slate-700">+{extraChipCount} More</span>
+              <span className="inline-flex shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[9px] font-medium text-slate-700">+{extraChipCount} More</span>
             ) : null}
           </div>
         ) : null}
         {sellerRoleChip ? (
-          <span className="inline-flex w-fit truncate rounded bg-slate-900/90 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-white">
+          <span className="inline-flex w-fit truncate rounded bg-slate-900/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
             {sellerRoleChip}
           </span>
         ) : null}
@@ -233,12 +234,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="min-h-6 flex-1 rounded-md px-1.5 text-[9px] font-semibold"
+            className="min-h-7 flex-1 rounded-md px-1.5 text-[9px] font-semibold"
             vehicleId={vehicle.id}
           />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex min-h-6 flex-1 items-center justify-center rounded-md border border-slate-300 px-1.5 text-[9px] font-semibold text-slate-700"
+            className="inline-flex min-h-7 flex-1 items-center justify-center rounded-md border border-slate-300 px-1.5 text-[9px] font-semibold text-slate-700"
           >
             View Details
           </Link>
