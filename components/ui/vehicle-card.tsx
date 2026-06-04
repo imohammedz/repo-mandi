@@ -56,7 +56,7 @@ const getListingTypeTag = (vehicle: Vehicle) => (vehicle.listingType === "REPO" 
 const getTyreText = (vehicle: Vehicle) => {
   const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
   if (typeof total === "number" && total > 0) {
-    return `${total} Tyre`;
+    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
   }
   return "";
 };
@@ -111,7 +111,7 @@ const getSellerRoleChip = (vehicle: Vehicle) => {
   return "";
 };
 
-export function VehicleCard({ vehicle }: Props) {
+export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
   const secondLine = getSecondLine(vehicle);
@@ -120,7 +120,8 @@ export function VehicleCard({ vehicle }: Props) {
   const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
   const kmLine = formatIndianKmShort(kmValue);
   const chips = buildSpecChips(vehicle);
-  const visibleChips = chips.slice(0, 3);
+  const maxVisibleChips = compact ? 3 : 3;
+  const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
@@ -136,7 +137,7 @@ export function VehicleCard({ vehicle }: Props) {
     event.preventDefault();
     event.stopPropagation();
     if (imageSources.length <= 1) return;
-    setActiveImageIndex((prev) => (prev - 1 + imageSources.length) % imageSources.length);
+    setActiveImageIndex((prev) => (prev === 0 ? imageSources.length - 1 : prev - 1));
   };
   const onNextImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
