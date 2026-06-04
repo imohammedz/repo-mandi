@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { MapPin, Truck } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -72,7 +73,7 @@ const getBodyTypeChip = (vehicle: Vehicle) => {
 
 const getRepoStatusTag = (vehicle: Vehicle) => {
   const repoStatusToken = toNormalizedToken(vehicle.repoStatus);
-  if (repoStatusToken.includes("AUCTION")) return "AUCTION VEHICLE";
+  if (repoStatusToken && repoStatusToken.includes("AUCTION")) return "AUCTION VEHICLE";
   return vehicle.listingType === "REPO" ? "BANK REPO" : "NON REPO";
 };
 
@@ -141,11 +142,22 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         </span>
         <h3 className="truncate text-[13px] font-semibold leading-tight text-slate-900">{title}</h3>
         <p className="truncate text-lg font-extrabold leading-none text-slate-900">{formatIndianPriceShort(price)}</p>
-        <p className="truncate text-[11px] text-slate-600">
-          {locationLine ? `📍 ${locationLine}` : ""}
-          {locationLine && kmLine ? "  •  " : ""}
-          {kmLine ? `🚛 ${kmLine}` : ""}
-        </p>
+        {(locationLine || kmLine) && (
+          <div className="flex min-w-0 items-center gap-2 text-[11px] text-slate-600">
+            {locationLine ? (
+              <span className="inline-flex min-w-0 items-center gap-1 truncate">
+                <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span className="truncate">{locationLine}</span>
+              </span>
+            ) : null}
+            {kmLine ? (
+              <span className="inline-flex min-w-0 items-center gap-1 truncate">
+                <Truck className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span className="truncate">{kmLine}</span>
+              </span>
+            ) : null}
+          </div>
+        )}
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 flex-wrap items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
