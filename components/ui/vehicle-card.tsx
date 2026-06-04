@@ -19,6 +19,7 @@ type Props = {
 
 const CARD_HEIGHT_CLASS = "h-[142px]";
 const CHIP_MAX_WIDTH_CLASS = "max-w-[96px]";
+const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
   if (!value) return "";
@@ -123,7 +124,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const visibleChips = chips.slice(0, compact ? 3 : 4);
   const extraChipCount = chips.length - visibleChips.length;
   const imageSources = useMemo(
-    () => [...new Set([vehicle.image, ...(vehicle.gallery || [])].filter(Boolean).map((src) => resolveImageSrcForRender(src as string)))],
+    () => [...new Set([vehicle.image, ...(vehicle.gallery || [])].filter(isNonEmptyString).map((src) => resolveImageSrcForRender(src)))],
     [vehicle.gallery, vehicle.image]
   );
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -153,6 +154,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         <SafeImage
           src={activeImage}
           alt={vehicle.title}
+          aria-hidden="true"
           fill
           sizes="(max-width: 768px) 38vw, 200px"
           className="object-cover object-center opacity-60 blur-md scale-110"
