@@ -128,6 +128,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
+  const listingTypeTagClass =
+    listingTypeTag === "REPO"
+      ? "bg-amber-50 text-amber-800 border border-amber-100"
+      : "bg-blue-50 text-blue-700 border border-blue-100";
+  const sellerRoleChipClass =
+    sellerRoleChip === "BROKER" ? "bg-slate-900 text-white" : "bg-amber-100 text-amber-800 border border-amber-200";
   const imageSources = useMemo(
     () =>
       [
@@ -197,7 +203,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               type="button"
               onClick={onPrevImage}
               aria-label="Previous image"
-              className="absolute left-2 top-1/2 z-20 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+              className="absolute left-2 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -205,15 +211,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               type="button"
               onClick={onNextImage}
               aria-label="Next image"
-              className="absolute right-2 top-1/2 z-20 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+              className="absolute right-2 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <span
-              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded bg-black/60 px-2 py-1 text-[11px] font-medium text-white"
+              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white"
               aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
             >
-              {safeImageIndex + 1}/{imageCount}
+              {safeImageIndex + 1} / {imageCount}
             </span>
           </>
         ) : null}
@@ -221,7 +227,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span
-          className="inline-flex w-fit rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-700"
+          className={`inline-flex w-fit rounded px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${listingTypeTagClass}`}
           role="status"
           aria-label={`Listing type: ${listingTypeTag}`}
         >
@@ -232,7 +238,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {title}
           </Link>
         </h3>
-        <p className="truncate text-[22px] font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+        <p className="truncate text-xl font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
           {formatIndianPriceShort(price)}
         </p>
         {locationLine ? (
@@ -264,7 +270,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           </div>
         ) : null}
         {sellerRoleChip ? (
-          <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-900">
+          <span className={`inline-flex w-fit items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
             {sellerRoleChip}
           </span>
         ) : null}
@@ -272,12 +278,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-9 min-h-9 flex-1 rounded-lg px-3 text-[13px] font-semibold"
+            className="h-10 min-h-10 flex-1 items-center justify-center rounded-xl px-3 text-[13px] font-semibold"
             vehicleId={vehicle.id}
           />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-9 min-h-9 flex-1 items-center justify-center rounded-lg border border-slate-300 px-3 text-[13px] font-semibold text-slate-700"
+            className="inline-flex h-10 min-h-10 flex-1 items-center justify-center rounded-xl border border-slate-300 px-3 text-[13px] font-semibold text-slate-700"
           >
             View Details
           </Link>
@@ -287,7 +293,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
