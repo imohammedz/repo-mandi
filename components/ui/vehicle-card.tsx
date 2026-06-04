@@ -55,7 +55,7 @@ const getListingTypeTag = (vehicle: Vehicle) => (vehicle.listingType === "REPO" 
 const getTyreText = (vehicle: Vehicle) => {
   const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
   if (typeof total === "number" && total > 0) {
-    return `${total} Tyre`;
+    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
   }
   return "";
 };
@@ -129,7 +129,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const imageSources = useMemo(
     () => [...new Set([vehicle.image, ...(vehicle.gallery || [])].filter(isNonEmptyString).map((src) => resolveImageSrcForRender(src)))],
-    [vehicle.gallery, vehicle.image]
+    [vehicle.gallery, vehicle.image, resolveImageSrcForRender]
   );
   const safeImageIndex = 0;
   const activeImage = imageSources[safeImageIndex] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
@@ -189,7 +189,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {title}
           </Link>
         </h3>
-        <p className="truncate text-[21px] font-extrabold leading-none text-slate-900">{formatIndianPriceShort(price)}</p>
+        <p className="truncate text-[21px] font-extrabold leading-none text-slate-900" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+          {formatIndianPriceShort(price)}
+        </p>
         {usageLocationLine ? <p className="truncate text-[12px] text-slate-600">{usageLocationLine}</p> : null}
         {secondLine ? <p className="truncate text-[12px] text-slate-600">{secondLine}</p> : null}
         {usageType ? <p className="truncate text-[12px] font-medium uppercase text-slate-700">{usageType}</p> : null}
