@@ -200,7 +200,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           alt={vehicle.title}
           fill
           sizes="(max-width: 768px) 45vw, 240px"
-          className="z-10 object-contain object-center p-1"
+          className="z-10 object-contain object-center p-0.5"
           loading="lazy"
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
