@@ -549,6 +549,20 @@ export const otpCodes = pgTable("otp_codes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const featureRequests = pgTable("feature_requests", {
+  id: serial("id").primaryKey(),
+  vehicleId: varchar("vehicle_id", { length: 100 })
+    .notNull()
+    .references(() => vehicles.id, { onDelete: "cascade" }),
+  sellerId: integer("seller_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 50 }).notNull().default("PENDING"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // ─── Inferred types ───────────────────────────────────────────────────────────
 
 export type DbVehicle = typeof vehicles.$inferSelect;
@@ -570,3 +584,5 @@ export type DbSavedListingInsert = typeof savedListings.$inferInsert;
 export type DbPlatformSetting = typeof platformSettings.$inferSelect;
 export type DbOtpCode = typeof otpCodes.$inferSelect;
 export type DbOtpCodeInsert = typeof otpCodes.$inferInsert;
+export type DbFeatureRequest = typeof featureRequests.$inferSelect;
+export type DbFeatureRequestInsert = typeof featureRequests.$inferInsert;
