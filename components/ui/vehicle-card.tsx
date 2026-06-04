@@ -123,7 +123,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         <SafeImage
           src={activeImage}
           alt={vehicle.title}
-          aria-hidden="true"
           fill
           sizes="(max-width: 768px) 35vw, 200px"
           className="object-cover object-center"
@@ -147,7 +146,11 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         >
           {listingTypeTag}
         </span>
-        <h3 className="truncate text-[13px] font-semibold leading-tight text-slate-900">{title}</h3>
+        <h3 className="truncate text-[13px] font-semibold leading-tight text-slate-900">
+          <Link href={`/vehicles/${vehicle.id}`} className="hover:text-slate-700">
+            {title}
+          </Link>
+        </h3>
         <p className="truncate text-lg font-extrabold leading-none text-slate-900">{formatIndianPriceShort(price)}</p>
         {(locationLine || kmLine) && (
           <div className="flex min-w-0 items-center gap-2 text-[11px] text-slate-600">
@@ -175,7 +178,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           </div>
         ) : null}
         {vehicle.sellerRole ? (
-          <span className="inline-flex w-fit truncate rounded-full bg-slate-900/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+          <span className="inline-flex w-fit truncate rounded-full bg-slate-900/90 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
             {toReadableLabel(vehicle.sellerRole)}
           </span>
         ) : null}
