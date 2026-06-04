@@ -73,7 +73,7 @@ const getBodyTypeChip = (vehicle: Vehicle) => {
 
 const getRepoStatusTag = (vehicle: Vehicle) => {
   const repoStatusToken = toNormalizedToken(vehicle.repoStatus);
-  if (repoStatusToken && repoStatusToken.includes("AUCTION")) return "AUCTION VEHICLE";
+  if (repoStatusToken === "AUCTION_LIVE" || repoStatusToken === "AUCTION_UPCOMING") return "AUCTION VEHICLE";
   return vehicle.listingType === "REPO" ? "BANK REPO" : "NON REPO";
 };
 
@@ -137,7 +137,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 p-2.5">
-        <span className="inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+        <span className="inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700">
           {listingTypeTag}
         </span>
         <h3 className="truncate text-[13px] font-semibold leading-tight text-slate-900">{title}</h3>
@@ -161,14 +161,14 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 flex-wrap items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
-              <span key={chip} className={`inline-flex ${CHIP_MAX_WIDTH_CLASS} truncate rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-medium text-slate-700`}>
+              <span key={chip} className={`inline-flex ${CHIP_MAX_WIDTH_CLASS} truncate rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700`}>
                 {chip}
               </span>
             ))}
           </div>
         ) : null}
         {vehicle.sellerRole ? (
-          <span className="inline-flex w-fit truncate rounded-full bg-slate-900/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
+          <span className="inline-flex w-fit truncate rounded-full bg-slate-900/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
             {toReadableLabel(vehicle.sellerRole)}
           </span>
         ) : null}
@@ -176,12 +176,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="min-h-8 flex-1 rounded-lg px-2 text-[10px] font-semibold"
+            className="min-h-8 flex-1 rounded-lg px-2 text-[11px] font-semibold"
             vehicleId={vehicle.id}
           />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-slate-300 px-2 text-[10px] font-semibold text-slate-700"
+            className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-slate-300 px-2 text-[11px] font-semibold text-slate-700"
           >
             View Details
           </Link>
