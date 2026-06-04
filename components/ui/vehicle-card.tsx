@@ -131,13 +131,20 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-1.5 top-1.5 z-20" />
-        <span className="absolute bottom-1.5 left-1.5 z-20 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
+        <span
+          className="absolute bottom-1.5 left-1.5 z-20 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white"
+          aria-label={`${imageCount} ${imageCount === 1 ? "photo" : "photos"} available`}
+        >
           {imageCount} {imageCount === 1 ? "Photo" : "Photos"}
         </span>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 p-2.5">
-        <span className="inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700">
+        <span
+          className="inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700"
+          role="status"
+          aria-label={`Listing type: ${listingTypeTag}`}
+        >
           {listingTypeTag}
         </span>
         <h3 className="truncate text-[13px] font-semibold leading-tight text-slate-900">{title}</h3>
