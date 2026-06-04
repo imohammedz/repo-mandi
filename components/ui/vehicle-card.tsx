@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -17,9 +16,8 @@ type Props = {
   compact?: boolean;
 };
 
-const COMPACT_CARD_CLASS = "h-[154px] rounded-2xl";
-const REGULAR_CARD_CLASS = "h-[164px] rounded-2xl";
-const CHIP_MAX_WIDTH_CLASS = "max-w-[88px]";
+const COMPACT_CARD_CLASS = "min-h-[170px] rounded-2xl";
+const REGULAR_CARD_CLASS = "min-h-[180px] rounded-2xl";
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
@@ -57,7 +55,7 @@ const getListingTypeTag = (vehicle: Vehicle) => (vehicle.listingType === "REPO" 
 const getTyreText = (vehicle: Vehicle) => {
   const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
   if (typeof total === "number" && total > 0) {
-    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
+    return `${total} Tyre`;
   }
   return "";
 };
@@ -75,7 +73,7 @@ const getBodyTypeText = (vehicle: Vehicle) => {
   return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
 };
 
-const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" ").trim();
+const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
 
 const getAssetConfiguration = (vehicle: Vehicle) => toUpperLabel(vehicle.assetConfiguration);
 
@@ -109,6 +107,8 @@ const getSellerRoleChip = (vehicle: Vehicle) => {
   if (roleToken.includes("BROKER")) return "BROKER";
   if (roleToken.includes("DEALER")) return "DEALER";
   if (roleToken.includes("FLEET")) return "FLEET OWNER";
+  if (roleToken.includes("BANK") || roleToken.includes("NBFC")) return "BANK PARTNER";
+  if (roleToken.includes("RECOVERY")) return "RECOVERY AGENT";
   return "";
 };
 
@@ -122,7 +122,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const kmLine = formatIndianKmShort(kmValue);
   const chips = buildSpecChips(vehicle);
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
-  const maxVisibleChips = 3;
+  const maxVisibleChips = 2;
   const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
@@ -131,22 +131,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     () => [...new Set([vehicle.image, ...(vehicle.gallery || [])].filter(isNonEmptyString).map((src) => resolveImageSrcForRender(src)))],
     [vehicle.gallery, vehicle.image]
   );
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const safeImageIndex = imageSources.length ? Math.min(activeImageIndex, imageSources.length - 1) : 0;
+  const safeImageIndex = 0;
   const activeImage = imageSources[safeImageIndex] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
   const imageCount = imageSources.length || 1;
-  const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (imageSources.length <= 1) return;
-    setActiveImageIndex((prev) => (prev === 0 ? imageSources.length - 1 : prev - 1));
-  };
-  const onNextImage = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (imageSources.length <= 1) return;
-    setActiveImageIndex((prev) => (prev + 1) % imageSources.length);
-  };
+  const usageLocationLine = [kmLine, locationLine].filter(Boolean).join(" • ");
+  const chipsLine =
+    visibleChips.length > 0 ? `${visibleChips.join(" | ")}${extraChipCount > 0 ? ` | +${extraChipCount} More` : ""}` : "";
 
   return (
     <motion.article
@@ -155,91 +145,70 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       viewport={{ once: true }}
       className={`flex ${cardClass} overflow-hidden border border-slate-100 bg-white shadow-sm`}
     >
-      <div className="relative w-[40%] shrink-0 self-stretch overflow-hidden bg-black">
+      <div className="relative w-[40%] min-w-[35%] max-w-[42%] shrink-0 self-stretch overflow-hidden bg-slate-900">
         <SafeImage
           src={activeImage}
           alt={vehicle.title}
           fill
           sizes="(max-width: 768px) 40vw, 220px"
-          className="object-contain object-center p-1"
+          className="scale-110 object-cover object-center blur-md opacity-35"
+          loading="lazy"
+          aria-hidden
+          logContext={{ component: "VehicleCard", vehicleId: vehicle.id, variant: "background" }}
+        />
+        <SafeImage
+          src={activeImage}
+          alt={vehicle.title}
+          fill
+          sizes="(max-width: 768px) 40vw, 220px"
+          className="object-contain object-center p-2"
           loading="lazy"
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
-        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-1.5 top-1 z-20" />
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-2 top-2 z-20" />
         {imageCount > 1 ? (
-          <>
-            <button
-              type="button"
-              onClick={onPrevImage}
-              aria-label="Previous image"
-              className="absolute left-1 top-1/2 z-20 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
-            >
-              <ChevronLeft className="h-3 w-3" />
-            </button>
-            <button
-              type="button"
-              onClick={onNextImage}
-              aria-label="Next image"
-              className="absolute right-1 top-1/2 z-20 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
-            >
-              <ChevronRight className="h-3 w-3" />
-            </button>
-          </>
+          <span
+            className="absolute left-2 top-2 z-20 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white"
+            aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
+          >
+            {safeImageIndex + 1}/{imageCount}
+          </span>
         ) : null}
-        <span
-          className="absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-medium text-white"
-          aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
-          aria-live="polite"
-        >
-          {safeImageIndex + 1} / {imageCount}
-        </span>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 p-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
         <span
-          className="inline-flex w-fit rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-700"
+          className="inline-flex w-fit rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-700"
           role="status"
           aria-label={`Listing type: ${listingTypeTag}`}
         >
           {listingTypeTag}
         </span>
-        <h3 className="truncate text-[11px] font-semibold uppercase leading-tight text-slate-900">
-          <Link href={`/vehicles/${vehicle.id}`} className="inline-block py-0.5 hover:text-slate-700">
+        <h3 className="line-clamp-2 text-[15px] font-bold uppercase leading-tight text-slate-900">
+          <Link href={`/vehicles/${vehicle.id}`} className="inline-block hover:text-slate-700">
             {title}
           </Link>
         </h3>
-        {secondLine ? <p className="truncate text-[9px] text-slate-600">{secondLine}</p> : null}
-        {usageType ? <p className="truncate text-[9px] font-medium uppercase text-slate-600">{usageType}</p> : null}
-        <p className="truncate text-[17px] font-extrabold leading-none text-slate-900">{formatIndianPriceShort(price)}</p>
-        {kmLine ? <p className="truncate text-[9px] text-slate-600">{kmLine}</p> : null}
-        {locationLine ? <p className="truncate text-[9px] text-slate-600">Location: {locationLine}</p> : null}
-        {visibleChips.length > 0 ? (
-          <div className="flex min-w-0 items-center gap-1 overflow-hidden">
-            {visibleChips.map((chip) => (
-              <span key={chip} className={`inline-flex ${CHIP_MAX_WIDTH_CLASS} truncate rounded bg-slate-100 px-1 py-0.5 text-[9px] font-medium text-slate-700`}>
-                {chip}
-              </span>
-            ))}
-            {extraChipCount > 0 ? (
-              <span className="inline-flex shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[9px] font-medium text-slate-700">+{extraChipCount} More</span>
-            ) : null}
-          </div>
-        ) : null}
+        <p className="truncate text-[21px] font-extrabold leading-none text-slate-900">{formatIndianPriceShort(price)}</p>
+        {usageLocationLine ? <p className="truncate text-[12px] text-slate-600">{usageLocationLine}</p> : null}
+        {secondLine ? <p className="truncate text-[12px] text-slate-600">{secondLine}</p> : null}
+        {usageType ? <p className="truncate text-[12px] font-medium uppercase text-slate-700">{usageType}</p> : null}
+        {chipsLine ? <p className="truncate text-[11px] font-medium text-slate-600">{chipsLine}</p> : null}
         {sellerRoleChip ? (
-          <span className="inline-flex w-fit truncate rounded bg-slate-900/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
+          <span className="inline-flex w-fit truncate rounded bg-slate-900/90 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
             {sellerRoleChip}
           </span>
         ) : null}
-        <div className="mt-auto flex items-center gap-1 pt-0.5">
+        <div className="mt-auto flex items-center gap-1.5 pt-1">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="min-h-7 flex-1 rounded-md px-1.5 text-[9px] font-semibold"
+            className="min-h-8 rounded-lg px-2.5 text-[13px] font-semibold"
             vehicleId={vehicle.id}
           />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex min-h-7 flex-1 items-center justify-center rounded-md border border-slate-300 px-1.5 text-[9px] font-semibold text-slate-700"
+            className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-slate-300 px-2.5 text-[13px] font-semibold text-slate-700"
           >
             View Details
           </Link>
@@ -249,7 +218,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-6 w-6 shrink-0 rounded-md border border-slate-200 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
