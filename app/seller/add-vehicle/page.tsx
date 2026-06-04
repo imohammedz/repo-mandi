@@ -1666,7 +1666,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
             originalFileName: document.originalFileName,
           })),
           expectedPrice: String(normalizeRupeeAmount(form.expectedPrice) ?? ""),
-          reservePrice: String(normalizeRupeeAmount(form.reservePrice) ?? 0),
+          reservePrice: String(normalizeRupeeAmount(form.reservePrice) ?? ""),
           parkingDue: form.parkingDue.replace(/\D/g, ""),
           kmDriven: form.kmDriven.replace(/\D/g, ""),
           odometerReading: form.odometerReading.replace(/\D/g, ""),
