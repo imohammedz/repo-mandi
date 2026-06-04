@@ -8,7 +8,7 @@ import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
-import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
+import { resolveImageSrcForRender } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
 import { formatEnumLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
 
@@ -142,17 +142,16 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           : sellerRoleChip === "BANK PARTNER"
             ? "border border-purple-200 bg-purple-100 text-purple-800"
             : "border border-red-200 bg-red-100 text-red-800";
-  const imageSources = useMemo(
+  const images = useMemo(
     () =>
       [
         vehicle.image,
         vehicle.frontPhoto,
-        vehicle.gallery?.[0],
         vehicle.leftSidePhoto,
         vehicle.rightSidePhoto,
         vehicle.backPhoto,
         vehicle.sidePhoto,
-        ...(vehicle.gallery || []),
+        ...(vehicle.gallery ?? []),
       ]
         .filter(isNonEmptyString)
         .map((src) => resolveImageSrcForRender(src))
@@ -160,21 +159,21 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         .filter((src, index, all) => all.indexOf(src) === index),
     [vehicle.backPhoto, vehicle.frontPhoto, vehicle.gallery, vehicle.image, vehicle.leftSidePhoto, vehicle.rightSidePhoto, vehicle.sidePhoto]
   );
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const safeImageIndex = imageSources.length ? Math.min(activeImageIndex, imageSources.length - 1) : 0;
-  const activeImage = imageSources[safeImageIndex] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
-  const imageCount = imageSources.length || 1;
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const safeImageIndex = images.length ? Math.min(selectedImageIndex, images.length - 1) : 0;
+  const selectedImage = images[safeImageIndex] ?? null;
+  const imageCount = images.length;
   const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    if (imageSources.length <= 1) return;
-    setActiveImageIndex((prev) => (prev === 0 ? imageSources.length - 1 : prev - 1));
+    if (images.length <= 1) return;
+    setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
   const onNextImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    if (imageSources.length <= 1) return;
-    setActiveImageIndex((prev) => (prev + 1) % imageSources.length);
+    if (images.length <= 1) return;
+    setSelectedImageIndex((prev) => (prev + 1) % images.length);
   };
 
   return (
@@ -182,28 +181,36 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm`}
+      className={`flex ${cardClass} items-stretch gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm`}
     >
-      <div className="relative h-40 w-[43%] min-w-[140px] max-w-[190px] shrink-0 overflow-hidden rounded-xl bg-black/80">
-        <SafeImage
-          src={activeImage}
-          alt={vehicle.title}
-          fill
-          sizes="(max-width: 768px) 45vw, 240px"
-          className="scale-110 object-cover object-center blur-md opacity-40"
-          loading="lazy"
-          aria-hidden
-          logContext={{ component: "VehicleCard", vehicleId: vehicle.id, variant: "background" }}
-        />
-        <SafeImage
-          src={activeImage}
-          alt={vehicle.title}
-          fill
-          sizes="(max-width: 768px) 45vw, 240px"
-          className="z-10 object-contain object-center p-0.5"
-          loading="lazy"
-          logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
-        />
+      <div className="relative w-[38%] min-w-[130px] max-w-[180px] shrink-0 overflow-hidden rounded-xl bg-black/80">
+        {selectedImage ? (
+          <>
+            <SafeImage
+              src={selectedImage}
+              alt={vehicle.title}
+              fill
+              sizes="(max-width: 768px) 45vw, 240px"
+              className="scale-110 object-cover object-center blur-md opacity-40"
+              loading="lazy"
+              aria-hidden
+              logContext={{ component: "VehicleCard", vehicleId: vehicle.id, variant: "background" }}
+            />
+            <SafeImage
+              src={selectedImage}
+              alt={vehicle.title}
+              fill
+              sizes="(max-width: 768px) 45vw, 240px"
+              className="z-10 object-contain object-center p-0.5"
+              loading="lazy"
+              logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
+            />
+          </>
+        ) : (
+          <div className="absolute inset-0 z-10 flex items-center justify-center p-3 text-center text-xs font-medium text-white/90">
+            Photo not uploaded
+          </div>
+        )}
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-2 top-2 z-20" />
         {imageCount > 1 ? (
           <>
