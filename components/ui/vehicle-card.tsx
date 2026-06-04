@@ -17,7 +17,8 @@ type Props = {
   compact?: boolean;
 };
 
-const CARD_CLASS = "h-[154px] rounded-2xl";
+const COMPACT_CARD_CLASS = "h-[154px] rounded-2xl";
+const REGULAR_CARD_CLASS = "h-[164px] rounded-2xl";
 const CHIP_MAX_WIDTH_CLASS = "max-w-[88px]";
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
@@ -120,7 +121,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
   const kmLine = formatIndianKmShort(kmValue);
   const chips = buildSpecChips(vehicle);
-  const maxVisibleChips = compact ? 3 : 3;
+  const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
+  const maxVisibleChips = 3;
   const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
@@ -151,18 +153,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${CARD_CLASS} overflow-hidden border border-slate-100 bg-white shadow-sm`}
+      className={`flex ${cardClass} overflow-hidden border border-slate-100 bg-white shadow-sm`}
     >
       <div className="relative w-[40%] shrink-0 self-stretch overflow-hidden bg-black">
-        <SafeImage
-          src={activeImage}
-          alt={vehicle.title}
-          fill
-          sizes="(max-width: 768px) 40vw, 220px"
-          className="scale-110 object-cover object-center opacity-60 blur-md"
-          loading="lazy"
-          logContext={{ component: "VehicleCardBlur", vehicleId: vehicle.id }}
-        />
         <SafeImage
           src={activeImage}
           alt={vehicle.title}
@@ -214,7 +207,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         {usageType ? <p className="truncate text-[9px] font-medium uppercase text-slate-600">{usageType}</p> : null}
         <p className="truncate text-[17px] font-extrabold leading-none text-slate-900">{formatIndianPriceShort(price)}</p>
         {kmLine ? <p className="truncate text-[9px] text-slate-600">{kmLine}</p> : null}
-        {locationLine ? <p className="truncate text-[9px] text-slate-600">📍 {locationLine}</p> : null}
+        {locationLine ? <p className="truncate text-[9px] text-slate-600">Location: {locationLine}</p> : null}
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
