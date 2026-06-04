@@ -394,6 +394,10 @@ export const vehicles = pgTable("vehicles", {
   listingStatus: listingStatusEnum("listing_status").notNull().default("PENDING"),
   verificationStatus: verificationStatusEnum("verification_status").notNull().default("PENDING_VERIFICATION"),
   isPublished: boolean("is_published").notNull().default(false),
+  isFeatured: boolean("is_featured").notNull().default(false),
+  featuredAt: timestamp("featured_at"),
+  featuredExpiresAt: timestamp("featured_expires_at"),
+  featuredBy: integer("featured_by").references(() => users.id, { onDelete: "set null" }),
   rcVerified: boolean("rc_verified").notNull().default(false),
   photosVerified: boolean("photos_verified").notNull().default(false),
   yardVerified: boolean("yard_verified").notNull().default(false),
@@ -559,6 +563,7 @@ export const featureRequests = pgTable("feature_requests", {
     .references(() => users.id, { onDelete: "cascade" }),
   status: varchar("status", { length: 50 }).notNull().default("PENDING"),
   note: text("note"),
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

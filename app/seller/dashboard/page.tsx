@@ -3,9 +3,9 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
-import { vehicles as vehiclesTable } from "@/lib/schema";
+import { featureRequests, vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SupportContactCard } from "@/components/ui/support-contact-card";
@@ -27,6 +27,21 @@ export default async function SellerDashboardPage() {
     .where(and(eq(vehiclesTable.sellerId, currentUser.id), isNull(vehiclesTable.deletedAt)))
     .orderBy(desc(vehiclesTable.createdAt));
   const vehicleList = rows.map(dbToVehicle);
+  const vehicleIds = rows.map((row) => row.id);
+  const pendingFeatureRequests =
+    vehicleIds.length === 0
+      ? []
+      : await db
+          .select({ vehicleId: featureRequests.vehicleId })
+          .from(featureRequests)
+          .where(
+            and(
+              eq(featureRequests.sellerId, currentUser.id),
+              eq(featureRequests.status, "PENDING"),
+              inArray(featureRequests.vehicleId, vehicleIds),
+            ),
+          );
+  const pendingFeatureRequestVehicleIds = new Set(pendingFeatureRequests.map((row) => row.vehicleId));
 
   const total = vehicleList.length;
   const pending = vehicleList.filter((v) => v.listingStatus === "PENDING" || v.listingStatus === "BANK_PENDING_REVIEW").length;
@@ -44,11 +59,7 @@ export default async function SellerDashboardPage() {
 
   const formatFeaturedLabel = (featuredUntil?: string | null) => {
     if (!featuredUntil) return "⭐ Featured";
-    const formatted = new Date(featuredUntil).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const formatted = new Date(featuredUntil).toLocaleDateString("en-GB");
     return `⭐ Featured Until ${formatted}`;
   };
 
@@ -93,10 +104,12 @@ export default async function SellerDashboardPage() {
         {vehicleList.map((vehicle) => {
           const featuredMeta = vehicle as typeof vehicle & {
             isFeatured?: boolean;
-            featuredUntil?: string | null;
+            featuredExpiresAt?: string | null;
           };
-          const isFeatured = Boolean(featuredMeta.isFeatured);
-          const featuredUntil = featuredMeta.featuredUntil ?? null;
+          const featuredUntil = featuredMeta.featuredExpiresAt ?? null;
+          const featuredExpiry = featuredUntil ? new Date(featuredUntil) : null;
+          const isFeatured = Boolean(featuredMeta.isFeatured) && (!featuredExpiry || featuredExpiry > new Date());
+          const hasPendingRequest = pendingFeatureRequestVehicleIds.has(vehicle.id);
           const views = (vehicle as typeof vehicle & { views?: number }).views ?? 0;
 
           return (
@@ -106,6 +119,8 @@ export default async function SellerDashboardPage() {
                 <h3 className="text-sm font-semibold text-slate-900">{vehicle.title}</h3>
                 {isFeatured ? (
                   <p className="mt-1 text-xs font-medium text-amber-700">{formatFeaturedLabel(featuredUntil)}</p>
+                ) : hasPendingRequest ? (
+                  <p className="mt-1 text-xs font-medium text-slate-500">Feature Requested</p>
                 ) : null}
                 <p className="mt-1 text-xs text-slate-500">{formatCurrency(vehicle.price)}</p>
               </div>
@@ -128,6 +143,7 @@ export default async function SellerDashboardPage() {
               <FeatureListingButton
                 listingId={vehicle.id}
                 isFeatured={isFeatured}
+                hasPendingRequest={hasPendingRequest}
                 featuredUntil={featuredUntil}
                 className="w-full"
               />

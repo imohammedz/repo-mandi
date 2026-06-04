@@ -6,11 +6,18 @@ import { useState, useTransition } from "react";
 interface FeatureListingButtonProps {
   listingId: string;
   isFeatured: boolean;
+  hasPendingRequest?: boolean;
   featuredUntil?: string | null;
   className?: string;
 }
 
-export function FeatureListingButton({ listingId, isFeatured, featuredUntil, className }: FeatureListingButtonProps) {
+export function FeatureListingButton({
+  listingId,
+  isFeatured,
+  hasPendingRequest = false,
+  featuredUntil,
+  className,
+}: FeatureListingButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showModal, setShowModal] = useState(false);
@@ -19,7 +26,7 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
 
   const buttonClassName = [
     "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
-    isFeatured
+    isFeatured || hasPendingRequest
       ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
       : "bg-amber-500 text-white hover:bg-amber-600",
     className ?? "",
@@ -36,6 +43,7 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
       );
       return;
     }
+    if (hasPendingRequest) return;
     setSuccessMessage("");
     setErrorMessage("");
     setShowModal(true);
@@ -74,11 +82,17 @@ export function FeatureListingButton({ listingId, isFeatured, featuredUntil, cla
     <>
       <button
         type="button"
-        disabled={isPending}
+        disabled={isPending || hasPendingRequest}
         className={buttonClassName}
         onClick={handleOpen}
       >
-        {isPending ? "Submitting..." : isFeatured ? "Manage" : "⭐ Feature Listing"}
+        {isPending
+          ? "Submitting..."
+          : hasPendingRequest
+            ? "Feature Requested"
+            : isFeatured
+              ? "Manage"
+              : "⭐ Feature Listing"}
       </button>
 
       {successMessage ? (
