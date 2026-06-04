@@ -199,7 +199,7 @@ export default async function HomePage() {
               View all
             </Link>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {featuredListingVehicles.length > 0 ? (
               featuredListingVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
@@ -227,7 +227,7 @@ export default async function HomePage() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {recentVehicles.length > 0 ? (
               recentVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />

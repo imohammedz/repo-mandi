@@ -134,7 +134,7 @@ export default async function VehicleListingPage({
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-2">
         {appVehicles.length ? (
           appVehicles.map((vehicle) => <VehicleCard key={vehicle.id} vehicle={vehicle} compact />)
         ) : (

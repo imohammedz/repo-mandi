@@ -88,3 +88,16 @@ export function formatIndianShort(amount: number | null | undefined): string {
   }
   return `₹${amount.toLocaleString("en-IN")}`;
 }
+
+export function formatIndianPriceShort(amount: number | null | undefined): string {
+  return formatIndianShort(amount);
+}
+
+export function formatIndianKmShort(km: number | null | undefined): string {
+  if (km == null || !Number.isFinite(km) || km < 0) return "";
+  if (km >= 100_000) {
+    const lakhs = parseFloat((km / 100_000).toFixed(2));
+    return `${lakhs} Lakh KM`;
+  }
+  return `${Math.round(km).toLocaleString("en-IN")} KM`;
+}
