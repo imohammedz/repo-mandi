@@ -110,7 +110,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     [vehicle.gallery, vehicle.image]
   );
   const activeImage = imageSources[0] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
-  const imageCount = imageSources.length || 1;
+  const imageCount = imageSources.length;
 
   return (
     <motion.article
@@ -132,7 +132,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-1.5 top-1.5 z-20" />
         <span className="absolute bottom-1.5 left-1.5 z-20 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
-          {imageCount} {imageCount > 1 ? "Photos" : "Photo"}
+          {imageCount} {imageCount === 1 ? "Photo" : "Photos"}
         </span>
       </div>
 
