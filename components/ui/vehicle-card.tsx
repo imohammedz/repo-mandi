@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Gauge, MapPin } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -16,8 +17,8 @@ type Props = {
   compact?: boolean;
 };
 
-const COMPACT_CARD_CLASS = "min-h-[170px] rounded-2xl";
-const REGULAR_CARD_CLASS = "min-h-[180px] rounded-2xl";
+const COMPACT_CARD_CLASS = "min-h-[170px]";
+const REGULAR_CARD_CLASS = "min-h-[180px]";
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
@@ -128,30 +129,54 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const imageSources = useMemo(
-    () => [...new Set([vehicle.image, ...(vehicle.gallery || [])].filter(isNonEmptyString).map((src) => resolveImageSrcForRender(src)))],
-    [vehicle.gallery, vehicle.image]
+    () =>
+      [
+        vehicle.image,
+        vehicle.frontPhoto,
+        vehicle.gallery?.[0],
+        vehicle.leftSidePhoto,
+        vehicle.rightSidePhoto,
+        vehicle.backPhoto,
+        vehicle.sidePhoto,
+        ...(vehicle.gallery || []),
+      ]
+        .filter(isNonEmptyString)
+        .map((src) => resolveImageSrcForRender(src))
+        .filter(isNonEmptyString)
+        .filter((src, index, all) => all.indexOf(src) === index),
+    [vehicle.backPhoto, vehicle.frontPhoto, vehicle.gallery, vehicle.image, vehicle.leftSidePhoto, vehicle.rightSidePhoto, vehicle.sidePhoto]
   );
-  const safeImageIndex = 0;
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const safeImageIndex = imageSources.length ? Math.min(activeImageIndex, imageSources.length - 1) : 0;
   const activeImage = imageSources[safeImageIndex] ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
   const imageCount = imageSources.length || 1;
-  const usageLocationLine = [kmLine, locationLine].filter(Boolean).join(" • ");
-  const chipsLine =
-    visibleChips.length > 0 ? `${visibleChips.join(" | ")}${extraChipCount > 0 ? ` | +${extraChipCount} More` : ""}` : "";
+  const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (imageSources.length <= 1) return;
+    setActiveImageIndex((prev) => (prev === 0 ? imageSources.length - 1 : prev - 1));
+  };
+  const onNextImage = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (imageSources.length <= 1) return;
+    setActiveImageIndex((prev) => (prev + 1) % imageSources.length);
+  };
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} overflow-hidden border border-slate-100 bg-white shadow-sm`}
+      className={`flex ${cardClass} gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm`}
     >
-      <div className="relative w-[40%] min-w-[35%] max-w-[42%] shrink-0 self-stretch overflow-hidden bg-slate-900">
+      <div className="relative h-40 w-[38%] min-w-[120px] max-w-[160px] shrink-0 overflow-hidden rounded-xl bg-black/80">
         <SafeImage
           src={activeImage}
           alt={vehicle.title}
           fill
           sizes="(max-width: 768px) 40vw, 220px"
-          className="scale-110 object-cover object-center blur-md opacity-35"
+          className="scale-110 object-cover object-center blur-md opacity-40"
           loading="lazy"
           aria-hidden
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id, variant: "background" }}
@@ -161,22 +186,40 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           alt={vehicle.title}
           fill
           sizes="(max-width: 768px) 40vw, 220px"
-          className="object-contain object-center p-2"
+          className="z-10 object-contain object-center p-2"
           loading="lazy"
           logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
         />
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-2 top-2 z-20" />
         {imageCount > 1 ? (
-          <span
-            className="absolute left-2 top-2 z-20 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white"
-            aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
-          >
-            {safeImageIndex + 1}/{imageCount}
-          </span>
+          <>
+            <button
+              type="button"
+              onClick={onPrevImage}
+              aria-label="Previous image"
+              className="absolute left-2 top-1/2 z-20 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onNextImage}
+              aria-label="Next image"
+              className="absolute right-2 top-1/2 z-20 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <span
+              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded bg-black/60 px-2 py-1 text-[11px] font-medium text-white"
+              aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
+            >
+              {safeImageIndex + 1}/{imageCount}
+            </span>
+          </>
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span
           className="inline-flex w-fit rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-700"
           role="status"
@@ -189,28 +232,52 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {title}
           </Link>
         </h3>
-        <p className="truncate text-[21px] font-extrabold leading-none text-slate-900" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+        <p className="truncate text-[22px] font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
           {formatIndianPriceShort(price)}
         </p>
-        {usageLocationLine ? <p className="truncate text-[12px] text-slate-600">{usageLocationLine}</p> : null}
+        {locationLine ? (
+          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{locationLine}</span>
+          </p>
+        ) : null}
+        {kmLine ? (
+          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
+            <Gauge className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="truncate">{kmLine}</span>
+          </p>
+        ) : null}
         {secondLine ? <p className="truncate text-[12px] text-slate-600">{secondLine}</p> : null}
         {usageType ? <p className="truncate text-[12px] font-medium uppercase text-slate-700">{usageType}</p> : null}
-        {chipsLine ? <p className="truncate text-[11px] font-medium text-slate-600">{chipsLine}</p> : null}
+        {visibleChips.length > 0 ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            {visibleChips.map((chip) => (
+              <span key={chip} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                {chip}
+              </span>
+            ))}
+            {extraChipCount > 0 ? (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                +{extraChipCount} More
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {sellerRoleChip ? (
-          <span className="inline-flex w-fit truncate rounded bg-slate-900/90 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+          <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-900">
             {sellerRoleChip}
           </span>
         ) : null}
-        <div className="mt-auto flex items-center gap-1.5 pt-1">
+        <div className="mt-auto flex items-center gap-2 pt-1">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="min-h-8 rounded-lg px-2.5 text-[13px] font-semibold"
+            className="h-9 min-h-9 flex-1 rounded-lg px-3 text-[13px] font-semibold"
             vehicleId={vehicle.id}
           />
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-slate-300 px-2.5 text-[13px] font-semibold text-slate-700"
+            className="inline-flex h-9 min-h-9 flex-1 items-center justify-center rounded-lg border border-slate-300 px-3 text-[13px] font-semibold text-slate-700"
           >
             View Details
           </Link>
@@ -220,7 +287,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
