@@ -32,12 +32,12 @@ export function WhatsAppButton({ phone, text = "WhatsApp", className = "", vehic
     <Link
       href={`https://wa.me/${normalizedPhone}`}
       onClick={handleClick}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 ${className}`}
+      className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 ${className}`}
       target="_blank"
       rel="noopener noreferrer"
     >
       <MessageCircle className="h-4 w-4" />
-      {text}
+      <span className="truncate">{text}</span>
     </Link>
   );
 }

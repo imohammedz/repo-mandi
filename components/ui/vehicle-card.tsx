@@ -178,9 +178,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
+      className={`flex ${cardClass} min-w-0 w-full max-w-full items-stretch gap-2.5 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm box-border sm:gap-3 sm:p-3`}
     >
-      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
+      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 md:w-[38%] md:max-w-[180px]">
         {selectedImage ? (
           <>
             <SafeImage
@@ -242,26 +242,34 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex min-w-0 items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
           <span
-            className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+            className={`inline-flex max-w-full shrink-0 rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
             aria-label={`Listing type: ${listingTypeTag}`}
           >
             {listingTypeTag}
           </span>
           {sellerRoleChip ? (
-            <span className={`inline-flex w-fit items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-              {sellerRoleChip}
+            <span
+              className={`inline-flex min-w-0 max-w-full items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+            >
+              <span className="truncate">{sellerRoleChip}</span>
             </span>
           ) : null}
         </div>
         <h3 className="min-w-0 line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
-          <Link href={`/vehicles/${vehicle.id}`} className="inline-block min-w-0 cursor-pointer no-underline hover:text-slate-700 md:hover:underline">
+          <Link
+            href={`/vehicles/${vehicle.id}`}
+            className="block min-w-0 cursor-pointer no-underline hover:text-slate-700 md:hover:underline"
+          >
             {title}
           </Link>
         </h3>
-        <p className="truncate text-2xl font-extrabold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+        <p
+          className="truncate text-xl font-extrabold leading-none text-orange-600 sm:text-2xl"
+          aria-label={`Price ${formatIndianPriceShort(price)}`}
+        >
           {formatIndianPriceShort(price)}
         </p>
         {locationLine ? (
@@ -293,13 +301,19 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             ) : null}
           </div>
         ) : null}
-        <div className="mt-auto grid w-full min-w-0 grid-cols-[1fr_40px] items-center gap-1.5 pt-1">
+        <div className="mt-auto flex w-full min-w-0 items-center gap-1.5 pt-1">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-10 min-h-10 w-full min-w-0 items-center justify-center rounded-xl px-2 text-sm font-semibold"
+            className="h-10 min-h-10 flex-1 min-w-0 items-center justify-center rounded-xl px-3 text-sm font-semibold"
             vehicleId={vehicle.id}
           />
+          <Link
+            href={`/vehicles/${vehicle.id}`}
+            className="inline-flex h-10 min-h-10 flex-1 min-w-0 items-center justify-center truncate rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-700"
+          >
+            View Details
+          </Link>
           <ShareListingButton
             listingId={vehicle.id}
             title={title}
