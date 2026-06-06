@@ -152,7 +152,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
   const secondLine = getSecondLine(vehicle);
   const price = vehicle.expectedPrice ?? vehicle.price;
   const chips = buildSpecChips(vehicle);
-  const maxVisibleChips = 4;
+  const maxVisibleChips = 3;
   const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
@@ -210,7 +210,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`relative flex min-w-0 w-full max-w-full items-stretch gap-2 overflow-hidden rounded-2xl border bg-white p-2 shadow-sm box-border ${
+      className={`relative flex h-[172px] min-w-0 w-full max-w-full items-stretch gap-2 overflow-hidden rounded-2xl border bg-white p-2 shadow-sm box-border ${
         vehicle.isFeatured ? "border-amber-300 shadow-amber-100" : "border-slate-200"
       }`}
     >
@@ -284,8 +284,8 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
         ) : null}
       </div>
 
-      <div className={`flex min-w-0 ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-1`}>
-        <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
+      <div className={`flex min-w-0 overflow-hidden ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-1`}>
+        <div className="flex shrink-0 min-w-0 items-center justify-between gap-1.5 overflow-hidden">
           <span
             className={`inline-flex max-w-full overflow-hidden whitespace-nowrap rounded-full px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
@@ -296,48 +296,53 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
         </div>
         <Link
           href={`/vehicles/${vehicle.id}`}
-          className={`min-w-0 line-clamp-2 ${TITLE_TEXT_CLASS} font-bold uppercase leading-tight text-slate-900 no-underline hover:text-slate-700 md:hover:underline`}
+          className={`shrink-0 min-w-0 line-clamp-2 ${TITLE_TEXT_CLASS} font-bold uppercase leading-tight text-slate-900 no-underline hover:text-slate-700 md:hover:underline`}
         >
           {title}
         </Link>
         <p
-          className={`truncate ${PRICE_TEXT_CLASS} font-extrabold leading-none text-orange-600`}
+          className={`shrink-0 truncate ${PRICE_TEXT_CLASS} font-extrabold leading-none text-orange-600`}
           aria-label={`Price ${formatIndianPriceShort(price)}`}
         >
           {formatIndianPriceShort(price)}
         </p>
-        {kmDisplay ? (
-          <p className={`flex items-center gap-1 truncate ${SECONDARY_TEXT_CLASS} font-medium text-slate-600`}>
-            <svg className="h-3.5 w-3.5 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4l3 3" />
-            </svg>
-            <span className="truncate">{kmDisplay}</span>
-          </p>
-        ) : null}
-        {locationLine ? (
-          <p className={`flex items-center gap-1 truncate ${LOCATION_TEXT_CLASS} text-slate-600`}>
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="truncate">{locationLine}</span>
+        {(kmDisplay || locationLine) ? (
+          <p className={`shrink-0 flex items-center gap-1.5 truncate ${LOCATION_TEXT_CLASS} text-slate-600`}>
+            {kmDisplay ? (
+              <>
+                <svg className="h-3.5 w-3.5 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4l3 3" />
+                </svg>
+                <span className="shrink-0">{kmDisplay}</span>
+              </>
+            ) : null}
+            {kmDisplay && locationLine ? <span className="shrink-0 text-slate-300">·</span> : null}
+            {locationLine ? (
+              <>
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                <span className="truncate">{locationLine}</span>
+              </>
+            ) : null}
           </p>
         ) : null}
         {secondLine ? (
-          <p className={`truncate ${SECONDARY_TEXT_CLASS} font-medium text-slate-700`}>
+          <p className={`shrink-0 truncate ${SECONDARY_TEXT_CLASS} font-medium text-slate-700`}>
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
         {visibleChips.length > 0 ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-1">
+          <div className="shrink-0 flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
               <span
                 key={chip}
-                className={`inline-flex max-w-[8rem] items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 ${CHIP_TEXT_CLASS} font-medium text-slate-700`}
+                className={`inline-flex shrink-0 items-center whitespace-nowrap rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 ${CHIP_TEXT_CLASS} font-medium text-slate-700`}
               >
-                <span className="truncate">{chip}</span>
+                {chip}
               </span>
             ))}
             {extraChipCount > 0 ? (
-              <span className={`inline-flex shrink-0 items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 ${CHIP_TEXT_CLASS} font-medium text-slate-700`}>
+              <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 ${CHIP_TEXT_CLASS} font-medium text-slate-700`}>
                 +{extraChipCount} More
               </span>
             ) : null}
@@ -345,7 +350,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
         ) : null}
         {sellerRoleChip ? (
           <span
-            className={`inline-flex w-fit min-w-0 max-w-full items-center gap-1 rounded-full px-2 py-1 ${ROLE_TEXT_CLASS} font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+            className={`shrink-0 inline-flex w-fit min-w-0 max-w-full items-center gap-1 rounded-full px-2 py-1 ${ROLE_TEXT_CLASS} font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
           >
             <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <rect x="3" y="7" width="18" height="14" rx="1" />
@@ -360,7 +365,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-9 min-h-9 flex-1 min-w-0 items-center justify-center rounded-lg px-3 text-xs font-semibold"
+            className="h-8 min-h-8 flex-1 min-w-0 items-center justify-center rounded-lg px-3 text-xs font-semibold"
             vehicleId={vehicle.id}
           />
           <ShareListingButton
@@ -369,7 +374,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-8 w-8 min-h-8 min-w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
