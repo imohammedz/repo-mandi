@@ -19,6 +19,9 @@ type Props = {
 
 const COMPACT_CARD_CLASS = "min-h-[166px]";
 const REGULAR_CARD_CLASS = "min-h-[176px]";
+const IMAGE_SECTION_CLASS = "basis-2/5 min-w-[124px]";
+const DETAILS_SECTION_CLASS = "basis-3/5";
+const TITLE_TEXT_CLASS = "text-sm";
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
@@ -187,7 +190,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           Featured
         </span>
       ) : null}
-      <div className="relative h-[162px] basis-2/5 min-w-[124px] shrink-0 overflow-hidden rounded-xl bg-slate-900/90">
+      <div className={`relative h-[162px] ${IMAGE_SECTION_CLASS} shrink-0 overflow-hidden rounded-xl bg-slate-900/90`}>
         {selectedImage ? (
           <>
             <SafeImage
@@ -248,7 +251,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : null}
       </div>
 
-      <div className="flex min-w-0 basis-3/5 flex-1 flex-col gap-1">
+      <div className={`flex min-w-0 ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-1`}>
         <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
           <span
             className={`inline-flex max-w-full shrink-0 rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
@@ -258,7 +261,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {listingTypeTag}
           </span>
         </div>
-        <h3 className="min-w-0 line-clamp-2 text-[13px] font-bold uppercase leading-tight text-slate-900">
+        <h3 className={`min-w-0 line-clamp-2 ${TITLE_TEXT_CLASS} font-bold uppercase leading-tight text-slate-900`}>
           <Link
             href={`/vehicles/${vehicle.id}`}
             className="block min-w-0 cursor-pointer no-underline hover:text-slate-700 md:hover:underline"
