@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, MapPin, ShipWheel } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -17,8 +17,8 @@ type Props = {
   compact?: boolean;
 };
 
-const COMPACT_CARD_CLASS = "min-h-[170px]";
-const REGULAR_CARD_CLASS = "min-h-[180px]";
+const COMPACT_CARD_CLASS = "min-h-[166px]";
+const REGULAR_CARD_CLASS = "min-h-[176px]";
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
@@ -118,15 +118,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const price = vehicle.expectedPrice ?? vehicle.price;
   const chips = buildSpecChips(vehicle);
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
-  const maxVisibleChips = 2;
+  const maxVisibleChips = 4;
   const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
-      ? "border border-amber-200 bg-amber-50 text-[11px] font-semibold text-amber-800"
-      : "border border-blue-100 bg-blue-50 text-[10px] font-medium text-blue-700";
+      ? "border border-amber-200 bg-amber-100 text-[10px] font-semibold text-amber-900"
+      : "border border-sky-200 bg-sky-100 text-[10px] font-semibold text-sky-900";
   const sellerRoleChipClass =
     sellerRoleChip === "BROKER"
       ? "border border-amber-200 bg-amber-100 text-amber-800"
@@ -178,17 +178,24 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} min-w-0 w-full max-w-full items-stretch gap-2.5 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm box-border sm:gap-3 sm:p-3`}
+      className={`relative flex ${cardClass} min-w-0 w-full max-w-full items-stretch gap-2 overflow-hidden rounded-2xl border bg-white p-2 shadow-sm box-border ${
+        vehicle.isFeatured ? "border-amber-300 shadow-amber-100" : "border-slate-200"
+      }`}
     >
-      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 md:w-[38%] md:max-w-[180px]">
+      {vehicle.isFeatured ? (
+        <span className="absolute left-3 top-0 z-30 -translate-y-[45%] rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+          Featured
+        </span>
+      ) : null}
+      <div className="relative h-[162px] basis-2/5 min-w-[124px] shrink-0 overflow-hidden rounded-xl bg-slate-900/90">
         {selectedImage ? (
           <>
             <SafeImage
               src={selectedImage}
               alt={vehicle.title}
               fill
-              sizes="(max-width: 768px) 45vw, 240px"
-              className="scale-110 object-cover object-center blur-md opacity-40"
+              sizes="(max-width: 768px) 40vw, 220px"
+              className="object-cover object-center blur-md opacity-45"
               loading="lazy"
               aria-hidden
               logContext={{ component: "VehicleCard", vehicleId: vehicle.id, variant: "background" }}
@@ -197,8 +204,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               src={selectedImage}
               alt={vehicle.title}
               fill
-              sizes="(max-width: 768px) 45vw, 240px"
-              className="z-10 object-contain object-center p-0.5"
+              sizes="(max-width: 768px) 40vw, 220px"
+              className="z-10 object-contain object-center p-1"
               loading="lazy"
               logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
             />
@@ -241,8 +248,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+      <div className="flex min-w-0 basis-3/5 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
           <span
             className={`inline-flex max-w-full shrink-0 rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
@@ -250,15 +257,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           >
             {listingTypeTag}
           </span>
-          {sellerRoleChip ? (
-            <span
-              className={`inline-flex min-w-0 max-w-full items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
-            >
-              <span className="truncate">{sellerRoleChip}</span>
-            </span>
-          ) : null}
         </div>
-        <h3 className="min-w-0 line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
+        <h3 className="min-w-0 line-clamp-2 text-[13px] font-bold uppercase leading-tight text-slate-900">
           <Link
             href={`/vehicles/${vehicle.id}`}
             className="block min-w-0 cursor-pointer no-underline hover:text-slate-700 md:hover:underline"
@@ -267,7 +267,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           </Link>
         </h3>
         <p
-          className="truncate text-xl font-extrabold leading-none text-orange-600 sm:text-2xl"
+          className="truncate text-2xl font-extrabold leading-none text-orange-600 sm:text-[30px]"
           aria-label={`Price ${formatIndianPriceShort(price)}`}
         >
           {formatIndianPriceShort(price)}
@@ -279,8 +279,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           </p>
         ) : null}
         {secondLine ? (
-          <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
-            <ShipWheel className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+          <p className="truncate text-[12px] font-medium text-slate-700">
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
@@ -301,26 +300,28 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             ) : null}
           </div>
         ) : null}
+        {sellerRoleChip ? (
+          <span
+            className={`inline-flex w-fit min-w-0 max-w-full items-center rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+          >
+            <span className="truncate">{sellerRoleChip}</span>
+          </span>
+        ) : null}
         <div className="mt-auto flex w-full min-w-0 items-center gap-1.5 pt-1">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-10 min-h-10 flex-1 min-w-0 items-center justify-center rounded-xl px-3 text-sm font-semibold"
+            className="h-9 min-h-9 flex-1 min-w-0 items-center justify-center rounded-lg px-3 text-xs font-semibold"
             vehicleId={vehicle.id}
           />
-          <Link
-            href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-10 min-h-10 flex-1 min-w-0 items-center justify-center truncate rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-700"
-          >
-            View Details
-          </Link>
           <ShareListingButton
             listingId={vehicle.id}
             title={title}
             location={locationLine}
             price={price}
-            variant="icon"
-            className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            variant="button"
+            className="h-9 min-h-9 shrink-0 items-center justify-center rounded-lg border-slate-300 px-3 text-xs font-semibold shadow-none hover:bg-slate-50"
+            label="Share"
           />
         </div>
       </div>
