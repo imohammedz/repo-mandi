@@ -22,6 +22,11 @@ const REGULAR_CARD_CLASS = "min-h-[176px]";
 const IMAGE_SECTION_CLASS = "basis-2/5 min-w-[124px]";
 const DETAILS_SECTION_CLASS = "basis-3/5";
 const TITLE_TEXT_CLASS = "text-sm";
+const PRICE_TEXT_CLASS = "text-2xl sm:text-[30px]";
+const LISTING_TYPE_TAG_STYLES = {
+  REPO: "border border-amber-200 bg-amber-100 text-[10px] font-semibold text-amber-900",
+  NON_REPO: "border border-sky-200 bg-sky-100 text-[10px] font-semibold text-sky-900",
+} as const;
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 const toReadableLabel = (value: string | null | undefined) => {
@@ -126,10 +131,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
-  const listingTypeTagClass =
-    listingTypeTag === "REPO"
-      ? "border border-amber-200 bg-amber-100 text-[10px] font-semibold text-amber-900"
-      : "border border-sky-200 bg-sky-100 text-[10px] font-semibold text-sky-900";
+  const listingTypeTagClass = listingTypeTag === "REPO" ? LISTING_TYPE_TAG_STYLES.REPO : LISTING_TYPE_TAG_STYLES.NON_REPO;
   const sellerRoleChipClass =
     sellerRoleChip === "BROKER"
       ? "border border-amber-200 bg-amber-100 text-amber-800"
@@ -270,7 +272,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           </Link>
         </h3>
         <p
-          className="truncate text-2xl font-extrabold leading-none text-orange-600 sm:text-[30px]"
+          className={`truncate ${PRICE_TEXT_CLASS} font-extrabold leading-none text-orange-600`}
           aria-label={`Price ${formatIndianPriceShort(price)}`}
         >
           {formatIndianPriceShort(price)}
