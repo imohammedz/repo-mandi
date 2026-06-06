@@ -19,15 +19,18 @@ type Props = {
 
 const COMPACT_CARD_CLASS = "min-h-[166px]";
 const REGULAR_CARD_CLASS = "min-h-[176px]";
+const IMAGE_SECTION_HEIGHT_CLASS = "h-[162px]";
 const IMAGE_SECTION_CLASS = "basis-2/5 min-w-[124px]";
 const DETAILS_SECTION_CLASS = "basis-3/5";
 const TITLE_TEXT_CLASS = "text-[13.5px]";
 const PRICE_TEXT_CLASS = "text-[23px] sm:text-2xl";
 const SECONDARY_TEXT_CLASS = "text-[12px]";
 const CHIP_TEXT_CLASS = "text-[10.5px]";
+const LOCATION_TEXT_CLASS = "text-[11.5px]";
+const ROLE_TEXT_CLASS = "text-[10px]";
 const LISTING_TYPE_TAG_STYLES = {
-  REPO: "border border-amber-200 bg-amber-100 text-[10px] font-semibold text-amber-900",
-  NON_REPO: "border border-sky-200 bg-sky-100 text-[10px] font-semibold text-sky-900",
+  REPO: `border border-amber-200 bg-amber-100 ${ROLE_TEXT_CLASS} font-semibold text-amber-900`,
+  NON_REPO: `border border-sky-200 bg-sky-100 ${ROLE_TEXT_CLASS} font-semibold text-sky-900`,
 } as const;
 const BLOCKED_SECOND_LINE_TOKENS = new Set(["COMPLETE_VEHICLE", "PRIME_MOVER", "PRIME_MOVER_TRAILER", "TRAILER", "BODY"]);
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
@@ -117,7 +120,7 @@ const buildSpecChips = (vehicle: Vehicle): string[] => {
   };
 
   const totalTyres = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
-  if (typeof totalTyres === "number" && totalTyres > 0) addChip(`${totalTyres} Tyre`);
+  if (typeof totalTyres === "number" && totalTyres > 0) addChip(`${totalTyres} ${totalTyres === 1 ? "Tyre" : "Tyres"}`);
   if (vehicle.bsNorm) addChip(toReadableLabel(vehicle.bsNorm));
   const transferToken = toNormalizedToken(vehicle.transferType);
   if (transferToken === "RC_TRANSFER") addChip("RC Transfer");
@@ -222,7 +225,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           Featured
         </span>
       ) : null}
-      <div className={`relative h-[162px] ${IMAGE_SECTION_CLASS} shrink-0 overflow-hidden rounded-xl bg-slate-900/90`}>
+      <div className={`relative ${IMAGE_SECTION_HEIGHT_CLASS} ${IMAGE_SECTION_CLASS} shrink-0 overflow-hidden rounded-xl bg-slate-900/90`}>
         {selectedImage ? (
           <>
             <SafeImage
@@ -308,7 +311,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           {formatIndianPriceShort(price)}
         </p>
         {locationLine ? (
-          <p className="flex items-center gap-1 truncate text-[11.5px] text-slate-600">
+          <p className={`flex items-center gap-1 truncate ${LOCATION_TEXT_CLASS} text-slate-600`}>
             <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <span className="truncate">{locationLine}</span>
           </p>
@@ -337,7 +340,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : null}
         {sellerRoleChip ? (
           <span
-            className={`inline-flex w-fit min-w-0 max-w-full items-center rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+            className={`inline-flex w-fit min-w-0 max-w-full items-center rounded-full px-2 py-1 ${ROLE_TEXT_CLASS} font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
           >
             <span className="truncate">{sellerRoleChip}</span>
           </span>
