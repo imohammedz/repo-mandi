@@ -18,13 +18,13 @@ type Props = {
   compact?: boolean;
 };
 
-const IMAGE_SECTION_CLASS = "basis-2/5 min-w-[124px]";
-const DETAILS_SECTION_CLASS = "basis-3/5";
-const TITLE_TEXT_CLASS = "text-[13.5px]";
-const PRICE_TEXT_CLASS = "text-[22px] sm:text-[24px]";
-const SECONDARY_TEXT_CLASS = "text-[12px]";
-const CHIP_TEXT_CLASS = "text-[10.5px]";
-const LOCATION_TEXT_CLASS = "text-[11.5px]";
+const IMAGE_SECTION_CLASS = "basis-[42%] min-w-[124px]";
+const DETAILS_SECTION_CLASS = "basis-[58%]";
+const TITLE_TEXT_CLASS = "text-[13px]";
+const PRICE_TEXT_CLASS = "text-[22px] tracking-tight";
+const SECONDARY_TEXT_CLASS = "text-[11px]";
+const CHIP_TEXT_CLASS = "text-[10px]";
+const LOCATION_TEXT_CLASS = "text-[11px]";
 const ROLE_TEXT_CLASS = "text-[10px]";
 const LISTING_TYPE_TAG_STYLES = {
   REPO: `border border-amber-200 bg-amber-100 ${ROLE_TEXT_CLASS} font-semibold text-amber-900`,
@@ -210,7 +210,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`relative flex h-[172px] min-w-0 w-full max-w-full items-stretch gap-2 overflow-hidden rounded-2xl border bg-white p-2 shadow-sm box-border ${
+      className={`relative flex min-w-0 w-full max-w-full items-stretch gap-2 overflow-hidden rounded-2xl border bg-white p-2 shadow-sm box-border ${
         vehicle.isFeatured ? "border-amber-300 shadow-amber-100" : "border-slate-200"
       }`}
     >
@@ -284,7 +284,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
         ) : null}
       </div>
 
-      <div className={`flex min-w-0 overflow-hidden ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-1`}>
+      <div className={`flex min-w-0 overflow-hidden ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-[3px]`}>
         <div className="flex shrink-0 min-w-0 items-center justify-between gap-1.5 overflow-hidden">
           <span
             className={`inline-flex max-w-full overflow-hidden whitespace-nowrap rounded-full px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
@@ -296,7 +296,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
         </div>
         <Link
           href={`/vehicles/${vehicle.id}`}
-          className={`shrink-0 min-w-0 line-clamp-2 ${TITLE_TEXT_CLASS} font-bold uppercase leading-tight text-slate-900 no-underline hover:text-slate-700 md:hover:underline`}
+          className={`shrink-0 min-w-0 line-clamp-2 ${TITLE_TEXT_CLASS} font-extrabold uppercase leading-tight text-slate-900 no-underline hover:text-slate-700 md:hover:underline`}
         >
           {title}
         </Link>
@@ -365,7 +365,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-8 min-h-8 flex-1 min-w-0 items-center justify-center rounded-lg px-3 text-xs font-semibold"
+            className="h-9 min-h-9 flex-1 min-w-0 items-center justify-center rounded-xl px-3 text-xs font-semibold"
             vehicleId={vehicle.id}
           />
           <ShareListingButton
@@ -374,7 +374,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-8 w-8 min-h-8 min-w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
