@@ -260,7 +260,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       <div className={`flex min-w-0 ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-1`}>
         <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
           <span
-            className={`inline-flex max-w-full rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+            className={`inline-flex max-w-full overflow-hidden whitespace-nowrap rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
             aria-label={`Listing type: ${listingTypeTag}`}
           >
