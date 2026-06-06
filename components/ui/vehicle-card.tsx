@@ -203,7 +203,7 @@ export function VehicleCard({ vehicle, compact: _compact }: Props) {
     if (images.length <= 1) return;
     setSelectedImageIndex((prev) => (prev + 1) % images.length);
   };
-  const kmDisplay = formatIndianKmShort(vehicle.odometerReading);
+  const kmDisplay = formatIndianKmShort(vehicle.kmDriven ?? vehicle.odometerReading);
 
   return (
     <motion.article
