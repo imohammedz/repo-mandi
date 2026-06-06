@@ -188,7 +188,11 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       }`}
     >
       {vehicle.isFeatured ? (
-        <span className="absolute left-3 top-0 z-30 -translate-y-[45%] rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+        <span
+          className="absolute left-3 top-0 z-30 -translate-y-[45%] rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900"
+          role="img"
+          aria-label="Featured listing"
+        >
           Featured
         </span>
       ) : null}
@@ -256,7 +260,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       <div className={`flex min-w-0 ${DETAILS_SECTION_CLASS} flex-1 flex-col gap-1`}>
         <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
           <span
-            className={`inline-flex max-w-full shrink-0 rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+            className={`inline-flex max-w-full rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
             aria-label={`Listing type: ${listingTypeTag}`}
           >
