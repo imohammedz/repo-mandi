@@ -170,23 +170,6 @@ const toSpecValue = (value: string | number | null | undefined) => {
   return normalizeText(value);
 };
 
-const renderSpecGroup = (title: string, rows: Array<{ label: string; value: string }>) => {
-  if (!rows.length) return null;
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-      <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2">
-        {rows.map((row) => (
-          <div key={`${title}-${row.label}`}>
-            <dt className="text-xs font-medium text-slate-500">{row.label}</dt>
-            <dd className="mt-0.5 text-sm font-semibold text-slate-900">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-};
-
 const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
   FRONT: 1,
   BACK: 2,
