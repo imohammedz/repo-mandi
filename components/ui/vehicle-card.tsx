@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -69,14 +69,19 @@ const getBodySizeLine = (vehicle: Vehicle) => {
 };
 
 const getBodyTypeText = (vehicle: Vehicle) => {
+  const isPrimeMoverTrailer = vehicle.assetCategory === "Prime Mover + Trailer";
+  if (isPrimeMoverTrailer) {
+    const trailerLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength || vehicle.bodyDimensions);
+    const trailerType = toReadableLabel(vehicle.trailerType || vehicle.bodyType);
+    const typePart = trailerType || "Trailer";
+    return [trailerLength, typePart].filter(Boolean).join(" ").trim();
+  }
   const bodyLength = getBodySizeLine(vehicle);
   const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
   return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
 };
 
 const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
-
-const getAssetConfiguration = (vehicle: Vehicle) => toUpperLabel(vehicle.assetConfiguration);
 
 const buildSpecChips = (vehicle: Vehicle): string[] => {
   const chips: string[] = [];
@@ -117,7 +122,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
   const secondLine = getSecondLine(vehicle);
-  const usageType = getAssetConfiguration(vehicle);
   const price = vehicle.expectedPrice ?? vehicle.price;
   const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
   const kmLine = formatIndianKmShort(kmValue);
@@ -247,13 +251,20 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span
-          className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
-          role="status"
-          aria-label={`Listing type: ${listingTypeTag}`}
-        >
-          {listingTypeTag}
-        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span
+            className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+            role="status"
+            aria-label={`Listing type: ${listingTypeTag}`}
+          >
+            {listingTypeTag}
+          </span>
+          {sellerRoleChip ? (
+            <span className={`inline-flex w-fit items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+              {sellerRoleChip}
+            </span>
+          ) : null}
+        </div>
         <h3 className="min-w-0 line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
           <Link href={`/vehicles/${vehicle.id}`} className="inline-block min-w-0 hover:text-slate-700">
             {title}
@@ -280,12 +291,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
-        {usageType ? (
-          <p className="flex items-center gap-1 truncate text-[12px] font-medium uppercase text-slate-700">
-            <Truck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="truncate">{usageType}</span>
-          </p>
-        ) : null}
         {visibleChips.length > 0 ? (
           <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
             {visibleChips.map((chip) => (
@@ -303,31 +308,20 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             ) : null}
           </div>
         ) : null}
-        {sellerRoleChip ? (
-          <span className={`inline-flex w-fit items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-            {sellerRoleChip}
-          </span>
-        ) : null}
         <div className="mt-auto flex w-full min-w-0 items-center gap-1.5 pt-1">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-10 min-h-10 min-w-0 flex-1 items-center justify-center rounded-xl px-2 text-sm font-semibold"
+            className="h-8 min-h-8 min-w-0 flex-1 items-center justify-center rounded-xl px-2 text-xs font-semibold"
             vehicleId={vehicle.id}
           />
-          <Link
-            href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-10 min-h-10 min-w-0 flex-1 items-center justify-center truncate rounded-xl border border-slate-300 px-2 text-sm font-semibold text-slate-700"
-          >
-            View Details
-          </Link>
           <ShareListingButton
             listingId={vehicle.id}
             title={title}
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
