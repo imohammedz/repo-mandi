@@ -134,8 +134,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
-      ? "border border-amber-200 bg-amber-50 text-[11px] font-semibold text-amber-800"
-      : "border border-blue-100 bg-blue-50 text-[10px] font-medium text-blue-700";
+      ? "border border-amber-200 bg-amber-50 text-[9px] font-semibold text-amber-800"
+      : "border border-blue-100 bg-blue-50 text-[9px] font-medium text-blue-700";
   const sellerRoleChipClass =
     sellerRoleChip === "BROKER"
       ? "border border-amber-200 bg-amber-100 text-amber-800"
@@ -250,69 +250,69 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 h-[180px] overflow-hidden">
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           <span
-            className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+            className={`inline-flex w-fit rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
             aria-label={`Listing type: ${listingTypeTag}`}
           >
             {listingTypeTag}
           </span>
           {sellerRoleChip ? (
-            <span className={`inline-flex w-fit items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+            <span className={`inline-flex w-fit items-center rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
               {sellerRoleChip}
             </span>
           ) : null}
         </div>
-        <h3 className="min-w-0 line-clamp-2 text-[13px] font-semibold uppercase leading-tight text-slate-900">
+        <h3 className="min-w-0 line-clamp-2 text-[12px] font-semibold uppercase leading-tight text-slate-900">
           <Link href={`/vehicles/${vehicle.id}`} className="inline-block min-w-0 hover:text-slate-700">
             {title}
           </Link>
         </h3>
-        <p className="truncate text-[16px] font-bold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
+        <p className="truncate text-[14px] font-bold leading-none text-orange-600" aria-label={`Price ${formatIndianPriceShort(price)}`}>
           {formatIndianPriceShort(price)}
         </p>
         {locationLine ? (
-          <p className="flex items-center gap-1 truncate text-[11px] text-slate-600">
-            <MapPin className="h-3 w-3 shrink-0 text-slate-500" />
+          <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
+            <MapPin className="h-2.5 w-2.5 shrink-0 text-slate-500" />
             <span className="truncate">{locationLine}</span>
           </p>
         ) : null}
         {kmLine ? (
-          <p className="flex items-center gap-1 truncate text-[11px] text-slate-600">
-            <Gauge className="h-3 w-3 shrink-0 text-slate-500" />
+          <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
+            <Gauge className="h-2.5 w-2.5 shrink-0 text-slate-500" />
             <span className="truncate">{kmLine}</span>
           </p>
         ) : null}
         {secondLine ? (
-          <p className="flex items-center gap-1 truncate text-[11px] text-slate-600">
-            <ShipWheel className="h-3 w-3 shrink-0 text-slate-500" />
+          <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
+            <ShipWheel className="h-2.5 w-2.5 shrink-0 text-slate-500" />
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
         {visibleChips.length > 0 ? (
-          <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
+          <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
             {visibleChips.map((chip) => (
               <span
                 key={chip}
-                className="inline-flex max-w-full items-center overflow-hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700"
+                className="inline-flex max-w-full items-center overflow-hidden rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700"
               >
                 <span className="truncate">{chip}</span>
               </span>
             ))}
             {extraChipCount > 0 ? (
-              <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">
+              <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700">
                 +{extraChipCount} More
               </span>
             ) : null}
           </div>
         ) : null}
-        <div className="mt-auto flex w-full min-w-0 items-center gap-1.5 pt-1">
+        <div className="mt-auto flex w-full min-w-0 items-center gap-1.5">
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-8 min-h-8 min-w-0 flex-1 items-center justify-center rounded-xl px-2 text-xs font-semibold"
+            className="h-6 min-h-6 min-w-0 flex-1 items-center justify-center rounded-lg px-2 text-[10px] font-semibold"
             vehicleId={vehicle.id}
           />
           <ShareListingButton
@@ -321,7 +321,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
