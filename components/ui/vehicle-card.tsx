@@ -312,22 +312,16 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           <WhatsAppButton
             phone={vehicle.sellerPhone}
             text="WhatsApp"
-            className="h-10 min-h-10 min-w-0 flex-1 items-center justify-center rounded-xl px-2 text-sm font-semibold"
+            className="h-8 min-h-8 min-w-0 flex-1 items-center justify-center rounded-xl px-2 text-xs font-semibold"
             vehicleId={vehicle.id}
           />
-          <Link
-            href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-10 min-h-10 min-w-0 flex-1 items-center justify-center truncate rounded-xl border border-slate-300 px-2 text-sm font-semibold text-slate-700"
-          >
-            View Details
-          </Link>
           <ShareListingButton
             listingId={vehicle.id}
             title={title}
             location={locationLine}
             price={price}
             variant="icon"
-            className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
+            className="h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50"
           />
         </div>
       </div>
