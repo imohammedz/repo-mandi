@@ -69,10 +69,10 @@ const getBodySizeLine = (vehicle: Vehicle) => {
 };
 
 const getBodyTypeText = (vehicle: Vehicle) => {
-  const isPrimeMoverTrailer = vehicle.assetConfiguration === "Prime Mover + Trailer";
+  const isPrimeMoverTrailer = vehicle.assetCategory === "Prime Mover + Trailer";
   if (isPrimeMoverTrailer) {
     const trailerLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength || vehicle.bodyDimensions);
-    const trailerType = toReadableLabel(vehicle.trailerType || vehicle.bodyApplicationType || vehicle.bodyType);
+    const trailerType = toReadableLabel(vehicle.trailerType || vehicle.bodyType);
     const typePart = trailerType || "Trailer";
     return [trailerLength, typePart].filter(Boolean).join(" ").trim();
   }
@@ -251,13 +251,20 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span
-          className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
-          role="status"
-          aria-label={`Listing type: ${listingTypeTag}`}
-        >
-          {listingTypeTag}
-        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span
+            className={`inline-flex w-fit rounded px-1.5 py-0.5 uppercase tracking-wide ${listingTypeTagClass}`}
+            role="status"
+            aria-label={`Listing type: ${listingTypeTag}`}
+          >
+            {listingTypeTag}
+          </span>
+          {sellerRoleChip ? (
+            <span className={`inline-flex w-fit items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+              {sellerRoleChip}
+            </span>
+          ) : null}
+        </div>
         <h3 className="min-w-0 line-clamp-2 text-[14px] font-semibold uppercase leading-tight text-slate-900">
           <Link href={`/vehicles/${vehicle.id}`} className="inline-block min-w-0 hover:text-slate-700">
             {title}
@@ -300,11 +307,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               </span>
             ) : null}
           </div>
-        ) : null}
-        {sellerRoleChip ? (
-          <span className={`inline-flex w-fit items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-            {sellerRoleChip}
-          </span>
         ) : null}
         <div className="mt-auto flex w-full min-w-0 items-center gap-1.5 pt-1">
           <WhatsAppButton
