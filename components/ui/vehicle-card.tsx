@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -69,14 +69,19 @@ const getBodySizeLine = (vehicle: Vehicle) => {
 };
 
 const getBodyTypeText = (vehicle: Vehicle) => {
+  const isPrimeMoverTrailer = vehicle.assetConfiguration === "Prime Mover + Trailer";
+  if (isPrimeMoverTrailer) {
+    const trailerLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength || vehicle.bodyDimensions);
+    const trailerType = toReadableLabel(vehicle.trailerType || vehicle.bodyApplicationType || vehicle.bodyType);
+    const typePart = trailerType || "Trailer";
+    return [trailerLength, typePart].filter(Boolean).join(" ").trim();
+  }
   const bodyLength = getBodySizeLine(vehicle);
   const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
   return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
 };
 
 const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
-
-const getAssetConfiguration = (vehicle: Vehicle) => toUpperLabel(vehicle.assetConfiguration);
 
 const buildSpecChips = (vehicle: Vehicle): string[] => {
   const chips: string[] = [];
@@ -117,7 +122,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
   const secondLine = getSecondLine(vehicle);
-  const usageType = getAssetConfiguration(vehicle);
   const price = vehicle.expectedPrice ?? vehicle.price;
   const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
   const kmLine = formatIndianKmShort(kmValue);
@@ -278,12 +282,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           <p className="flex items-center gap-1 truncate text-[12px] text-slate-600">
             <ShipWheel className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <span className="truncate">{secondLine}</span>
-          </p>
-        ) : null}
-        {usageType ? (
-          <p className="flex items-center gap-1 truncate text-[12px] font-medium uppercase text-slate-700">
-            <Truck className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="truncate">{usageType}</span>
           </p>
         ) : null}
         {visibleChips.length > 0 ? (
