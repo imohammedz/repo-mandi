@@ -112,6 +112,13 @@ export const financeInquiryStatusEnum = pgEnum("finance_inquiry_status", [
   "REJECTED",
 ]);
 
+export const insuranceInquiryStatusEnum = pgEnum("insurance_inquiry_status", [
+  "NEW",
+  "CONTACTED",
+  "CLOSED",
+  "REJECTED",
+]);
+
 export const timeToSellEnum = pgEnum("time_to_sell", [
   "LESS_THAN_1_WEEK",
   "ONE_TO_TWO_WEEKS",
@@ -496,6 +503,36 @@ export const financeInquiries = pgTable("finance_inquiries", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const insuranceInquiries = pgTable("insurance_inquiries", {
+  id: serial("id").primaryKey(),
+  vehicleId: varchar("vehicle_id", { length: 100 }).notNull(),
+  sellerId: integer("seller_id"),
+  buyerName: text("buyer_name").notNull(),
+  buyerPhone: varchar("buyer_phone", { length: 20 }).notNull(),
+  phoneVerified: boolean("phone_verified").notNull().default(false),
+  requirementText: text("requirement_text").notNull(),
+  listingTitle: text("listing_title").notNull(),
+  insuranceValidTill: date("insurance_valid_till", { mode: "string" }),
+  vehicleSnapshot: jsonb("vehicle_snapshot")
+    .$type<{
+      title: string;
+      brand: string | null;
+      model: string | null;
+      year: number | null;
+      listingType: string | null;
+      assetStructure: string | null;
+      assetCategory: string | null;
+      bodyApplicationType: string | null;
+      location: string | null;
+      sellerName: string | null;
+      sellerPhone: string | null;
+    }>()
+    .notNull(),
+  status: insuranceInquiryStatusEnum("status").notNull().default("NEW"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const vehicleSaleFeedback = pgTable("vehicle_sale_feedback", {
   id: serial("id").primaryKey(),
   vehicleId: varchar("vehicle_id", { length: 100 })
@@ -578,6 +615,8 @@ export type DbLead = typeof leads.$inferSelect;
 export type DbLeadInsert = typeof leads.$inferInsert;
 export type DbFinanceInquiry = typeof financeInquiries.$inferSelect;
 export type DbFinanceInquiryInsert = typeof financeInquiries.$inferInsert;
+export type DbInsuranceInquiry = typeof insuranceInquiries.$inferSelect;
+export type DbInsuranceInquiryInsert = typeof insuranceInquiries.$inferInsert;
 export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
 export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;

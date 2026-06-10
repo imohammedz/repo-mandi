@@ -4,11 +4,9 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import {
   ArrowLeft,
-  CalendarDays,
-  CircleCheck,
-  FileText,
+  Gauge,
   MapPin,
-  ShieldCheck,
+  ShipWheel,
 } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
@@ -18,22 +16,20 @@ import { eq, ne, desc, and, isNull, asc, count } from "drizzle-orm";
 import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
 import { SellerCard } from "@/components/ui/seller-card";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import { SupportContactInline } from "@/components/ui/support-contact-inline";
-import { SupportContactCard } from "@/components/ui/support-contact-card";
 import { getCurrentUser } from "@/lib/auth";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
 import { FinanceEstimateCard } from "@/components/ui/finance-estimate-card";
+import { InsuranceRenewalCard } from "@/components/ui/insurance-renewal-card";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
-  getListingModeLabel,
   hasEngineOrPowertrain,
   normalizeClassification,
 } from "@/lib/vehicle-classification";
-import { formatDisplayLabel } from "@/lib/formatting";
-import { SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
+import { formatDisplayLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
+import { SITE_CONFIG } from "@/lib/config/site";
 import { resolveImageSrcForRender } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
@@ -107,16 +103,21 @@ const buildHeroTitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
   return computed || vehicle.title;
 };
 
-const buildClassificationLine = (vehicle: ReturnType<typeof dbToVehicle>) => {
-  const categoryLabel = toReadableLabel(vehicle.assetCategory || vehicle.type);
-  const axleLabel = toReadableLabel(vehicle.axleConfiguration || vehicle.axleType);
-  const bodyLabel = toReadableLabel(vehicle.bodyApplicationType || vehicle.vehicleSubType);
+const toNormalizedToken = (value: string | null | undefined) =>
+  value
+    ?.toString()
+    .trim()
+    .replace(/[\s-]+/g, "_")
+    .toUpperCase() ?? "";
 
-  const first = categoryLabel || bodyLabel;
-  const secondCandidate = axleLabel || bodyLabel;
-  if (!first && !secondCandidate) return "";
-  if (!secondCandidate || first.toLowerCase() === secondCandidate.toLowerCase()) return first;
-  return `${first} • ${secondCandidate}`;
+const getSellerRoleChip = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const roleToken = toNormalizedToken(vehicle.sellerRole);
+  if (roleToken.includes("BROKER")) return "BROKER";
+  if (roleToken.includes("DEALER")) return "DEALER";
+  if (roleToken.includes("FLEET")) return "FLEET OWNER";
+  if (roleToken.includes("BANK") || roleToken.includes("NBFC")) return "BANK PARTNER";
+  if (roleToken.includes("RECOVERY")) return "RECOVERY AGENT";
+  return "";
 };
 
 const buildQuickInfoChips = (vehicle: ReturnType<typeof dbToVehicle>, showsRunning: boolean) => {
@@ -140,6 +141,29 @@ const buildQuickInfoChips = (vehicle: ReturnType<typeof dbToVehicle>, showsRunni
   return chips;
 };
 
+const formatBodyLengthShort = (raw: string | null | undefined) => {
+  if (!raw) return "";
+  const cleaned = raw.trim().toUpperCase();
+  const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(?:FT|FEET|FOOT|')?/);
+  return match ? `${match[1]} FT` : cleaned;
+};
+
+const getTyreText = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
+  if (typeof total === "number" && total > 0) {
+    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
+  }
+  return "";
+};
+
+const getBodyTypeText = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const bodyLength = formatBodyLengthShort(vehicle.bodyLength || vehicle.trailerLength || vehicle.bodyDimensions);
+  const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
+  return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
+};
+
+const getSecondLine = (vehicle: ReturnType<typeof dbToVehicle>) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
+
 const toSpecValue = (value: string | number | null | undefined) => {
   if (value === null || value === undefined) return "";
   if (typeof value === "number") return value.toLocaleString("en-IN");
@@ -161,31 +185,6 @@ const renderSpecGroup = (title: string, rows: Array<{ label: string; value: stri
       </dl>
     </section>
   );
-};
-
-const formatDate = (value: Date | string | null | undefined) => {
-  if (!value) return "";
-  const parsed = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-};
-
-const getFileNameFromUrl = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    return decodeURIComponent(parts[parts.length - 1] || "document");
-  } catch {
-    return "document";
-  }
-};
-
-const DOCUMENT_LABELS: Record<string, string> = {
-  RC: "RC",
-  INSURANCE: "Insurance",
-  FITNESS: "Fitness",
-  PERMIT: "Permit",
-  INSPECTION_REPORT: "Inspection Report",
 };
 
 const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
@@ -381,19 +380,6 @@ export default async function VehicleDetailPage({
     .limit(3);
   const similar = similarRows.map(dbToVehicle);
 
-  const documentRows = await db
-    .select()
-    .from(vehicleMedia)
-    .where(and(eq(vehicleMedia.vehicleId, vehicle.id), eq(vehicleMedia.type, "DOCUMENT")))
-    .orderBy(desc(vehicleMedia.createdAt));
-  const documentCategorySummary = dedupeLabels(
-    documentRows.map((doc) => {
-      if (doc.category === "OTHER") return toReadableLabel(doc.customName) || "Other";
-      return DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.category);
-    })
-  );
-  const canDownloadDocuments = currentUser?.accountType === "ADMIN";
-
   // Seller stats
   let memberSinceYear: string | undefined;
   let trucksSold = 0;
@@ -430,15 +416,17 @@ export default async function VehicleDetailPage({
 
   const classificationTags = dedupeLabels([
     vehicle.listingType === "REPO" ? "Repo" : "Regular",
-    getListingModeLabel(vehicle.listingMode),
     getAssetStructureLabel(vehicle.assetStructure) || "Standalone",
     getDetachableTypeLabel(vehicle.detachableType),
   ]);
 
   const quickInfoChips = buildQuickInfoChips(vehicle, showsRunning);
-  const updatedAtLabel = formatDate(row.updatedAt);
   const heroTitle = buildHeroTitle(vehicle);
-  const classificationLine = buildClassificationLine(vehicle);
+  const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
+  const sellerRoleChip = getSellerRoleChip(vehicle);
+  const priceLine = formatIndianPriceShort(vehicle.expectedPrice ?? vehicle.price);
+  const kmLine = formatIndianKmShort(vehicle.kmDriven ?? vehicle.odometerReading ?? null);
+  const secondLine = getSecondLine(vehicle);
 
   const vehicleInfoSpecs = [
     { label: "Brand", value: toSpecValue(vehicle.brand) },
@@ -523,9 +511,55 @@ export default async function VehicleDetailPage({
     { label: "Parking Due", value: parkingDueLabel(vehicle.parkingDue) },
   ].filter((item) => item.value);
 
-  const description = (vehicle.description ?? vehicle.conditionNotes ?? "").trim();
-  const inspectionNotes = dedupeLabels(vehicle.inspectionNotes || []);
-  if (vehicle.yardVerified) inspectionNotes.push("RepoMandi Physical Inspection Completed");
+  const allDetailChips = dedupeLabels([
+    ...quickInfoChips,
+    ...classificationTags,
+    ...trustTags,
+    transferTypeLabel ? `Transfer Type: ${transferTypeLabel}` : "",
+    ...vehicleInfoSpecs.map((item) => `${item.label}: ${item.value}`),
+    ...registrationSpecs.map((item) => `${item.label}: ${item.value}`),
+    ...conditionSpecs.map((item) => `${item.label}: ${item.value}`),
+    ...trailerSpecs.map((item) => `${item.label}: ${item.value}`),
+    ...documentationSpecs.map((item) => `${item.label}: ${item.value}`),
+  ]);
+  const maxVisibleDetailChips = 10;
+  const visibleDetailChips = allDetailChips.slice(0, maxVisibleDetailChips);
+  const hiddenDetailChips = allDetailChips.slice(maxVisibleDetailChips);
+
+  const parseDocumentationDate = (value: string | null | undefined) => {
+    if (!value) return null;
+    const trimmed = normalizeText(value);
+    if (!trimmed) return null;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+      const [day, month, year] = trimmed.split("/");
+      const parsed = new Date(`${year}-${month}-${day}T00:00:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const parsed = new Date(`${trimmed}T00:00:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  };
+
+  const getValidityBadge = (value: string | null | undefined) => {
+    const parsed = parseDocumentationDate(value);
+    if (!parsed) return { label: "Not Set", className: "border-slate-200 bg-slate-100 text-slate-600", state: "UNKNOWN" as const };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffInDays = Math.floor((parsed.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffInDays < 0) return { label: "Expired", className: "border-red-200 bg-red-50 text-red-700", state: "EXPIRED" as const };
+    if (diffInDays <= 30) {
+      return { label: "Expiring Soon", className: "border-amber-200 bg-amber-50 text-amber-700", state: "EXPIRING_SOON" as const };
+    }
+    return { label: "Valid", className: "border-emerald-200 bg-emerald-50 text-emerald-700", state: "VALID" as const };
+  };
+
+  const insuranceBadge = getValidityBadge(vehicle.insuranceValidity);
+  const permitBadge = getValidityBadge(vehicle.permitValidity);
+  const fitnessBadge = getValidityBadge(vehicle.fitnessStatus);
+  const taxBadge = getValidityBadge(vehicle.taxValidity);
+  const showInsuranceRenewalCard = insuranceBadge.state === "EXPIRED" || insuranceBadge.state === "EXPIRING_SOON";
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-5 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4">
@@ -551,69 +585,87 @@ export default async function VehicleDetailPage({
         <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-3 top-3 z-20" />
       </div>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-        <div className="flex flex-wrap gap-2">
-          {classificationTags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"
-            >
-              {tag}
+      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+            {listingTypeTag}
+          </span>
+          {sellerRoleChip ? (
+            <span className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+              {sellerRoleChip}
             </span>
-          ))}
-          {trustTags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
-            >
-              <CircleCheck className="h-3.5 w-3.5" />
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{heroTitle}</h1>
-          {classificationLine ? <p className="text-sm text-slate-500">{classificationLine}</p> : null}
-        </div>
-
-        <p className="text-3xl font-bold text-slate-900">{formatCurrency(vehicle.expectedPrice ?? vehicle.price)}</p>
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <MapPin className="h-4 w-4" />
-          <span>{displayLocation || "Location unavailable"}</span>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Transfer Type</p>
-          <p className="text-sm font-semibold text-slate-900">{transferTypeLabel}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-          <span>{vehicle.listingType === "REPO" ? "Repo" : "Regular"}</span>
-          <span>•</span>
-          <span>{getListingModeLabel(vehicle.listingMode)}</span>
-          {updatedAtLabel ? (
-            <>
-              <span>•</span>
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5" /> Updated {updatedAtLabel}
-              </span>
-            </>
           ) : null}
         </div>
-        <SupportContactInline prompt="Need assistance?" subject={SUPPORT_SUBJECTS.sellerVerification} className="text-xs text-slate-600" />
+        <h1 className="text-xl font-semibold uppercase text-slate-900 md:text-2xl">{heroTitle}</h1>
+        <p className="text-2xl font-bold text-orange-600">{priceLine}</p>
+        <p className="flex items-center gap-2 text-sm text-slate-600">
+          <MapPin className="h-4 w-4 shrink-0 text-slate-500" />
+          <span>{displayLocation || "Location unavailable"}</span>
+        </p>
+        {kmLine ? (
+          <p className="flex items-center gap-2 text-sm text-slate-600">
+            <Gauge className="h-4 w-4 shrink-0 text-slate-500" />
+            <span>{kmLine}</span>
+          </p>
+        ) : null}
+        {secondLine ? (
+          <p className="flex items-center gap-2 text-sm text-slate-600">
+            <ShipWheel className="h-4 w-4 shrink-0 text-slate-500" />
+            <span>{secondLine}</span>
+          </p>
+        ) : null}
       </section>
 
-      {quickInfoChips.length ? (
+      {allDetailChips.length ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <div className="flex flex-wrap gap-2">
-            {quickInfoChips.map((chip) => (
-              <span key={chip} className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+          <h2 className="text-base font-semibold text-slate-900">All Vehicle Details</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {visibleDetailChips.map((chip) => (
+              <span key={chip} className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
                 {chip}
               </span>
             ))}
           </div>
+          {hiddenDetailChips.length ? (
+            <details className="mt-3">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-700">+{hiddenDetailChips.length} more</summary>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {hiddenDetailChips.map((chip) => (
+                  <span key={chip} className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </section>
       ) : null}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-900">Document Validity</h2>
+        <div className="mt-4 space-y-3">
+          {[
+            { label: "Insurance Valid Till", value: formatDocumentationDate(vehicle.insuranceValidity), badge: insuranceBadge },
+            { label: "Permit Valid Till", value: formatDocumentationDate(vehicle.permitValidity), badge: permitBadge },
+            { label: "Fitness Valid Till", value: formatDocumentationDate(vehicle.fitnessStatus), badge: fitnessBadge },
+            { label: "Tax Valid Till", value: formatDocumentationDate(vehicle.taxValidity), badge: taxBadge },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+              <div>
+                <p className="text-xs text-slate-500">{item.label}</p>
+                <p className="text-sm font-semibold text-slate-900">{item.value || "Not Set"}</p>
+              </div>
+              <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${item.badge.className}`}>
+                {item.badge.label}
+              </span>
+            </div>
+          ))}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+            <p className="text-xs text-slate-500">Parking Due</p>
+            <p className="text-sm font-semibold text-slate-900">{parkingDueLabel(vehicle.parkingDue) || "Not Set"}</p>
+          </div>
+        </div>
+      </section>
 
       <FinanceEstimateCard
         vehicleId={vehicle.id}
@@ -621,135 +673,40 @@ export default async function VehicleDetailPage({
         listingPrice={vehicle.expectedPrice ?? vehicle.price ?? null}
       />
 
-      <div className="space-y-5">
-        <SellerCard
-          id="seller-contact-card"
-          name={vehicle.businessName || vehicle.sellerName}
-          role={vehicle.sellerRole}
-          phone={vehicle.sellerPhone}
+      {showInsuranceRenewalCard ? (
+        <InsuranceRenewalCard
+          vehicleId={vehicle.id}
           vehicleTitle={heroTitle}
-          sellerId={vehicle.sellerId ?? undefined}
-          city={displayLocation}
-          sellerVerified={vehicle.sellerVerified ?? false}
-          photosVerified={vehicle.photosVerified ?? false}
-          rcVerified={vehicle.rcVerified ?? false}
-          yardVerified={vehicle.yardVerified ?? false}
-          trucksSold={trucksSold}
-          memberSinceYear={memberSinceYear}
-          className="h-fit w-full"
+          insuranceValidTill={formatDocumentationDate(vehicle.insuranceValidity) || "Not Set"}
+          alertType={insuranceBadge.state === "EXPIRED" ? "EXPIRED" : "EXPIRING_SOON"}
         />
+      ) : null}
 
-        <div className="w-full space-y-5">
-          <section className="space-y-4">
-            <h2 className="text-base font-semibold text-slate-900">Vehicle Specifications</h2>
-            {renderSpecGroup("Vehicle Information", vehicleInfoSpecs)}
-            {renderSpecGroup("Registration & Compliance", registrationSpecs)}
-            {renderSpecGroup("Condition & Usage", conditionSpecs)}
-            {renderSpecGroup("Trailer / Body Details", trailerSpecs)}
-            {renderSpecGroup("Documentation Details", documentationSpecs)}
-          </section>
+      <SellerCard
+        id="seller-contact-card"
+        name={vehicle.businessName || vehicle.sellerName}
+        role={vehicle.sellerRole}
+        phone={vehicle.sellerPhone}
+        vehicleTitle={heroTitle}
+        sellerId={vehicle.sellerId ?? undefined}
+        city={displayLocation}
+        sellerVerified={vehicle.sellerVerified ?? false}
+        photosVerified={vehicle.photosVerified ?? false}
+        rcVerified={vehicle.rcVerified ?? false}
+        yardVerified={vehicle.yardVerified ?? false}
+        trucksSold={trucksSold}
+        memberSinceYear={memberSinceYear}
+        className="h-fit w-full"
+      />
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Description</h2>
-            {description ? (
-              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{description}</p>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">No description available.</p>
-            )}
-            {inspectionNotes.length ? (
-              <div className="mt-4 border-t border-slate-100 pt-3">
-                <h3 className="text-sm font-semibold text-slate-800">Inspection Notes</h3>
-                <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                  {inspectionNotes.map((note) => (
-                    <li key={note} className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </section>
-
-          <SupportContactCard
-            title="Questions about inspections?"
-            description="Contact RepoMandi support for inspection and yard verification help."
-            subject={SUPPORT_SUBJECTS.inspection}
-          />
-
-          {documentRows.length ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900">Documents Uploaded</h2>
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {documentCategorySummary.map((label) => (
-                  <li key={label} className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                    <span>{label}</span>
-                  </li>
-                ))}
-              </ul>
-              {canDownloadDocuments ? (
-                <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin Document Access</p>
-                  {documentRows.map((doc) => {
-                    const label =
-                      doc.category === "OTHER"
-                        ? `Other: ${toReadableLabel(doc.customName) || "Other"}`
-                        : DOCUMENT_LABELS[doc.category] || toReadableLabel(doc.category) || "Document";
-                    const isVerified =
-                      (doc.category === "RC" && vehicle.rcVerified) ||
-                      (doc.category === "INSPECTION_REPORT" && vehicle.yardVerified);
-                    const fileName = doc.originalFileName || getFileNameFromUrl(doc.url);
-                    return (
-                      <a
-                        key={doc.id}
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                      >
-                        <span className="min-w-0">
-                          <span className="block font-medium text-slate-800">{label}</span>
-                          <span className="block truncate text-xs text-slate-500">{fileName}</span>
-                        </span>
-                        <span className="inline-flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          {isVerified ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
-                              <ShieldCheck className="h-3.5 w-3.5" />
-                              Verified
-                            </span>
-                          ) : null}
-                        </span>
-                      </a>
-                    );
-                  })}
-                </div>
-              ) : null}
-              {!canDownloadDocuments ? (
-                <p className="mt-3 text-xs text-slate-500">
-                  Document files are only available to admins during verification.
-                </p>
-              ) : null}
-              {!documentCategorySummary.length ? (
-                <p className="mt-3 text-sm text-slate-500">No documents uploaded.</p>
-              ) : null}
-              <div className="mt-3 text-xs text-slate-500">
-                {documentRows.length} {documentRows.length === 1 ? "file" : "files"} uploaded.
-              </div>
-            </section>
-          ) : null}
-
-          <section className="space-y-3">
-            <h2 className="text-base font-semibold text-slate-900">Similar Vehicles</h2>
-            <div className="space-y-2">
-              {similar.map((item) => (
-                <VehicleCard key={item.id} vehicle={item} compact />
-              ))}
-            </div>
-          </section>
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold text-slate-900">Similar Vehicles</h2>
+        <div className="space-y-2">
+          {similar.map((item) => (
+            <VehicleCard key={item.id} vehicle={item} compact />
+          ))}
         </div>
-      </div>
+      </section>
 
       <VehicleStickyContactCta
         vehicleId={vehicle.id}
