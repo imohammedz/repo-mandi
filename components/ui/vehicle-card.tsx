@@ -99,15 +99,26 @@ const buildSpecChips = (vehicle: Vehicle): string[] => {
     chips.push(trimmed);
   };
 
-  if (vehicle.bsNorm) addChip(toReadableLabel(vehicle.bsNorm));
+  // RTO — use registrationState, skip if empty or Unknown
+  const rto = vehicle.registrationState?.trim();
+  if (rto && rto.toUpperCase() !== "UNKNOWN") addChip(rto);
+
+  // Transfer — only show "RTO NOC" when transferType is RTO_NOC
   const transferToken = toNormalizedToken(vehicle.transferType);
-  if (transferToken === "RC_TRANSFER") addChip("RC Transfer");
-  else if (transferToken === "RTO_NOC") addChip("RTO NOC");
-  else if (transferToken === "OPEN_NOC") addChip("Open NOC");
-  if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
-  const gvw = String(vehicle.gvwTonnes ?? "").trim();
-  if (gvw) addChip(/\bton(?:ne|nes)?\b/i.test(gvw) ? `${gvw} GVW` : `${gvw} Ton GVW`);
-  if (vehicle.suspensionType) addChip(toReadableLabel(vehicle.suspensionType));
+  if (transferToken === "RTO_NOC") addChip("RTO NOC");
+
+  // AC / Non-AC Cabin
+  if (vehicle.acCabin === "YES") addChip("AC Cabin");
+  else if (vehicle.acCabin === "NO") addChip("Non-AC Cabin");
+
+  // Tyre Mount — label as "Tyre Mount: <value>", skip Unknown
+  if (vehicle.tyreMountStatus && vehicle.tyreMountStatus !== "UNKNOWN") {
+    const mountToken = toNormalizedToken(vehicle.tyreMountStatus);
+    if (mountToken === "ON_DISC") addChip("Tyre Mount: On Disc");
+    else if (mountToken === "PARTIAL") addChip("Tyre Mount: Partial");
+    else if (mountToken === "WITH_TYRES") addChip("Tyre Mount: With Tyres");
+    else if (mountToken === "WITHOUT_DISC_AND_TYRES") addChip("Tyre Mount: No Disc/Tyres");
+  }
 
   return chips;
 };
@@ -132,9 +143,6 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const kmLine = formatIndianKmShort(kmValue);
   const chips = buildSpecChips(vehicle);
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
-  const maxVisibleChips = 3;
-  const visibleChips = chips.slice(0, maxVisibleChips);
-  const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
   const listingTypeTagClass =
@@ -306,21 +314,16 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             <span className="truncate">{secondLine}</span>
           </p>
         ) : null}
-        {visibleChips.length > 0 ? (
+        {chips.length > 0 ? (
           <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
-            {visibleChips.map((chip) => (
+            {chips.map((chip) => (
               <span
                 key={chip}
-                className="inline-flex max-w-full items-center overflow-hidden rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700"
+                className="inline-flex max-w-[140px] shrink-0 items-center overflow-hidden rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700 whitespace-nowrap"
               >
                 <span className="truncate">{chip}</span>
               </span>
             ))}
-            {extraChipCount > 0 ? (
-              <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700">
-                +{extraChipCount} More
-              </span>
-            ) : null}
           </div>
         ) : null}
         <div className="mt-auto flex w-full min-w-0 items-center gap-1.5">
