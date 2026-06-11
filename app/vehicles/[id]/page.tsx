@@ -216,9 +216,9 @@ const buildVehicleSpecChips = (vehicle: ReturnType<typeof dbToVehicle>, showsRun
         : ""
       : "",
     vehicle.bsNorm ? toReadableLabel(vehicle.bsNorm) : "",
-    vehicle.fuelType ? `Fuel: ${toReadableLabel(vehicle.fuelType)}` : "",
+    vehicle.fuelType ? toReadableLabel(vehicle.fuelType) : "",
     vehicle.suspensionType ? toReadableLabel(vehicle.suspensionType) : "",
-    vehicle.engineCondition ? `Engine: ${toReadableLabel(vehicle.engineCondition)}` : "",
+    vehicle.engineCondition ? toReadableLabel(vehicle.engineCondition) : "",
     getAssetStructureLabel(vehicle.assetStructure),
     getDetachableTypeLabel(vehicle.detachableType),
     vehicle.batteryIncluded === "YES" ? "Battery Included" : "",
@@ -627,7 +627,7 @@ export default async function VehicleDetailPage({
         </p>
 
         {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeChip) ? (
-          <div className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1">
             {rtoInfo ? (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600">
                 <span className="text-slate-500">RTO:</span>
