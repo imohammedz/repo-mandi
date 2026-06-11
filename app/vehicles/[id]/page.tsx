@@ -22,6 +22,7 @@ import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-cta";
 import { FinanceEstimateCard } from "@/components/ui/finance-estimate-card";
 import { InsuranceRenewalCard } from "@/components/ui/insurance-renewal-card";
+import { VehicleDetailChips } from "@/components/ui/vehicle-detail-chips";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
@@ -496,9 +497,6 @@ export default async function VehicleDetailPage({
     ...conditionSpecs.map((item) => `${item.label}: ${item.value}`),
     ...trailerSpecs.map((item) => `${item.label}: ${item.value}`),
   ]);
-  const maxVisibleDetailChips = 10;
-  const visibleDetailChips = allDetailChips.slice(0, maxVisibleDetailChips);
-  const hiddenDetailChips = allDetailChips.slice(maxVisibleDetailChips);
 
   const parseDocumentationDate = (value: string | null | undefined) => {
     if (!value) return null;
@@ -590,30 +588,7 @@ export default async function VehicleDetailPage({
         ) : null}
       </section>
 
-      {allDetailChips.length ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <h2 className="text-base font-semibold text-slate-900">All Vehicle Details</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {visibleDetailChips.map((chip) => (
-              <span key={chip} className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-                {chip}
-              </span>
-            ))}
-          </div>
-          {hiddenDetailChips.length ? (
-            <details className="mt-3">
-              <summary className="cursor-pointer text-sm font-semibold text-slate-700">+{hiddenDetailChips.length} more</summary>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {hiddenDetailChips.map((chip) => (
-                  <span key={chip} className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </details>
-          ) : null}
-        </section>
-      ) : null}
+      <VehicleDetailChips chips={allDetailChips} />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">Document Validity</h2>
