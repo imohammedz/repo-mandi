@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import {
   ArrowLeft,
+  Disc3,
   Gauge,
   MapPin,
-  ShipWheel,
 } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
@@ -29,7 +29,12 @@ import {
   hasEngineOrPowertrain,
   normalizeClassification,
 } from "@/lib/vehicle-classification";
-import { formatDisplayLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
+import {
+  formatDisplayLabel,
+  formatIndianKmShort,
+  formatIndianPriceShort,
+  getPreferredTrailerTypeLabel,
+} from "@/lib/formatting";
 import { SITE_CONFIG } from "@/lib/config/site";
 import { resolveImageSrcForRender } from "@/lib/media";
 
@@ -104,6 +109,88 @@ const buildHeroTitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
   return computed || vehicle.title;
 };
 
+const formatBodyLengthShort = (raw: string | null | undefined) => {
+  if (!raw) return "";
+  const cleaned = raw.trim().toUpperCase();
+  const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(?:FT|FEET|FOOT|')?/);
+  return match ? `${match[1]} FT` : cleaned;
+};
+
+const getTyreText = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
+  if (typeof total === "number" && total > 0) {
+    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
+  }
+  return "";
+};
+
+const getBodyTypeText = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  if (vehicle.assetCategory === "Prime Mover + Trailer") {
+    const trailerLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength || vehicle.bodyDimensions);
+    const trailerType = getPreferredTrailerTypeLabel(vehicle);
+    return [trailerLength, trailerType].filter(Boolean).join(" ").trim();
+  }
+  const bodyLength = formatBodyLengthShort(vehicle.bodyLength || vehicle.trailerLength || vehicle.bodyDimensions);
+  const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
+  return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
+};
+
+const buildPrimaryTitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const classification = normalizeClassification({
+    assetStructure: vehicle.assetStructure,
+    detachableType: vehicle.detachableType,
+    assetConfiguration: vehicle.assetConfiguration,
+  });
+
+  const axleLabel = toReadableLabel(vehicle.axleConfiguration || vehicle.axleType);
+
+  if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER") {
+    const bodyLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength);
+    const trailerType = toReadableLabel(vehicle.trailerType || vehicle.bodyApplicationType);
+    const parts = dedupeLabels([String(vehicle.year || ""), vehicle.brand, vehicle.model, bodyLength, trailerType]);
+    return parts.join(" ").trim() || vehicle.title || "";
+  }
+
+  const parts = dedupeLabels([String(vehicle.year || ""), vehicle.brand, vehicle.model, axleLabel]);
+  return parts.join(" ").trim() || vehicle.title || "";
+};
+
+const buildTrailerSubtitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const classification = normalizeClassification({
+    assetStructure: vehicle.assetStructure,
+    detachableType: vehicle.detachableType,
+    assetConfiguration: vehicle.assetConfiguration,
+  });
+  if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER") {
+    return "";
+  }
+  return getBodyTypeText(vehicle);
+};
+
+const buildConfigurationLine = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const classification = normalizeClassification({
+    assetStructure: vehicle.assetStructure,
+    detachableType: vehicle.detachableType,
+    assetConfiguration: vehicle.assetConfiguration,
+  });
+
+  const axleLabel = toReadableLabel(vehicle.axleConfiguration || vehicle.axleType);
+
+  if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "PRIME_MOVER") {
+    const hasTrailerInfo = !!(vehicle.trailerType || vehicle.trailerLength || vehicle.bodyLength);
+    const suffix = hasTrailerInfo ? "Prime Mover + Trailer" : "Prime Mover";
+    return dedupeLabels([axleLabel, suffix]).join(" ").trim();
+  }
+  if (classification.assetStructure === "DETACHABLE" && classification.detachableType === "TRAILER") {
+    return "Trailer";
+  }
+  if (classification.assetStructure === "EQUIPMENT") {
+    return toReadableLabel(vehicle.assetCategory || vehicle.type);
+  }
+  const assetCategoryLabel = normalizeText(vehicle.assetCategory);
+  return dedupeLabels([axleLabel, assetCategoryLabel]).join(" ").trim();
+};
+
 const toNormalizedToken = (value: string | null | undefined) =>
   value
     ?.toString()
@@ -141,29 +228,6 @@ const buildQuickInfoChips = (vehicle: ReturnType<typeof dbToVehicle>, showsRunni
 
   return chips;
 };
-
-const formatBodyLengthShort = (raw: string | null | undefined) => {
-  if (!raw) return "";
-  const cleaned = raw.trim().toUpperCase();
-  const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(?:FT|FEET|FOOT|')?/);
-  return match ? `${match[1]} FT` : cleaned;
-};
-
-const getTyreText = (vehicle: ReturnType<typeof dbToVehicle>) => {
-  const total = vehicle.totalTyres ?? vehicle.tyreCount ?? vehicle.currentTyreCount;
-  if (typeof total === "number" && total > 0) {
-    return `${total} ${total === 1 ? "Tyre" : "Tyres"}`;
-  }
-  return "";
-};
-
-const getBodyTypeText = (vehicle: ReturnType<typeof dbToVehicle>) => {
-  const bodyLength = formatBodyLengthShort(vehicle.bodyLength || vehicle.trailerLength || vehicle.bodyDimensions);
-  const bodyType = toReadableLabel(vehicle.bodyApplicationType || vehicle.trailerType || vehicle.bodyType || vehicle.vehicleSubType);
-  return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
-};
-
-const getSecondLine = (vehicle: ReturnType<typeof dbToVehicle>) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
 
 const toSpecValue = (value: string | number | null | undefined) => {
   if (value === null || value === undefined) return "";
@@ -408,9 +472,35 @@ export default async function VehicleDetailPage({
   const heroTitle = buildHeroTitle(vehicle);
   const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
   const sellerRoleChip = getSellerRoleChip(vehicle);
+  const listingTypeTagClass =
+    listingTypeTag === "REPO"
+      ? "border border-amber-200 bg-amber-50 text-amber-800"
+      : "border border-blue-100 bg-blue-50 text-blue-700";
+  const sellerRoleChipClass =
+    sellerRoleChip === "BROKER"
+      ? "border border-amber-200 bg-amber-100 text-amber-800"
+      : sellerRoleChip === "DEALER"
+        ? "border border-blue-200 bg-blue-100 text-blue-800"
+        : sellerRoleChip === "FLEET OWNER"
+          ? "border border-green-200 bg-green-100 text-green-800"
+          : sellerRoleChip === "BANK PARTNER"
+            ? "border border-purple-200 bg-purple-100 text-purple-800"
+            : "border border-red-200 bg-red-100 text-red-800";
   const priceLine = formatIndianPriceShort(vehicle.expectedPrice ?? vehicle.price);
   const kmLine = formatIndianKmShort(vehicle.kmDriven ?? vehicle.odometerReading ?? null);
-  const secondLine = getSecondLine(vehicle);
+  const primaryTitle = buildPrimaryTitle(vehicle);
+  const trailerSubtitle = buildTrailerSubtitle(vehicle);
+  const configurationLine = buildConfigurationLine(vehicle);
+  const tyreText = getTyreText(vehicle);
+  const rtoInfo = normalizeText(vehicle.registrationState);
+  const tyreMountStatus =
+    vehicle.tyresIncluded === "YES"
+      ? "With Tyres"
+      : vehicle.tyresIncluded === "NO"
+        ? "Without Tyres"
+        : "";
+  const tyreMountStatusChip = vehicle.tyreMountStatus ? toReadableLabel(vehicle.tyreMountStatus) : "";
+  const showAcCabin = vehicle.acCabin === "YES";
 
   const vehicleInfoSpecs = [
     { label: "Brand", value: toSpecValue(vehicle.brand) },
@@ -559,32 +649,76 @@ export default async function VehicleDetailPage({
 
       <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+          <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${listingTypeTagClass}`}>
             {listingTypeTag}
           </span>
           {sellerRoleChip ? (
-            <span className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+            <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
               {sellerRoleChip}
             </span>
           ) : null}
         </div>
-        <h1 className="text-xl font-semibold uppercase text-slate-900 md:text-2xl">{heroTitle}</h1>
+
+        <h1 className="text-xl font-bold uppercase text-slate-900 md:text-2xl">{primaryTitle}</h1>
+
+        {trailerSubtitle ? (
+          <p className="text-base font-semibold text-slate-700">{trailerSubtitle}</p>
+        ) : null}
+
         <p className="text-2xl font-bold text-orange-600">{priceLine}</p>
+
+        {(tyreText || kmLine) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {kmLine ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+                <Gauge className="h-4 w-4 shrink-0 text-slate-500" />
+                <span>{kmLine}</span>
+              </span>
+            ) : null}
+            {tyreText ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+                <Disc3 className="h-4 w-4 shrink-0 text-slate-500" />
+                <span>{tyreText}</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {configurationLine ? (
+          <p className="text-xs text-slate-500">{configurationLine}</p>
+        ) : null}
+
         <p className="flex items-center gap-2 text-sm text-slate-600">
           <MapPin className="h-4 w-4 shrink-0 text-slate-500" />
           <span>{displayLocation || "Location unavailable"}</span>
         </p>
-        {kmLine ? (
-          <p className="flex items-center gap-2 text-sm text-slate-600">
-            <Gauge className="h-4 w-4 shrink-0 text-slate-500" />
-            <span>{kmLine}</span>
-          </p>
-        ) : null}
-        {secondLine ? (
-          <p className="flex items-center gap-2 text-sm text-slate-600">
-            <ShipWheel className="h-4 w-4 shrink-0 text-slate-500" />
-            <span>{secondLine}</span>
-          </p>
+
+        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || showAcCabin) ? (
+          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+            {rtoInfo ? (
+              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+                <span className="text-slate-500">RTO:</span>
+                <span className="font-medium">{rtoInfo}</span>
+              </span>
+            ) : null}
+            {transferTypeLabel ? (
+              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+                <span className="text-slate-500">Transfer:</span>
+                <span className="font-medium">{transferTypeLabel}</span>
+              </span>
+            ) : null}
+            {(tyreMountStatusChip || tyreMountStatus) ? (
+              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+                <span className="text-slate-500">Tyre Mount:</span>
+                <span className="font-medium">{tyreMountStatusChip || tyreMountStatus}</span>
+              </span>
+            ) : null}
+            {showAcCabin ? (
+              <span className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                AC Cabin
+              </span>
+            ) : null}
+          </div>
         ) : null}
       </section>
 

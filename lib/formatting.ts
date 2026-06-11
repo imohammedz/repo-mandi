@@ -65,6 +65,24 @@ export function formatEnumLabel(value: string | null | undefined) {
   return formatDisplayLabel(value);
 }
 
+export function hasPrimeMoverTrailerLabel(value: string | null | undefined) {
+  return /\bprime\s*mover\s*\+\s*trailer\b/i.test(value ?? "");
+}
+
+export function getPreferredTrailerTypeLabel(input: {
+  trailerType?: string | null;
+  bodyType?: string | null;
+  bodyApplicationType?: string | null;
+  vehicleSubType?: string | null;
+}) {
+  const trailerType = formatDisplayLabel(input.trailerType);
+  if (trailerType) return trailerType;
+
+  const fallbackType = formatDisplayLabel(input.bodyType || input.bodyApplicationType || input.vehicleSubType);
+  if (!fallbackType || hasPrimeMoverTrailerLabel(fallbackType)) return "Trailer";
+  return fallbackType;
+}
+
 /**
  * Formats a rupee amount using Indian short units (Lakhs / Cr).
  * Trailing zeros are removed from the fractional part.

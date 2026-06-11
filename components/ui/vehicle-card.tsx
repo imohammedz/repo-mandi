@@ -3,14 +3,19 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel } from "lucide-react";
+import { ChevronLeft, ChevronRight, Disc3, Gauge, MapPin, ShipWheel } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { resolveImageSrcForRender } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
-import { formatEnumLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
+import {
+  formatEnumLabel,
+  formatIndianKmShort,
+  formatIndianPriceShort,
+  getPreferredTrailerTypeLabel,
+} from "@/lib/formatting";
 
 type Props = {
   vehicle: Vehicle;
@@ -72,8 +77,7 @@ const getBodyTypeText = (vehicle: Vehicle) => {
   const isPrimeMoverTrailer = vehicle.assetCategory === "Prime Mover + Trailer";
   if (isPrimeMoverTrailer) {
     const trailerLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength || vehicle.bodyDimensions);
-    const trailerType = toReadableLabel(vehicle.trailerType || vehicle.bodyType);
-    const typePart = trailerType || "Trailer";
+    const typePart = getPreferredTrailerTypeLabel(vehicle);
     return [trailerLength, typePart].filter(Boolean).join(" ").trim();
   }
   const bodyLength = getBodySizeLine(vehicle);
@@ -81,7 +85,7 @@ const getBodyTypeText = (vehicle: Vehicle) => {
   return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
 };
 
-const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
+const getSecondLine = (vehicle: Vehicle) => getBodyTypeText(vehicle);
 
 const buildSpecChips = (vehicle: Vehicle): string[] => {
   const chips: string[] = [];
@@ -100,9 +104,9 @@ const buildSpecChips = (vehicle: Vehicle): string[] => {
   if (transferToken === "RC_TRANSFER") addChip("RC Transfer");
   else if (transferToken === "RTO_NOC") addChip("RTO NOC");
   else if (transferToken === "OPEN_NOC") addChip("Open NOC");
+  if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
   const gvw = String(vehicle.gvwTonnes ?? "").trim();
   if (gvw) addChip(/\bton(?:ne|nes)?\b/i.test(gvw) ? `${gvw} GVW` : `${gvw} Ton GVW`);
-  if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
   if (vehicle.suspensionType) addChip(toReadableLabel(vehicle.suspensionType));
 
   return chips;
@@ -122,12 +126,13 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
   const secondLine = getSecondLine(vehicle);
+  const tyreText = getTyreText(vehicle);
   const price = vehicle.expectedPrice ?? vehicle.price;
   const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
   const kmLine = formatIndianKmShort(kmValue);
   const chips = buildSpecChips(vehicle);
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
-  const maxVisibleChips = 2;
+  const maxVisibleChips = 3;
   const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
@@ -279,11 +284,21 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             <span className="truncate">{locationLine}</span>
           </p>
         ) : null}
-        {kmLine ? (
-          <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
-            <Gauge className="h-2.5 w-2.5 shrink-0 text-slate-500" />
-            <span className="truncate">{kmLine}</span>
-          </p>
+        {(kmLine || tyreText) ? (
+          <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
+            {kmLine ? (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">
+                <Gauge className="h-2.5 w-2.5 shrink-0 text-slate-500" />
+                <span>{kmLine}</span>
+              </span>
+            ) : null}
+            {tyreText ? (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">
+                <Disc3 className="h-2.5 w-2.5 shrink-0 text-slate-500" />
+                <span>{tyreText}</span>
+              </span>
+            ) : null}
+          </div>
         ) : null}
         {secondLine ? (
           <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
