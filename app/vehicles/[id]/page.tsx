@@ -481,12 +481,16 @@ export default async function VehicleDetailPage({
         ? "Without Tyres"
         : "";
   const tyreMountStatusChip = vehicle.tyreMountStatus ? toReadableLabel(vehicle.tyreMountStatus) : "";
-  const cabinTypeChip =
+  const cabinTypeLabel =
     vehicle.acCabin === "YES"
       ? "AC Cabin"
       : vehicle.acCabin === "NO"
         ? "Non-AC Cabin"
         : "";
+  const metadataChipClass =
+    "inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600";
+  const metadataTextChipClass =
+    "inline-flex shrink-0 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] font-medium text-slate-600";
 
   const formatDocumentationDate = (v: string | null | undefined) => {
     if (!v) return "";
@@ -623,33 +627,33 @@ export default async function VehicleDetailPage({
           <span>{displayLocation || "Location unavailable"}</span>
         </p>
 
-        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeChip) ? (
+        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeLabel) ? (
           <div
-            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1"
+            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1 [scrollbar-width:thin]"
             tabIndex={0}
             aria-label="Vehicle metadata"
           >
             {rtoInfo ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600">
+              <span className={metadataChipClass}>
                 <span className="text-slate-500">RTO:</span>
                 <span className="font-medium">{rtoInfo}</span>
               </span>
             ) : null}
             {transferTypeLabel ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600">
+              <span className={metadataChipClass}>
                 <span className="text-slate-500">Transfer:</span>
                 <span className="font-medium">{transferTypeLabel}</span>
               </span>
             ) : null}
             {(tyreMountStatusChip || tyreMountStatus) ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600">
+              <span className={metadataChipClass}>
                 <span className="text-slate-500">Tyre Mount:</span>
                 <span className="font-medium">{tyreMountStatusChip || tyreMountStatus}</span>
               </span>
             ) : null}
-            {cabinTypeChip ? (
-              <span className="inline-flex shrink-0 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] font-medium text-slate-600">
-                {cabinTypeChip}
+            {cabinTypeLabel ? (
+              <span className={metadataTextChipClass}>
+                {cabinTypeLabel}
               </span>
             ) : null}
           </div>
