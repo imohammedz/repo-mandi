@@ -449,8 +449,6 @@ export default async function VehicleDetailPage({
     trucksSold = soldResult?.count ?? 0;
   }
 
-  const classificationTags = dedupeLabels([getAssetStructureLabel(vehicle.assetStructure), getDetachableTypeLabel(vehicle.detachableType)]);
-
   const vehicleSpecChips = buildVehicleSpecChips(vehicle, showsRunning);
   const heroTitle = buildHeroTitle(vehicle);
   const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
@@ -514,7 +512,6 @@ export default async function VehicleDetailPage({
 
   const allDetailChips = dedupeLabels([
     ...vehicleSpecChips,
-    ...classificationTags,
     vehicle.sellerVerified ? "Verified Seller" : "",
     vehicle.photosVerified ? "Photos Verified" : "",
     vehicle.rcVerified ? "RC Verified" : "",
@@ -627,7 +624,11 @@ export default async function VehicleDetailPage({
         </p>
 
         {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeChip) ? (
-          <div className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1">
+          <div
+            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1"
+            tabIndex={0}
+            aria-label="Vehicle metadata"
+          >
             {rtoInfo ? (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600">
                 <span className="text-slate-500">RTO:</span>
