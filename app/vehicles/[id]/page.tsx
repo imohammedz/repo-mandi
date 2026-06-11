@@ -470,6 +470,20 @@ export default async function VehicleDetailPage({
   const heroTitle = buildHeroTitle(vehicle);
   const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
   const sellerRoleChip = getSellerRoleChip(vehicle);
+  const listingTypeTagClass =
+    listingTypeTag === "REPO"
+      ? "border border-amber-200 bg-amber-50 text-amber-800"
+      : "border border-blue-100 bg-blue-50 text-blue-700";
+  const sellerRoleChipClass =
+    sellerRoleChip === "BROKER"
+      ? "border border-amber-200 bg-amber-100 text-amber-800"
+      : sellerRoleChip === "DEALER"
+        ? "border border-blue-200 bg-blue-100 text-blue-800"
+        : sellerRoleChip === "FLEET OWNER"
+          ? "border border-green-200 bg-green-100 text-green-800"
+          : sellerRoleChip === "BANK PARTNER"
+            ? "border border-purple-200 bg-purple-100 text-purple-800"
+            : "border border-red-200 bg-red-100 text-red-800";
   const priceLine = formatIndianPriceShort(vehicle.expectedPrice ?? vehicle.price);
   const kmLine = formatIndianKmShort(vehicle.kmDriven ?? vehicle.odometerReading ?? null);
   const primaryTitle = buildPrimaryTitle(vehicle);
@@ -632,11 +646,11 @@ export default async function VehicleDetailPage({
 
       <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+          <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${listingTypeTagClass}`}>
             {listingTypeTag}
           </span>
           {sellerRoleChip ? (
-            <span className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+            <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
               {sellerRoleChip}
             </span>
           ) : null}
