@@ -22,86 +22,71 @@ section {
 
 /* ── SellTruckCard banner ─────────────────────────────────── */
 .sell-card {
+  height: 68px;
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px;
-  margin: 18px 0;
-  border-radius: 16px;
-  border: 1px solid #f3d7bd;
-  background: linear-gradient(90deg, #fff4e8 0%, #fffaf5 100%);
-  box-shadow: 0 4px 14px rgba(20, 31, 54, 0.08);
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid #f1dcc5;
+  background: linear-gradient(90deg, #fff3e4 0%, #fffaf5 100%);
+  box-shadow: 0 2px 8px rgba(20, 31, 54, 0.07);
+  overflow: hidden;
 }
 .sell-card-img {
-  width: 110px;
-  height: 70px;
-  border-radius: 12px;
-  overflow: hidden;
+  width: 90px;
+  height: 52px;
   flex-shrink: 0;
 }
 .sell-card-img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .sell-card-content {
   flex: 1;
   min-width: 0;
 }
 .sell-card-content h3 {
-  margin: 0 0 6px;
-  font-size: 18px;
-  font-weight: 800;
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
   color: #0f172a;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 .sell-card-content p {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 .sell-card-btn {
+  height: 42px;
   background: #07122f;
   color: white;
   border: none;
-  border-radius: 10px;
-  padding: 13px 18px;
-  font-size: 14px;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   cursor: pointer;
   text-decoration: none;
+  flex-shrink: 0;
 }
 .sell-card-btn span {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border: 1.5px solid white;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
-}
-@media (max-width: 520px) {
-  .sell-card {
-    gap: 10px;
-    padding: 10px;
-  }
-  .sell-card-img {
-    width: 92px;
-    height: 58px;
-  }
-  .sell-card-content h3 {
-    font-size: 15px;
-  }
-  .sell-card-content p {
-    font-size: 11px;
-  }
-  .sell-card-btn {
-    padding: 10px 12px;
-    font-size: 12px;
-  }
 }
