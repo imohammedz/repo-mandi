@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "Unauthorized." }, { status: 401 });
     }
 
-    const body = (await request.json()) as { phone?: string; role?: string };
+    const body = (await request.json()) as { phone?: string };
     const phone = (body.phone ?? "").replace(/\D/g, "");
 
     if (!phone) {
@@ -58,11 +58,10 @@ export async function POST(request: Request) {
 
     const [upserted] = await db
       .insert(users)
-      .values({ phone, role: body.role ?? null })
+      .values({ phone })
       .onConflictDoUpdate({
         target: users.phone,
         set: {
-          role: body.role ?? null,
           updatedAt: new Date(),
         },
       })

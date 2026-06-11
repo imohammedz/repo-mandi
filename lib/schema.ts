@@ -205,7 +205,6 @@ export const availabilityStatusEnum = pgEnum("availability_status", [
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   phone: varchar("phone", { length: 20 }).notNull().unique(),
-  role: varchar("role", { length: 50 }), // legacy field
   fullName: text("full_name").notNull().default(""),
   email: varchar("email", { length: 255 }),
   accountType: accountTypeEnum("account_type").notNull().default("BUYER"),
