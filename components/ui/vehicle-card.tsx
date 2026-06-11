@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Gauge, MapPin, ShipWheel } from "lucide-react";
+import { ChevronLeft, ChevronRight, Disc3, Gauge, MapPin, ShipWheel } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -85,7 +85,7 @@ const getBodyTypeText = (vehicle: Vehicle) => {
   return [bodyLength, bodyType].filter(Boolean).join(" ").trim();
 };
 
-const getSecondLine = (vehicle: Vehicle) => [getTyreText(vehicle), getBodyTypeText(vehicle)].filter(Boolean).join(" • ").trim();
+const getSecondLine = (vehicle: Vehicle) => getBodyTypeText(vehicle);
 
 const buildSpecChips = (vehicle: Vehicle): string[] => {
   const chips: string[] = [];
@@ -126,6 +126,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
   const secondLine = getSecondLine(vehicle);
+  const tyreText = getTyreText(vehicle);
   const price = vehicle.expectedPrice ?? vehicle.price;
   const kmValue = vehicle.kmDriven ?? vehicle.odometerReading ?? null;
   const kmLine = formatIndianKmShort(kmValue);
@@ -283,11 +284,21 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             <span className="truncate">{locationLine}</span>
           </p>
         ) : null}
-        {kmLine ? (
-          <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
-            <Gauge className="h-2.5 w-2.5 shrink-0 text-slate-500" />
-            <span className="truncate">{kmLine}</span>
-          </p>
+        {(kmLine || tyreText) ? (
+          <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
+            {kmLine ? (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">
+                <Gauge className="h-2.5 w-2.5 shrink-0 text-slate-500" />
+                <span>{kmLine}</span>
+              </span>
+            ) : null}
+            {tyreText ? (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">
+                <Disc3 className="h-2.5 w-2.5 shrink-0 text-slate-500" />
+                <span>{tyreText}</span>
+              </span>
+            ) : null}
+          </div>
         ) : null}
         {secondLine ? (
           <p className="flex items-center gap-1 truncate text-[10px] text-slate-600">
