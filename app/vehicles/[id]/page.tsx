@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import {
   ArrowLeft,
+  Disc3,
+  Gauge,
   MapPin,
 } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
@@ -665,12 +667,18 @@ export default async function VehicleDetailPage({
         <p className="text-2xl font-bold text-orange-600">{priceLine}</p>
 
         {(tyreText || kmLine) ? (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-            {tyreText ? (
-              <span className="text-sm font-semibold text-slate-800">{tyreText}</span>
-            ) : null}
+          <div className="flex flex-wrap items-center gap-2">
             {kmLine ? (
-              <span className="text-sm font-semibold text-slate-800">{kmLine}</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+                <Gauge className="h-4 w-4 shrink-0 text-slate-500" />
+                <span>{kmLine}</span>
+              </span>
+            ) : null}
+            {tyreText ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+                <Disc3 className="h-4 w-4 shrink-0 text-slate-500" />
+                <span>{tyreText}</span>
+              </span>
             ) : null}
           </div>
         ) : null}
