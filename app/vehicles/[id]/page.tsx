@@ -85,6 +85,12 @@ const dedupeLabels = (parts: Array<string | null | undefined>) => {
   return unique;
 };
 
+const buildDetailChip = (label: string, value: string | null | undefined) => {
+  const normalized = normalizeText(value);
+  if (!normalized) return "";
+  return `${label}: ${toReadableLabel(normalized)}`;
+};
+
 const buildHeroTitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
   const classification = normalizeClassification({
     assetStructure: vehicle.assetStructure,
@@ -208,22 +214,43 @@ const getSellerRoleChip = (vehicle: ReturnType<typeof dbToVehicle>) => {
   return "";
 };
 
-const buildVehicleSpecChips = (vehicle: ReturnType<typeof dbToVehicle>, showsRunning: boolean) => {
+const buildVehicleSpecChips = (
+  vehicle: ReturnType<typeof dbToVehicle>,
+  options: { showsRunning: boolean; includeTyreMountStatus: boolean; includeCabinType: boolean }
+) => {
+  const { showsRunning, includeTyreMountStatus, includeCabinType } = options;
+  const tyreMountStatusLabel =
+    vehicle.tyreMountStatus ? toReadableLabel(vehicle.tyreMountStatus) : vehicle.tyresIncluded === "YES" ? "With Tyres" : "";
+  const hasTyresMounted = toNormalizedToken(vehicle.tyreMountStatus) === "WITH_TYRES" || vehicle.tyresIncluded === "YES";
+
   const chips = dedupeLabels([
-    showsRunning
-      ? toReadableLabel(vehicle.runningCondition || vehicle.condition) === "Running"
-        ? "Running"
-        : ""
-      : "",
-    vehicle.bsNorm ? toReadableLabel(vehicle.bsNorm) : "",
-    vehicle.fuelType ? toReadableLabel(vehicle.fuelType) : "",
-    vehicle.suspensionType ? toReadableLabel(vehicle.suspensionType) : "",
-    vehicle.engineCondition ? toReadableLabel(vehicle.engineCondition) : "",
-    getAssetStructureLabel(vehicle.assetStructure),
-    getDetachableTypeLabel(vehicle.detachableType),
-    vehicle.batteryIncluded === "YES" ? "Battery Included" : "",
-    vehicle.rimsDiscsIncluded === "YES" ? "Rims Included" : "",
-    vehicle.keyAvailable === "YES" ? "Key Available" : "",
+    buildDetailChip(
+      "Vehicle Condition",
+      showsRunning ? vehicle.runningCondition || vehicle.condition : vehicle.condition
+    ),
+    buildDetailChip("Engine Condition", vehicle.engineCondition),
+    buildDetailChip("Needs Towing", vehicle.needsTowing),
+    buildDetailChip("Fuel Type", vehicle.fuelType),
+    buildDetailChip("BS Norm / Emission Norm", vehicle.bsNorm),
+    buildDetailChip("Transmission", vehicle.transmission),
+    buildDetailChip("Suspension Type", vehicle.suspensionType),
+    includeTyreMountStatus ? buildDetailChip("Tyre Mount Status", tyreMountStatusLabel) : "",
+    hasTyresMounted ? buildDetailChip("Tyre Condition", vehicle.tyreCondition) : "",
+    includeCabinType ? buildDetailChip("Cabin Type", vehicle.acCabin === "YES" ? "AC Cabin" : vehicle.acCabin === "NO" ? "Non-AC Cabin" : "") : "",
+    buildDetailChip("Ownership Details", vehicle.sellerType || vehicle.sellerRole),
+    vehicle.listingType === "REPO" ? buildDetailChip("Finance Status", vehicle.repoStatus) : "",
+    vehicle.listingType === "REPO" ? buildDetailChip("Finance Company", vehicle.financeCompany) : "",
+    buildDetailChip("Road Safety", vehicle.roadSafeStatus),
+    buildDetailChip("Body Condition", vehicle.bodyCondition),
+    buildDetailChip("Body Attached", vehicle.bodyAttached),
+    buildDetailChip("ABS", vehicle.abs),
+    buildDetailChip("GPS Installed", vehicle.gpsInstalled),
+    buildDetailChip("Documents Available", vehicle.documentsAvailable),
+    buildDetailChip("Battery Included", vehicle.batteryIncluded),
+    buildDetailChip("Rims / Discs Included", vehicle.rimsDiscsIncluded),
+    buildDetailChip("Key Available", vehicle.keyAvailable),
+    getAssetStructureLabel(vehicle.assetStructure) ? `Asset Structure: ${getAssetStructureLabel(vehicle.assetStructure)}` : "",
+    getDetachableTypeLabel(vehicle.detachableType) ? `Detachable Type: ${getDetachableTypeLabel(vehicle.detachableType)}` : "",
   ]);
 
   return chips;
@@ -449,7 +476,6 @@ export default async function VehicleDetailPage({
     trucksSold = soldResult?.count ?? 0;
   }
 
-  const vehicleSpecChips = buildVehicleSpecChips(vehicle, showsRunning);
   const heroTitle = buildHeroTitle(vehicle);
   const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
   const sellerRoleChip = getSellerRoleChip(vehicle);
@@ -487,6 +513,11 @@ export default async function VehicleDetailPage({
       : vehicle.acCabin === "NO"
         ? "Non-AC Cabin"
         : "";
+  const vehicleSpecChips = buildVehicleSpecChips(vehicle, {
+    showsRunning,
+    includeTyreMountStatus: !(tyreMountStatusChip || tyreMountStatus),
+    includeCabinType: !cabinTypeLabel,
+  });
   const metadataChipClass =
     "inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600";
   const metadataTextChipClass =
