@@ -10,8 +10,6 @@ export default function SellTruckCard() {
   const hidden =
     pathname.startsWith("/auth") ||
     pathname.startsWith("/onboarding") ||
-    pathname.startsWith("/seller/") ||
-    pathname.startsWith("/admin") ||
     pathname === "/sell";
 
   if (hidden) return null;
