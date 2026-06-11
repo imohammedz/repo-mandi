@@ -657,6 +657,7 @@ export default async function VehicleDetailPage({
           if (rto && rto.toUpperCase() !== "UNKNOWN") metaChips.push(rto);
           if (vehicle.transferType === "RTO_NOC") metaChips.push("RTO NOC");
           if (vehicle.acCabin === "YES") metaChips.push("AC Cabin");
+          else if (vehicle.acCabin === "NO") metaChips.push("Non-AC Cabin");
           if (vehicle.tyreMountStatus && vehicle.tyreMountStatus !== "UNKNOWN") {
             if (vehicle.tyreMountStatus === "ON_DISC") metaChips.push("Tyre Mount: On Disc");
             else if (vehicle.tyreMountStatus === "PARTIAL") metaChips.push("Tyre Mount: Partial");

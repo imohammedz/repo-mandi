@@ -107,8 +107,9 @@ const buildSpecChips = (vehicle: Vehicle): string[] => {
   const transferToken = toNormalizedToken(vehicle.transferType);
   if (transferToken === "RTO_NOC") addChip("RTO NOC");
 
-  // AC Cabin — show only when acCabin is YES
+  // AC / Non-AC Cabin
   if (vehicle.acCabin === "YES") addChip("AC Cabin");
+  else if (vehicle.acCabin === "NO") addChip("Non-AC Cabin");
 
   // Tyre Mount — label as "Tyre Mount: <value>", skip Unknown
   if (vehicle.tyreMountStatus && vehicle.tyreMountStatus !== "UNKNOWN") {
