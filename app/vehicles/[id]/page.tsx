@@ -499,6 +499,7 @@ export default async function VehicleDetailPage({
       : vehicle.tyresIncluded === "NO"
         ? "Without Tyres"
         : "";
+  const tyreMountStatusChip = vehicle.tyreMountStatus ? toReadableLabel(vehicle.tyreMountStatus) : "";
   const showAcCabin = vehicle.acCabin === "YES";
 
   const vehicleInfoSpecs = [
@@ -692,7 +693,7 @@ export default async function VehicleDetailPage({
           <span>{displayLocation || "Location unavailable"}</span>
         </p>
 
-        {(rtoInfo || transferTypeLabel || tyreMountStatus || showAcCabin) ? (
+        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || showAcCabin) ? (
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
             {rtoInfo ? (
               <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
@@ -706,10 +707,10 @@ export default async function VehicleDetailPage({
                 <span className="font-medium">{transferTypeLabel}</span>
               </span>
             ) : null}
-            {tyreMountStatus ? (
+            {(tyreMountStatusChip || tyreMountStatus) ? (
               <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
                 <span className="text-slate-500">Tyre Mount:</span>
-                <span className="font-medium">{tyreMountStatus}</span>
+                <span className="font-medium">{tyreMountStatusChip || tyreMountStatus}</span>
               </span>
             ) : null}
             {showAcCabin ? (
