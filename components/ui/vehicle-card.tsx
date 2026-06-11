@@ -104,9 +104,9 @@ const buildSpecChips = (vehicle: Vehicle): string[] => {
   if (transferToken === "RC_TRANSFER") addChip("RC Transfer");
   else if (transferToken === "RTO_NOC") addChip("RTO NOC");
   else if (transferToken === "OPEN_NOC") addChip("Open NOC");
+  if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
   const gvw = String(vehicle.gvwTonnes ?? "").trim();
   if (gvw) addChip(/\bton(?:ne|nes)?\b/i.test(gvw) ? `${gvw} GVW` : `${gvw} Ton GVW`);
-  if (vehicle.tyreMountStatus) addChip(toReadableLabel(vehicle.tyreMountStatus));
   if (vehicle.suspensionType) addChip(toReadableLabel(vehicle.suspensionType));
 
   return chips;
@@ -132,7 +132,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const kmLine = formatIndianKmShort(kmValue);
   const chips = buildSpecChips(vehicle);
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
-  const maxVisibleChips = 2;
+  const maxVisibleChips = 3;
   const visibleChips = chips.slice(0, maxVisibleChips);
   const extraChipCount = chips.length - visibleChips.length;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
