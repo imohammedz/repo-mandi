@@ -57,18 +57,6 @@ const toReadableLabel = (value: string | null | undefined) => {
   return formatDisplayLabel(normalized) || normalized;
 };
 
-const getTransferTypeLabel = (transferType: string | null | undefined, nocStatus: string | null | undefined) => {
-  const normalizedTransferType = normalizeText(transferType).replace(/[\s-]+/g, "_").toUpperCase();
-  if (normalizedTransferType === "RC_TRANSFER") return "RC Transfer";
-  if (normalizedTransferType === "RTO_NOC") return "RTO NOC";
-  if (normalizedTransferType === "OPEN_NOC") return "Open NOC";
-  if (normalizedTransferType === "UNKNOWN") return "Unknown";
-
-  const normalizedNocStatus = normalizeText(nocStatus).replace(/[\s-]+/g, "_").toUpperCase();
-  if (normalizedNocStatus === "AVAILABLE") return "RC Transfer";
-  return "Unknown";
-};
-
 const dedupeLabels = (parts: Array<string | null | undefined>) => {
   const seen = new Set<string>();
   const unique: string[] = [];
@@ -435,7 +423,6 @@ export default async function VehicleDetailPage({
 
   const displayLocation =
     vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
-  const transferTypeLabel = getTransferTypeLabel(vehicle.transferType, vehicle.nocStatus);
   const showsRunning = hasEngineOrPowertrain({
     assetStructure: vehicle.assetStructure,
     detachableType: vehicle.detachableType,
@@ -507,7 +494,6 @@ export default async function VehicleDetailPage({
   const trailerSubtitle = buildTrailerSubtitle(vehicle);
   const configurationLine = buildConfigurationLine(vehicle);
   const tyreText = getTyreText(vehicle);
-  const rtoInfo = normalizeText(vehicle.registrationState);
   const tyreMountStatus =
     vehicle.tyresIncluded === "YES"
       ? "With Tyres"
@@ -529,10 +515,6 @@ export default async function VehicleDetailPage({
     cabinTypeShownInMetadata: isCabinTypeShownInMetadata,
     cabinTypeLabel,
   });
-  const metadataChipClass =
-    "inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600";
-  const metadataTextChipClass =
-    "inline-flex shrink-0 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] font-medium text-slate-600";
 
   const formatDocumentationDate = (v: string | null | undefined) => {
     if (!v) return "";
@@ -668,38 +650,37 @@ export default async function VehicleDetailPage({
           <span>{displayLocation || "Location unavailable"}</span>
         </p>
 
-        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeLabel) ? (
-          <div
-            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-            tabIndex={0}
-            role="region"
-            aria-label="Vehicle metadata"
-          >
-            {rtoInfo ? (
-              <span className={metadataChipClass}>
-                <span className="text-slate-500">RTO:</span>
-                <span className="font-medium">{rtoInfo}</span>
-              </span>
-            ) : null}
-            {transferTypeLabel ? (
-              <span className={metadataChipClass}>
-                <span className="text-slate-500">Transfer:</span>
-                <span className="font-medium">{transferTypeLabel}</span>
-              </span>
-            ) : null}
-            {(tyreMountStatusChip || tyreMountStatus) ? (
-              <span className={metadataChipClass}>
-                <span className="text-slate-500">Tyre Mount:</span>
-                <span className="font-medium">{tyreMountStatusChip || tyreMountStatus}</span>
-              </span>
-            ) : null}
-            {cabinTypeLabel ? (
-              <span className={metadataTextChipClass}>
-                {cabinTypeLabel}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
+        {(() => {
+          // Build compact metadata chips: RTO, RTO NOC, AC Cabin, Tyre Mount
+          const metaChips: string[] = [];
+          const rto = vehicle.registrationState?.trim();
+          if (rto && rto.toUpperCase() !== "UNKNOWN") metaChips.push(rto);
+          if (vehicle.transferType === "RTO_NOC") metaChips.push("RTO NOC");
+          if (vehicle.acCabin === "YES") metaChips.push("AC Cabin");
+          if (vehicle.tyreMountStatus && vehicle.tyreMountStatus !== "UNKNOWN") {
+            if (vehicle.tyreMountStatus === "ON_DISC") metaChips.push("Tyre Mount: On Disc");
+            else if (vehicle.tyreMountStatus === "PARTIAL") metaChips.push("Tyre Mount: Partial");
+            else if (vehicle.tyreMountStatus === "WITH_TYRES") metaChips.push("Tyre Mount: With Tyres");
+            else if (vehicle.tyreMountStatus === "WITHOUT_DISC_AND_TYRES") metaChips.push("Tyre Mount: No Disc/Tyres");
+          }
+          if (metaChips.length === 0) return null;
+          return (
+            <div
+              className="flex flex-nowrap items-center gap-1.5 overflow-hidden border-t border-slate-100 pt-3"
+              role="region"
+              aria-label="Vehicle metadata"
+            >
+              {metaChips.map((chip) => (
+                <span
+                  key={chip}
+                  className="inline-flex max-w-[160px] shrink-0 items-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-700 whitespace-nowrap"
+                >
+                  <span className="truncate">{chip}</span>
+                </span>
+              ))}
+            </div>
+          );
+        })()}
       </section>
 
       <VehicleDetailChips chips={allDetailChips} />
