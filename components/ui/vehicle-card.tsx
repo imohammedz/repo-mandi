@@ -111,13 +111,13 @@ const buildSpecChips = (vehicle: Vehicle): string[] => {
   if (vehicle.acCabin === "YES") addChip("AC Cabin");
   else if (vehicle.acCabin === "NO") addChip("Non-AC Cabin");
 
-  // Tyre Mount — label as "Tyre Mount: <value>", skip Unknown
+  // Tyre Mount — skip Unknown/unselected and show simplified value chips
   if (vehicle.tyreMountStatus && vehicle.tyreMountStatus !== "UNKNOWN") {
     const mountToken = toNormalizedToken(vehicle.tyreMountStatus);
-    if (mountToken === "ON_DISC") addChip("Tyre Mount: On Disc");
-    else if (mountToken === "PARTIAL") addChip("Tyre Mount: Partial");
-    else if (mountToken === "WITH_TYRES") addChip("Tyre Mount: With Tyres");
-    else if (mountToken === "WITHOUT_DISC_AND_TYRES") addChip("Tyre Mount: No Disc/Tyres");
+    if (mountToken === "ON_DISC") addChip("On Disc");
+    else if (mountToken === "PARTIAL") addChip("Partial Tyres");
+    else if (mountToken === "WITH_TYRES") addChip("With Tyre");
+    else if (mountToken === "WITHOUT_DISC_AND_TYRES") addChip("Without Disc and Tyres");
   }
 
   return chips;

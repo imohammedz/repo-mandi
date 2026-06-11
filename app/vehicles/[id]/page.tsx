@@ -659,10 +659,10 @@ export default async function VehicleDetailPage({
           if (vehicle.acCabin === "YES") metaChips.push("AC Cabin");
           else if (vehicle.acCabin === "NO") metaChips.push("Non-AC Cabin");
           if (vehicle.tyreMountStatus && vehicle.tyreMountStatus !== "UNKNOWN") {
-            if (vehicle.tyreMountStatus === "ON_DISC") metaChips.push("Tyre Mount: On Disc");
-            else if (vehicle.tyreMountStatus === "PARTIAL") metaChips.push("Tyre Mount: Partial");
-            else if (vehicle.tyreMountStatus === "WITH_TYRES") metaChips.push("Tyre Mount: With Tyres");
-            else if (vehicle.tyreMountStatus === "WITHOUT_DISC_AND_TYRES") metaChips.push("Tyre Mount: No Disc/Tyres");
+            if (vehicle.tyreMountStatus === "ON_DISC") metaChips.push("On Disc");
+            else if (vehicle.tyreMountStatus === "PARTIAL") metaChips.push("Partial Tyres");
+            else if (vehicle.tyreMountStatus === "WITH_TYRES") metaChips.push("With Tyre");
+            else if (vehicle.tyreMountStatus === "WITHOUT_DISC_AND_TYRES") metaChips.push("Without Disc and Tyres");
           }
           if (metaChips.length === 0) return null;
           return (
