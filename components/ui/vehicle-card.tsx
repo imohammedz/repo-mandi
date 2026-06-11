@@ -318,9 +318,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {chips.map((chip) => (
               <span
                 key={chip}
-                className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700 whitespace-nowrap"
+                className="inline-flex max-w-[140px] shrink-0 items-center overflow-hidden rounded-full bg-slate-100 px-1.5 py-0 text-[9px] font-medium text-slate-700 whitespace-nowrap"
               >
-                {chip}
+                <span className="truncate">{chip}</span>
               </span>
             ))}
           </div>
