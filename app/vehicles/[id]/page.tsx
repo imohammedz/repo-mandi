@@ -558,7 +558,6 @@ export default async function VehicleDetailPage({
 
   const allDetailChips = dedupeLabels([
     ...vehicleSpecChips,
-    vehicle.sellerVerified ? "Verified Seller" : "",
     vehicle.photosVerified ? "Photos Verified" : "",
     vehicle.rcVerified ? "RC Verified" : "",
     vehicle.yardVerified ? "Yard Verified" : "",
