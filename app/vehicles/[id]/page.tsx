@@ -91,6 +91,14 @@ const buildDetailChip = (label: string, value: string | null | undefined) => {
   return `${label}: ${toReadableLabel(normalized)}`;
 };
 
+const getTyreMountStatusToken = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const explicitToken = toNormalizedToken(vehicle.tyreMountStatus);
+  if (explicitToken) return explicitToken;
+  if (vehicle.tyresIncluded === "YES") return "WITH_TYRES";
+  if (vehicle.tyresIncluded === "NO") return "WITHOUT_DISC_AND_TYRES";
+  return "";
+};
+
 const buildHeroTitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
   const classification = normalizeClassification({
     assetStructure: vehicle.assetStructure,
@@ -216,12 +224,12 @@ const getSellerRoleChip = (vehicle: ReturnType<typeof dbToVehicle>) => {
 
 const buildVehicleSpecChips = (
   vehicle: ReturnType<typeof dbToVehicle>,
-  options: { showsRunning: boolean; includeTyreMountStatus: boolean; includeCabinType: boolean }
+  options: { showsRunning: boolean; tyreMountShownInMetadata: boolean; cabinTypeShownInMetadata: boolean; cabinTypeLabel: string }
 ) => {
-  const { showsRunning, includeTyreMountStatus, includeCabinType } = options;
-  const tyreMountStatusLabel =
-    vehicle.tyreMountStatus ? toReadableLabel(vehicle.tyreMountStatus) : vehicle.tyresIncluded === "YES" ? "With Tyres" : "";
-  const hasTyresMounted = toNormalizedToken(vehicle.tyreMountStatus) === "WITH_TYRES" || vehicle.tyresIncluded === "YES";
+  const { showsRunning, tyreMountShownInMetadata, cabinTypeShownInMetadata, cabinTypeLabel } = options;
+  const tyreMountStatusToken = getTyreMountStatusToken(vehicle);
+  const tyreMountStatusLabel = tyreMountStatusToken ? toReadableLabel(tyreMountStatusToken) : "";
+  const hasTyresMounted = tyreMountStatusToken === "WITH_TYRES";
 
   const chips = dedupeLabels([
     buildDetailChip(
@@ -234,9 +242,9 @@ const buildVehicleSpecChips = (
     buildDetailChip("BS Norm / Emission Norm", vehicle.bsNorm),
     buildDetailChip("Transmission", vehicle.transmission),
     buildDetailChip("Suspension Type", vehicle.suspensionType),
-    includeTyreMountStatus ? buildDetailChip("Tyre Mount Status", tyreMountStatusLabel) : "",
+    !tyreMountShownInMetadata ? buildDetailChip("Tyre Mount Status", tyreMountStatusLabel) : "",
     hasTyresMounted ? buildDetailChip("Tyre Condition", vehicle.tyreCondition) : "",
-    includeCabinType ? buildDetailChip("Cabin Type", vehicle.acCabin === "YES" ? "AC Cabin" : vehicle.acCabin === "NO" ? "Non-AC Cabin" : "") : "",
+    !cabinTypeShownInMetadata ? buildDetailChip("Cabin Type", cabinTypeLabel) : "",
     buildDetailChip("Ownership Details", vehicle.sellerType || vehicle.sellerRole),
     vehicle.listingType === "REPO" ? buildDetailChip("Finance Status", vehicle.repoStatus) : "",
     vehicle.listingType === "REPO" ? buildDetailChip("Finance Company", vehicle.financeCompany) : "",
@@ -513,10 +521,13 @@ export default async function VehicleDetailPage({
       : vehicle.acCabin === "NO"
         ? "Non-AC Cabin"
         : "";
+  const isTyreMountShownInMetadata = Boolean(tyreMountStatusChip || tyreMountStatus);
+  const isCabinTypeShownInMetadata = Boolean(cabinTypeLabel);
   const vehicleSpecChips = buildVehicleSpecChips(vehicle, {
     showsRunning,
-    includeTyreMountStatus: !(tyreMountStatusChip || tyreMountStatus),
-    includeCabinType: !cabinTypeLabel,
+    tyreMountShownInMetadata: isTyreMountShownInMetadata,
+    cabinTypeShownInMetadata: isCabinTypeShownInMetadata,
+    cabinTypeLabel,
   });
   const metadataChipClass =
     "inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600";
@@ -660,7 +671,7 @@ export default async function VehicleDetailPage({
 
         {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeLabel) ? (
           <div
-            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1 [scrollbar-width:thin]"
+            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             tabIndex={0}
             role="region"
             aria-label="Vehicle metadata"
