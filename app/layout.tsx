@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { TopHeader } from "@/components/layout/top-header";
 import { StickyWhatsAppCTA } from "@/components/layout/sticky-whatsapp-cta";
+import SellTruckCard from "@/components/ui/SellTruckCard";
 import { SavedListingsProvider } from "@/components/providers/saved-listings-provider";
 import { SITE_CONFIG } from "@/lib/config/site";
 import "./globals.css";
@@ -43,9 +44,12 @@ export default function RootLayout({
       <body className="overflow-x-hidden bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
-          <div className="mx-auto min-h-screen w-full max-w-xl overflow-x-hidden pb-24 pt-14">{children}</div>
+          <div className="mx-auto min-h-screen w-full max-w-xl overflow-x-hidden pb-36 pt-14">{children}</div>
           <SiteFooter />
           <StickyWhatsAppCTA />
+          <div className="fixed inset-x-0 bottom-[64px] z-50 mx-auto max-w-xl px-3">
+            <SellTruckCard />
+          </div>
           <BottomNav />
         </SavedListingsProvider>
       </body>
