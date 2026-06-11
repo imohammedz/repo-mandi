@@ -19,3 +19,89 @@ body {
 section {
   scroll-margin-top: 88px;
 }
+
+/* ── SellTruckCard banner ─────────────────────────────────── */
+.sell-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin: 18px 0;
+  border-radius: 16px;
+  border: 1px solid #f3d7bd;
+  background: linear-gradient(90deg, #fff4e8 0%, #fffaf5 100%);
+  box-shadow: 0 4px 14px rgba(20, 31, 54, 0.08);
+}
+.sell-card-img {
+  width: 110px;
+  height: 70px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sell-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sell-card-content {
+  flex: 1;
+  min-width: 0;
+}
+.sell-card-content h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.sell-card-content p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+.sell-card-btn {
+  background: #07122f;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.sell-card-btn span {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .sell-card {
+    gap: 10px;
+    padding: 10px;
+  }
+  .sell-card-img {
+    width: 92px;
+    height: 58px;
+  }
+  .sell-card-content h3 {
+    font-size: 15px;
+  }
+  .sell-card-content p {
+    font-size: 11px;
+  }
+  .sell-card-btn {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
