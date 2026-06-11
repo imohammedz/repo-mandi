@@ -707,8 +707,9 @@ export default async function VehicleDetailPage({
               </span>
             ) : null}
             {tyreMountStatus ? (
-              <span className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
-                {tyreMountStatus}
+              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+                <span className="text-slate-500">Tyre Mount:</span>
+                <span className="font-medium">{tyreMountStatus}</span>
               </span>
             ) : null}
             {showAcCabin ? (
