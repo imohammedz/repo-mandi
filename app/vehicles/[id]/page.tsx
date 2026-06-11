@@ -579,6 +579,7 @@ export default async function VehicleDetailPage({
   const fitnessBadge = getValidityBadge(vehicle.fitnessStatus);
   const taxBadge = getValidityBadge(vehicle.taxValidity);
   const showInsuranceRenewalCard = insuranceBadge.state === "EXPIRED" || insuranceBadge.state === "EXPIRING_SOON";
+  const listingDescription = normalizeText(vehicle.description || vehicle.conditionNotes);
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-5 px-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] pt-4">
@@ -711,6 +712,18 @@ export default async function VehicleDetailPage({
           </div>
         </div>
       </section>
+
+      {listingDescription ? (
+        <section
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          aria-labelledby="vehicle-listing-description-heading"
+        >
+          <h2 id="vehicle-listing-description-heading" className="text-base font-semibold text-slate-900">
+            Description
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">{listingDescription}</p>
+        </section>
+      ) : null}
 
       <FinanceEstimateCard
         vehicleId={vehicle.id}
