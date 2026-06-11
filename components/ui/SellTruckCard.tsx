@@ -26,7 +26,7 @@ export default function SellTruckCard() {
       </div>
       <div className="sell-card-content">
         <h3>Sell Your Truck</h3>
-        <p>List for free &amp; reach verified buyers fast</p>
+        <p>List for free & reach verified buyers fast</p>
       </div>
       <Link href="/sell" className="sell-card-btn">
         Sell Now
