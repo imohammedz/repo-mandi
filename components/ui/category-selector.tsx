@@ -1,0 +1,312 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
+
+type Category = {
+  id: CategoryId;
+  label: string;
+  href: string;
+};
+
+const categories: Category[] = [
+  {
+    id: "prime-mover",
+    label: "Prime Mover",
+    href: "/vehicles?assetStructure=DETACHABLE&detachableType=PRIME_MOVER",
+  },
+  {
+    id: "trailers",
+    label: "Trailers",
+    href: "/vehicles?assetStructure=DETACHABLE&detachableType=TRAILER",
+  },
+  {
+    id: "tippers",
+    label: "Tippers",
+    href: "/vehicles?assetStructure=STANDALONE&bodyApplicationType=Tipper",
+  },
+  {
+    id: "container",
+    label: "Container",
+    href: "/vehicles?bodyApplicationType=Container+Truck",
+  },
+  {
+    id: "buses",
+    label: "Buses",
+    href: "/vehicles?assetStructure=STANDALONE&assetCategory=Bus+%2F+Passenger+Commercial",
+  },
+  {
+    id: "equipment",
+    label: "Equipment",
+    href: "/vehicles?assetStructure=EQUIPMENT",
+  },
+];
+
+/* ───────── SVG vehicle illustrations (facing right) ───────── */
+
+function PrimeMoverIcon({ tint }: { tint: boolean }) {
+  const body = tint ? "#c2410c" : "#475569";
+  const glass = tint ? "#fed7aa" : "#bae6fd";
+  const dark = tint ? "#9a3412" : "#1e293b";
+  const mid = tint ? "#ea580c" : "#64748b";
+  return (
+    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
+      {/* chassis */}
+      <rect x="2" y="19" width="42" height="4" rx="1" fill={body} />
+      {/* fuel tank */}
+      <rect x="4" y="15" width="7" height="7" rx="1" fill={dark} />
+      {/* cab body */}
+      <rect x="28" y="5" width="22" height="16" rx="3" fill={body} />
+      {/* windshield */}
+      <rect x="39" y="8" width="9" height="9" rx="1" fill={glass} />
+      {/* front bumper */}
+      <rect x="49" y="16" width="6" height="4" rx="1" fill={dark} />
+      {/* exhaust */}
+      <rect x="30" y="1" width="2" height="6" rx="1" fill={mid} />
+      {/* front wheel */}
+      <circle cx="52" cy="25" r="5" fill={dark} />
+      <circle cx="52" cy="25" r="2" fill={mid} />
+      {/* drive wheels */}
+      <circle cx="16" cy="25" r="5" fill={dark} />
+      <circle cx="16" cy="25" r="2" fill={mid} />
+      <circle cx="28" cy="25" r="5" fill={dark} />
+      <circle cx="28" cy="25" r="2" fill={mid} />
+    </svg>
+  );
+}
+
+function TrailerIcon({ tint }: { tint: boolean }) {
+  const body = tint ? "#c2410c" : "#475569";
+  const dark = tint ? "#9a3412" : "#1e293b";
+  const mid = tint ? "#ea580c" : "#64748b";
+  const accent = tint ? "#fed7aa" : "#94a3b8";
+  return (
+    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
+      {/* main flatbed platform */}
+      <rect x="3" y="17" width="52" height="5" rx="1" fill={body} />
+      {/* stake sides */}
+      <rect x="6" y="11" width="2" height="8" rx="1" fill={dark} />
+      <rect x="16" y="11" width="2" height="8" rx="1" fill={dark} />
+      <rect x="26" y="11" width="2" height="8" rx="1" fill={dark} />
+      <rect x="36" y="11" width="2" height="8" rx="1" fill={dark} />
+      <rect x="46" y="11" width="2" height="8" rx="1" fill={dark} />
+      {/* top rail */}
+      <rect x="4" y="11" width="48" height="2" rx="1" fill={mid} />
+      {/* king pin / coupling */}
+      <rect x="2" y="18" width="4" height="3" rx="1" fill={accent} />
+      {/* wheels – 2 rear axles */}
+      <circle cx="38" cy="25" r="5" fill={dark} />
+      <circle cx="38" cy="25" r="2" fill={mid} />
+      <circle cx="50" cy="25" r="5" fill={dark} />
+      <circle cx="50" cy="25" r="2" fill={mid} />
+      <circle cx="14" cy="25" r="5" fill={dark} />
+      <circle cx="14" cy="25" r="2" fill={mid} />
+      <circle cx="26" cy="25" r="5" fill={dark} />
+      <circle cx="26" cy="25" r="2" fill={mid} />
+    </svg>
+  );
+}
+
+function TipperIcon({ tint }: { tint: boolean }) {
+  const body = tint ? "#c2410c" : "#475569";
+  const glass = tint ? "#fed7aa" : "#bae6fd";
+  const dark = tint ? "#9a3412" : "#1e293b";
+  const mid = tint ? "#ea580c" : "#64748b";
+  return (
+    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
+      {/* chassis */}
+      <rect x="2" y="19" width="50" height="4" rx="1" fill={body} />
+      {/* cab */}
+      <rect x="2" y="7" width="16" height="14" rx="2" fill={body} />
+      {/* windshield */}
+      <rect x="10" y="9" width="7" height="8" rx="1" fill={glass} />
+      {/* tipper body (raised at rear) */}
+      <polygon
+        points="20,5 52,12 52,19 20,19"
+        fill={mid}
+        stroke={dark}
+        strokeWidth="0.5"
+      />
+      {/* tipper interior */}
+      <polygon points="22,7 50,13 50,18 22,18" fill={body} />
+      {/* front wheel */}
+      <circle cx="10" cy="25" r="5" fill={dark} />
+      <circle cx="10" cy="25" r="2" fill={mid} />
+      {/* rear wheels */}
+      <circle cx="36" cy="25" r="5" fill={dark} />
+      <circle cx="36" cy="25" r="2" fill={mid} />
+      <circle cx="47" cy="25" r="5" fill={dark} />
+      <circle cx="47" cy="25" r="2" fill={mid} />
+    </svg>
+  );
+}
+
+function ContainerIcon({ tint }: { tint: boolean }) {
+  const body = tint ? "#c2410c" : "#475569";
+  const glass = tint ? "#fed7aa" : "#bae6fd";
+  const dark = tint ? "#9a3412" : "#1e293b";
+  const mid = tint ? "#ea580c" : "#64748b";
+  const box = tint ? "#fb923c" : "#94a3b8";
+  return (
+    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
+      {/* chassis */}
+      <rect x="2" y="19" width="52" height="4" rx="1" fill={body} />
+      {/* cab */}
+      <rect x="2" y="7" width="14" height="14" rx="2" fill={body} />
+      {/* windshield */}
+      <rect x="9" y="9" width="6" height="8" rx="1" fill={glass} />
+      {/* container box */}
+      <rect x="18" y="5" width="36" height="16" rx="1" fill={box} />
+      {/* container ribs */}
+      <line x1="26" y1="5" x2="26" y2="21" stroke={dark} strokeWidth="1" />
+      <line x1="34" y1="5" x2="34" y2="21" stroke={dark} strokeWidth="1" />
+      <line x1="42" y1="5" x2="42" y2="21" stroke={dark} strokeWidth="1" />
+      {/* container door frame */}
+      <rect x="48" y="7" width="5" height="12" rx="1" fill={mid} />
+      {/* front wheel */}
+      <circle cx="10" cy="25" r="5" fill={dark} />
+      <circle cx="10" cy="25" r="2" fill={mid} />
+      {/* rear wheels */}
+      <circle cx="36" cy="25" r="5" fill={dark} />
+      <circle cx="36" cy="25" r="2" fill={mid} />
+      <circle cx="47" cy="25" r="5" fill={dark} />
+      <circle cx="47" cy="25" r="2" fill={mid} />
+    </svg>
+  );
+}
+
+function BusIcon({ tint }: { tint: boolean }) {
+  const body = tint ? "#c2410c" : "#475569";
+  const glass = tint ? "#fed7aa" : "#bae6fd";
+  const dark = tint ? "#9a3412" : "#1e293b";
+  const mid = tint ? "#ea580c" : "#64748b";
+  return (
+    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
+      {/* bus body */}
+      <rect x="2" y="5" width="54" height="17" rx="3" fill={body} />
+      {/* front windshield */}
+      <rect x="47" y="8" width="8" height="10" rx="1" fill={glass} />
+      {/* windows row */}
+      <rect x="5" y="8" width="7" height="7" rx="1" fill={glass} />
+      <rect x="15" y="8" width="7" height="7" rx="1" fill={glass} />
+      <rect x="25" y="8" width="7" height="7" rx="1" fill={glass} />
+      <rect x="35" y="8" width="7" height="7" rx="1" fill={glass} />
+      {/* door */}
+      <rect x="6" y="16" width="5" height="5" rx="0.5" fill={dark} />
+      {/* chassis rail */}
+      <rect x="4" y="21" width="50" height="2" fill={dark} />
+      {/* front wheel */}
+      <circle cx="48" cy="25" r="5" fill={dark} />
+      <circle cx="48" cy="25" r="2" fill={mid} />
+      {/* rear wheel */}
+      <circle cx="12" cy="25" r="5" fill={dark} />
+      <circle cx="12" cy="25" r="2" fill={mid} />
+    </svg>
+  );
+}
+
+function ExcavatorIcon({ tint }: { tint: boolean }) {
+  const body = tint ? "#c2410c" : "#475569";
+  const glass = tint ? "#fed7aa" : "#bae6fd";
+  const dark = tint ? "#9a3412" : "#1e293b";
+  const mid = tint ? "#ea580c" : "#64748b";
+  const arm = tint ? "#fb923c" : "#94a3b8";
+  return (
+    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
+      {/* tracks */}
+      <rect x="6" y="20" width="36" height="8" rx="4" fill={dark} />
+      <rect x="9" y="22" width="30" height="4" rx="2" fill={mid} />
+      {/* track wheels */}
+      <circle cx="12" cy="24" r="3" fill={dark} />
+      <circle cx="36" cy="24" r="3" fill={dark} />
+      {/* body */}
+      <rect x="8" y="11" width="24" height="12" rx="2" fill={body} />
+      {/* cab */}
+      <rect x="10" y="8" width="16" height="8" rx="2" fill={mid} />
+      {/* windshield */}
+      <rect x="20" y="9" width="5" height="5" rx="1" fill={glass} />
+      {/* main boom (goes up-right) */}
+      <rect
+        x="30"
+        y="9"
+        width="18"
+        height="4"
+        rx="2"
+        fill={arm}
+        transform="rotate(-35 30 13)"
+      />
+      {/* arm (goes down-right from boom) */}
+      <rect
+        x="43"
+        y="2"
+        width="14"
+        height="3"
+        rx="1.5"
+        fill={arm}
+        transform="rotate(20 43 4)"
+      />
+      {/* bucket */}
+      <path
+        d="M52 10 L58 13 L55 18 L50 16 Z"
+        fill={dark}
+        stroke={mid}
+        strokeWidth="0.5"
+      />
+    </svg>
+  );
+}
+
+const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX.Element> = {
+  "prime-mover": PrimeMoverIcon,
+  trailers: TrailerIcon,
+  tippers: TipperIcon,
+  container: ContainerIcon,
+  buses: BusIcon,
+  equipment: ExcavatorIcon,
+};
+
+export function CategorySelector() {
+  const [selected, setSelected] = useState<CategoryId | null>(null);
+  const router = useRouter();
+
+  return (
+    <div className="grid grid-cols-6 gap-1">
+      {categories.map((cat) => {
+        const isSelected = selected === cat.id;
+        const Icon = iconComponents[cat.id];
+        return (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => {
+              setSelected(cat.id);
+              router.push(cat.href);
+            }}
+            className={[
+              "flex h-[68px] flex-col items-center justify-center gap-0.5 rounded-xl border px-0.5 py-1.5 transition-all",
+              isSelected
+                ? "border-orange-400 bg-orange-50 shadow-sm"
+                : "border-gray-200 bg-white",
+            ].join(" ")}
+          >
+            <div className="flex h-[34px] w-full items-center justify-center">
+              <div className="h-[26px] w-full max-w-[48px]">
+                <Icon tint={isSelected} />
+              </div>
+            </div>
+            <span
+              className={[
+                "line-clamp-1 text-center text-[9px] font-medium leading-tight",
+                isSelected ? "text-orange-600" : "text-gray-600",
+              ].join(" ")}
+            >
+              {cat.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
