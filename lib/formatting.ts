@@ -65,7 +65,7 @@ export function formatEnumLabel(value: string | null | undefined) {
   return formatDisplayLabel(value);
 }
 
-export function isPrimeMoverTrailerLabel(value: string | null | undefined) {
+export function hasPrimeMoverTrailerLabel(value: string | null | undefined) {
   return /\bprime\s*mover\s*\+\s*trailer\b/i.test(value ?? "");
 }
 
@@ -79,7 +79,7 @@ export function getPreferredTrailerTypeLabel(input: {
   if (trailerType) return trailerType;
 
   const fallbackType = formatDisplayLabel(input.bodyType || input.bodyApplicationType || input.vehicleSubType);
-  if (!fallbackType || isPrimeMoverTrailerLabel(fallbackType)) return "Trailer";
+  if (!fallbackType || hasPrimeMoverTrailerLabel(fallbackType)) return "Trailer";
   return fallbackType;
 }
 
