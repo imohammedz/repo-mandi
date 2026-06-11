@@ -10,7 +10,12 @@ import { SaveHeartButton } from "@/components/ui/save-heart-button";
 import { ShareListingButton } from "@/components/ui/share-listing-button";
 import { resolveImageSrcForRender } from "@/lib/media";
 import { SafeImage } from "@/components/ui/safe-image";
-import { formatEnumLabel, formatIndianKmShort, formatIndianPriceShort } from "@/lib/formatting";
+import {
+  formatEnumLabel,
+  formatIndianKmShort,
+  formatIndianPriceShort,
+  getPreferredTrailerTypeLabel,
+} from "@/lib/formatting";
 
 type Props = {
   vehicle: Vehicle;
@@ -51,18 +56,6 @@ const formatBodyLengthShort = (raw: string | null | undefined) => {
   return match ? `${match[1]} FT` : cleaned;
 };
 
-const isPrimeMoverTrailerLabel = (value: string | null | undefined) =>
-  /\bprime\s*mover\s*\+\s*trailer\b/i.test(value ?? "");
-
-const getPrimeMoverTrailerType = (vehicle: Vehicle) => {
-  const trailerType = toReadableLabel(vehicle.trailerType);
-  if (trailerType) return trailerType;
-
-  const fallbackType = toReadableLabel(vehicle.bodyType || vehicle.bodyApplicationType || vehicle.vehicleSubType);
-  if (!fallbackType || isPrimeMoverTrailerLabel(fallbackType)) return "Trailer";
-  return fallbackType;
-};
-
 const getListingTypeTag = (vehicle: Vehicle) => (vehicle.listingType === "REPO" ? "REPO" : "NON REPO");
 
 const getTyreText = (vehicle: Vehicle) => {
@@ -84,7 +77,7 @@ const getBodyTypeText = (vehicle: Vehicle) => {
   const isPrimeMoverTrailer = vehicle.assetCategory === "Prime Mover + Trailer";
   if (isPrimeMoverTrailer) {
     const trailerLength = formatBodyLengthShort(vehicle.trailerLength || vehicle.bodyLength || vehicle.bodyDimensions);
-    const typePart = getPrimeMoverTrailerType(vehicle);
+    const typePart = getPreferredTrailerTypeLabel(vehicle);
     return [trailerLength, typePart].filter(Boolean).join(" ").trim();
   }
   const bodyLength = getBodySizeLine(vehicle);
