@@ -85,6 +85,20 @@ const dedupeLabels = (parts: Array<string | null | undefined>) => {
   return unique;
 };
 
+const buildDetailChip = (label: string, value: string | null | undefined) => {
+  const normalized = normalizeText(value);
+  if (!normalized) return "";
+  return `${label}: ${toReadableLabel(normalized)}`;
+};
+
+const getTyreMountStatusToken = (vehicle: ReturnType<typeof dbToVehicle>) => {
+  const explicitToken = toNormalizedToken(vehicle.tyreMountStatus);
+  if (explicitToken) return explicitToken;
+  if (vehicle.tyresIncluded === "YES") return "WITH_TYRES";
+  if (vehicle.tyresIncluded === "NO") return "WITHOUT_DISC_AND_TYRES";
+  return "";
+};
+
 const buildHeroTitle = (vehicle: ReturnType<typeof dbToVehicle>) => {
   const classification = normalizeClassification({
     assetStructure: vehicle.assetStructure,
@@ -208,31 +222,46 @@ const getSellerRoleChip = (vehicle: ReturnType<typeof dbToVehicle>) => {
   return "";
 };
 
-const buildQuickInfoChips = (vehicle: ReturnType<typeof dbToVehicle>, showsRunning: boolean) => {
+const buildVehicleSpecChips = (
+  vehicle: ReturnType<typeof dbToVehicle>,
+  options: { showsRunning: boolean; tyreMountShownInMetadata: boolean; cabinTypeShownInMetadata: boolean; cabinTypeLabel: string }
+) => {
+  const { showsRunning, tyreMountShownInMetadata, cabinTypeShownInMetadata, cabinTypeLabel } = options;
+  const tyreMountStatusToken = getTyreMountStatusToken(vehicle);
+  const tyreMountStatusLabel = tyreMountStatusToken ? toReadableLabel(tyreMountStatusToken) : "";
+  const hasTyresMounted = tyreMountStatusToken === "WITH_TYRES";
+
   const chips = dedupeLabels([
-    showsRunning
-      ? toReadableLabel(vehicle.runningCondition || vehicle.condition) === "Running"
-        ? "Running"
-        : ""
-      : "",
-    vehicle.bsNorm ? toReadableLabel(vehicle.bsNorm) : "",
-    vehicle.tyresIncluded === "YES" ? "Tyres Included" : "",
-    vehicle.rimsDiscsIncluded === "YES" ? "Rims Included" : "",
-    vehicle.documentsAvailable === "YES" ? "RC Available" : "",
-    vehicle.acCabin === "YES" ? "AC Cabin" : "",
-    toReadableLabel(vehicle.axleConfiguration || vehicle.axleType),
-    vehicle.suspensionType ? toReadableLabel(vehicle.suspensionType) : "",
-    vehicle.batteryIncluded === "YES" ? "Battery Included" : "",
-    vehicle.keyAvailable === "YES" ? "Key Available" : "",
+    buildDetailChip(
+      "Vehicle Condition",
+      showsRunning ? vehicle.runningCondition || vehicle.condition : vehicle.condition
+    ),
+    buildDetailChip("Engine Condition", vehicle.engineCondition),
+    buildDetailChip("Needs Towing", vehicle.needsTowing),
+    buildDetailChip("Fuel Type", vehicle.fuelType),
+    buildDetailChip("BS Norm / Emission Norm", vehicle.bsNorm),
+    buildDetailChip("Transmission", vehicle.transmission),
+    buildDetailChip("Suspension Type", vehicle.suspensionType),
+    !tyreMountShownInMetadata ? buildDetailChip("Tyre Mount Status", tyreMountStatusLabel) : "",
+    hasTyresMounted ? buildDetailChip("Tyre Condition", vehicle.tyreCondition) : "",
+    !cabinTypeShownInMetadata ? buildDetailChip("Cabin Type", cabinTypeLabel) : "",
+    buildDetailChip("Ownership Details", vehicle.sellerType || vehicle.sellerRole),
+    vehicle.listingType === "REPO" ? buildDetailChip("Finance Status", vehicle.repoStatus) : "",
+    vehicle.listingType === "REPO" ? buildDetailChip("Finance Company", vehicle.financeCompany) : "",
+    buildDetailChip("Road Safety", vehicle.roadSafeStatus),
+    buildDetailChip("Body Condition", vehicle.bodyCondition),
+    buildDetailChip("Body Attached", vehicle.bodyAttached),
+    buildDetailChip("ABS", vehicle.abs),
+    buildDetailChip("GPS Installed", vehicle.gpsInstalled),
+    buildDetailChip("Documents Available", vehicle.documentsAvailable),
+    buildDetailChip("Battery Included", vehicle.batteryIncluded),
+    buildDetailChip("Rims / Discs Included", vehicle.rimsDiscsIncluded),
+    buildDetailChip("Key Available", vehicle.keyAvailable),
+    getAssetStructureLabel(vehicle.assetStructure) ? `Asset Structure: ${getAssetStructureLabel(vehicle.assetStructure)}` : "",
+    getDetachableTypeLabel(vehicle.detachableType) ? `Detachable Type: ${getDetachableTypeLabel(vehicle.detachableType)}` : "",
   ]);
 
   return chips;
-};
-
-const toSpecValue = (value: string | number | null | undefined) => {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "number") return value.toLocaleString("en-IN");
-  return normalizeText(value);
 };
 
 const PHOTO_DISPLAY_PRIORITY: Record<string, number> = {
@@ -455,20 +484,6 @@ export default async function VehicleDetailPage({
     trucksSold = soldResult?.count ?? 0;
   }
 
-  const trustTags = dedupeLabels([
-    vehicle.sellerVerified ? "Verified Seller" : "",
-    vehicle.photosVerified ? "Photos Verified" : "",
-    vehicle.rcVerified ? "RC Verified" : "",
-    vehicle.yardVerified ? "Yard Verified" : "",
-  ]);
-
-  const classificationTags = dedupeLabels([
-    vehicle.listingType === "REPO" ? "Repo" : "Regular",
-    getAssetStructureLabel(vehicle.assetStructure) || "Standalone",
-    getDetachableTypeLabel(vehicle.detachableType),
-  ]);
-
-  const quickInfoChips = buildQuickInfoChips(vehicle, showsRunning);
   const heroTitle = buildHeroTitle(vehicle);
   const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
   const sellerRoleChip = getSellerRoleChip(vehicle);
@@ -500,60 +515,24 @@ export default async function VehicleDetailPage({
         ? "Without Tyres"
         : "";
   const tyreMountStatusChip = vehicle.tyreMountStatus ? toReadableLabel(vehicle.tyreMountStatus) : "";
-  const showAcCabin = vehicle.acCabin === "YES";
-
-  const vehicleInfoSpecs = [
-    { label: "Brand", value: toSpecValue(vehicle.brand) },
-    { label: "Model", value: toSpecValue(vehicle.model) },
-    { label: "Year", value: toSpecValue(vehicle.year) },
-    { label: "Fuel Type", value: toSpecValue(vehicle.fuelType) },
-    {
-      label: "Configuration",
-      value: toSpecValue(
-        toReadableLabel(vehicle.axleConfiguration || vehicle.axleType) ||
-          toReadableLabel(vehicle.bodyApplicationType || vehicle.assetCategory || vehicle.type)
-      ),
-    },
-    { label: "KM Driven", value: toSpecValue(vehicle.kmDriven) },
-  ].filter((item) => item.value);
-
-  const registrationSpecs = [
-    {
-      label: "Registered State / RTO",
-      value: toSpecValue(vehicle.registrationState),
-    },
-    {
-      label: "Registration Number",
-      value: toSpecValue(vehicle.vehicleRegistrationNumber),
-    },
-    {
-      label: "RC Available",
-      value: vehicle.documentsAvailable ? toReadableLabel(vehicle.documentsAvailable) : "",
-    },
-  ].filter((item) => item.value);
-
-  const conditionSpecs = [
-    {
-      label: "Running Condition",
-      value: showsRunning ? toReadableLabel(vehicle.runningCondition || vehicle.condition) : "",
-    },
-    { label: "Engine Condition", value: vehicle.engineCondition ? toReadableLabel(vehicle.engineCondition) : "" },
-    { label: "Tyres Included", value: vehicle.tyresIncluded ? toReadableLabel(vehicle.tyresIncluded) : "" },
-    { label: "Rims Included", value: vehicle.rimsDiscsIncluded ? toReadableLabel(vehicle.rimsDiscsIncluded) : "" },
-    { label: "Battery Included", value: vehicle.batteryIncluded ? toReadableLabel(vehicle.batteryIncluded) : "" },
-    { label: "Key Available", value: vehicle.keyAvailable ? toReadableLabel(vehicle.keyAvailable) : "" },
-  ].filter((item) => item.value);
-
-  const trailerSpecs = [
-    { label: "Trailer Type", value: toSpecValue(vehicle.trailerType) },
-    { label: "Trailer Length", value: toSpecValue(vehicle.trailerLength) },
-    {
-      label: "Suspension",
-      value: toSpecValue(toReadableLabel(vehicle.suspensionType)),
-    },
-    { label: "Axles", value: toSpecValue(vehicle.numberOfAxles) },
-    { label: "Body Dimensions", value: toSpecValue(vehicle.bodyDimensions) },
-  ].filter((item) => item.value);
+  const cabinTypeLabel =
+    vehicle.acCabin === "YES"
+      ? "AC Cabin"
+      : vehicle.acCabin === "NO"
+        ? "Non-AC Cabin"
+        : "";
+  const isTyreMountShownInMetadata = Boolean(tyreMountStatusChip || tyreMountStatus);
+  const isCabinTypeShownInMetadata = Boolean(cabinTypeLabel);
+  const vehicleSpecChips = buildVehicleSpecChips(vehicle, {
+    showsRunning,
+    tyreMountShownInMetadata: isTyreMountShownInMetadata,
+    cabinTypeShownInMetadata: isCabinTypeShownInMetadata,
+    cabinTypeLabel,
+  });
+  const metadataChipClass =
+    "inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] text-slate-600";
+  const metadataTextChipClass =
+    "inline-flex shrink-0 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[12px] font-medium text-slate-600";
 
   const formatDocumentationDate = (v: string | null | undefined) => {
     if (!v) return "";
@@ -578,14 +557,10 @@ export default async function VehicleDetailPage({
   };
 
   const allDetailChips = dedupeLabels([
-    ...quickInfoChips,
-    ...classificationTags,
-    ...trustTags,
-    transferTypeLabel ? `Transfer Type: ${transferTypeLabel}` : "",
-    ...vehicleInfoSpecs.map((item) => `${item.label}: ${item.value}`),
-    ...registrationSpecs.map((item) => `${item.label}: ${item.value}`),
-    ...conditionSpecs.map((item) => `${item.label}: ${item.value}`),
-    ...trailerSpecs.map((item) => `${item.label}: ${item.value}`),
+    ...vehicleSpecChips,
+    vehicle.photosVerified ? "Photos Verified" : "",
+    vehicle.rcVerified ? "RC Verified" : "",
+    vehicle.yardVerified ? "Yard Verified" : "",
   ]);
 
   const parseDocumentationDate = (value: string | null | undefined) => {
@@ -693,29 +668,34 @@ export default async function VehicleDetailPage({
           <span>{displayLocation || "Location unavailable"}</span>
         </p>
 
-        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || showAcCabin) ? (
-          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+        {(rtoInfo || transferTypeLabel || tyreMountStatus || tyreMountStatusChip || cabinTypeLabel) ? (
+          <div
+            className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+            tabIndex={0}
+            role="region"
+            aria-label="Vehicle metadata"
+          >
             {rtoInfo ? (
-              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+              <span className={metadataChipClass}>
                 <span className="text-slate-500">RTO:</span>
                 <span className="font-medium">{rtoInfo}</span>
               </span>
             ) : null}
             {transferTypeLabel ? (
-              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+              <span className={metadataChipClass}>
                 <span className="text-slate-500">Transfer:</span>
                 <span className="font-medium">{transferTypeLabel}</span>
               </span>
             ) : null}
             {(tyreMountStatusChip || tyreMountStatus) ? (
-              <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+              <span className={metadataChipClass}>
                 <span className="text-slate-500">Tyre Mount:</span>
                 <span className="font-medium">{tyreMountStatusChip || tyreMountStatus}</span>
               </span>
             ) : null}
-            {showAcCabin ? (
-              <span className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
-                AC Cabin
+            {cabinTypeLabel ? (
+              <span className={metadataTextChipClass}>
+                {cabinTypeLabel}
               </span>
             ) : null}
           </div>
