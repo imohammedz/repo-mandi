@@ -631,6 +631,7 @@ export default async function VehicleDetailPage({
           <div
             className="flex flex-nowrap gap-1.5 overflow-x-auto border-t border-slate-100 pt-3 pb-1 [scrollbar-width:thin]"
             tabIndex={0}
+            role="region"
             aria-label="Vehicle metadata"
           >
             {rtoInfo ? (
