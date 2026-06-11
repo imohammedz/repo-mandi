@@ -486,14 +486,6 @@ export default async function VehicleDetailPage({
     return toReadableLabel(trimmed);
   };
 
-  const documentationSpecs = [
-    { label: "Insurance Valid Till", value: vehicle.insuranceValidity ? formatDocumentationDate(vehicle.insuranceValidity) : "" },
-    { label: "Permit Valid Till", value: vehicle.permitValidity ? formatDocumentationDate(vehicle.permitValidity) : "" },
-    { label: "Fitness Valid Till", value: vehicle.fitnessStatus ? formatDocumentationDate(vehicle.fitnessStatus) : "" },
-    { label: "Tax Valid Till", value: vehicle.taxValidity ? formatDocumentationDate(vehicle.taxValidity) : "" },
-    { label: "Parking Due", value: parkingDueLabel(vehicle.parkingDue) },
-  ].filter((item) => item.value);
-
   const allDetailChips = dedupeLabels([
     ...quickInfoChips,
     ...classificationTags,
@@ -503,7 +495,6 @@ export default async function VehicleDetailPage({
     ...registrationSpecs.map((item) => `${item.label}: ${item.value}`),
     ...conditionSpecs.map((item) => `${item.label}: ${item.value}`),
     ...trailerSpecs.map((item) => `${item.label}: ${item.value}`),
-    ...documentationSpecs.map((item) => `${item.label}: ${item.value}`),
   ]);
   const maxVisibleDetailChips = 10;
   const visibleDetailChips = allDetailChips.slice(0, maxVisibleDetailChips);
