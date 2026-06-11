@@ -238,17 +238,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
-          <h3 className="text-xl font-semibold">List your vehicle in minutes</h3>
-          <p className="mt-2 text-sm text-slate-200">Get buyer leads quickly with verification support and transparent updates.</p>
-          <Link
-            href="/sell"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-slate-900"
-          >
-            Sell Vehicle
-          </Link>
-        </section>
-
         <footer className="pb-2 pt-3 text-xs text-slate-500">© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California</footer>
       </main>
     </div>
