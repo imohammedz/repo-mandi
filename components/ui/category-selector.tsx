@@ -19,6 +19,8 @@ const TIPPER_IMAGE_URL =
   "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
 const BUS_IMAGE_URL =
   "https://github.com/user-attachments/assets/dae8065f-977a-4701-a11c-fc111044fffb";
+const EQUIPMENT_IMAGE_URL =
+  "https://github.com/user-attachments/assets/99b52711-0c50-4b90-a48c-808696099194";
 const SELECTED_IMAGE_STYLE = {
   filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))",
 } as const;
@@ -149,53 +151,16 @@ function BusIcon({ tint }: { tint: boolean }) {
 }
 
 function ExcavatorIcon({ tint }: { tint: boolean }) {
-  const body = tint ? "#c2410c" : "#475569";
-  const glass = tint ? "#fed7aa" : "#bae6fd";
-  const dark = tint ? "#9a3412" : "#1e293b";
-  const mid = tint ? "#ea580c" : "#64748b";
-  const arm = tint ? "#fb923c" : "#94a3b8";
   return (
-    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
-      {/* tracks */}
-      <rect x="6" y="20" width="36" height="8" rx="4" fill={dark} />
-      <rect x="9" y="22" width="30" height="4" rx="2" fill={mid} />
-      {/* track wheels */}
-      <circle cx="12" cy="24" r="3" fill={dark} />
-      <circle cx="36" cy="24" r="3" fill={dark} />
-      {/* body */}
-      <rect x="8" y="11" width="24" height="12" rx="2" fill={body} />
-      {/* cab */}
-      <rect x="10" y="8" width="16" height="8" rx="2" fill={mid} />
-      {/* windshield */}
-      <rect x="20" y="9" width="5" height="5" rx="1" fill={glass} />
-      {/* main boom (goes up-right) */}
-      <rect
-        x="30"
-        y="9"
-        width="18"
-        height="4"
-        rx="2"
-        fill={arm}
-        transform="rotate(-35 30 13)"
-      />
-      {/* arm (goes down-right from boom) */}
-      <rect
-        x="43"
-        y="2"
-        width="14"
-        height="3"
-        rx="1.5"
-        fill={arm}
-        transform="rotate(20 43 4)"
-      />
-      {/* bucket */}
-      <path
-        d="M52 10 L58 13 L55 18 L50 16 Z"
-        fill={dark}
-        stroke={mid}
-        strokeWidth="0.5"
-      />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={EQUIPMENT_IMAGE_URL}
+      alt="Equipment"
+      width={52}
+      height={34}
+      className="h-full w-full object-contain"
+      style={tint ? SELECTED_IMAGE_STYLE : undefined}
+    />
   );
 }
 
