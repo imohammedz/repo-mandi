@@ -272,7 +272,7 @@ export function CategorySelector() {
   const router = useRouter();
 
   return (
-    <div className="grid grid-cols-6 gap-1">
+    <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">
       {categories.map((cat) => {
         const isSelected = selected === cat.id;
         const Icon = iconComponents[cat.id];
@@ -285,21 +285,21 @@ export function CategorySelector() {
               router.push(cat.href);
             }}
             className={[
-              "flex h-[68px] flex-col items-center justify-center gap-0.5 rounded-xl border px-0.5 py-1.5 transition-all",
+              "flex h-[68px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] border px-1 py-1 transition-all",
               isSelected
-                ? "border-orange-400 bg-orange-50 shadow-sm"
-                : "border-gray-200 bg-white",
+                ? "border-orange-300 bg-orange-50 shadow-[0_1px_2px_rgba(249,115,22,0.12)]"
+                : "border-gray-200 bg-white shadow-none",
             ].join(" ")}
           >
-            <div className="flex h-[34px] w-full items-center justify-center">
-              <div className="h-[26px] w-full max-w-[48px]">
+            <div className="flex h-[38px] w-full items-center justify-center">
+              <div className="h-[34px] w-full max-w-[52px]">
                 <Icon tint={isSelected} />
               </div>
             </div>
             <span
               className={[
-                "line-clamp-1 text-center text-[9px] font-medium leading-tight",
-                isSelected ? "text-orange-600" : "text-gray-600",
+                "line-clamp-1 max-w-full text-center text-[10px] font-medium leading-[1.05]",
+                isSelected ? "text-orange-600" : "text-gray-700",
               ].join(" ")}
             >
               {cat.label}
