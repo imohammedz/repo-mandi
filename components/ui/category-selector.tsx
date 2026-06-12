@@ -17,6 +17,8 @@ const TRAILER_IMAGE_URL =
   "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
 const TIPPER_IMAGE_URL =
   "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
+const BUS_IMAGE_URL =
+  "https://github.com/user-attachments/assets/dae8065f-977a-4701-a11c-fc111044fffb";
 const SELECTED_IMAGE_STYLE = {
   filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))",
 } as const;
@@ -133,32 +135,16 @@ function ContainerIcon({ tint }: { tint: boolean }) {
 }
 
 function BusIcon({ tint }: { tint: boolean }) {
-  const body = tint ? "#c2410c" : "#475569";
-  const glass = tint ? "#fed7aa" : "#bae6fd";
-  const dark = tint ? "#9a3412" : "#1e293b";
-  const mid = tint ? "#ea580c" : "#64748b";
   return (
-    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
-      {/* bus body */}
-      <rect x="2" y="5" width="54" height="17" rx="3" fill={body} />
-      {/* front windshield */}
-      <rect x="47" y="8" width="8" height="10" rx="1" fill={glass} />
-      {/* windows row */}
-      <rect x="5" y="8" width="7" height="7" rx="1" fill={glass} />
-      <rect x="15" y="8" width="7" height="7" rx="1" fill={glass} />
-      <rect x="25" y="8" width="7" height="7" rx="1" fill={glass} />
-      <rect x="35" y="8" width="7" height="7" rx="1" fill={glass} />
-      {/* door */}
-      <rect x="6" y="16" width="5" height="5" rx="0.5" fill={dark} />
-      {/* chassis rail */}
-      <rect x="4" y="21" width="50" height="2" fill={dark} />
-      {/* front wheel */}
-      <circle cx="48" cy="25" r="5" fill={dark} />
-      <circle cx="48" cy="25" r="2" fill={mid} />
-      {/* rear wheel */}
-      <circle cx="12" cy="25" r="5" fill={dark} />
-      <circle cx="12" cy="25" r="2" fill={mid} />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={BUS_IMAGE_URL}
+      alt="Bus"
+      width={52}
+      height={34}
+      className="h-full w-full object-contain"
+      style={tint ? SELECTED_IMAGE_STYLE : undefined}
+    />
   );
 }
 
