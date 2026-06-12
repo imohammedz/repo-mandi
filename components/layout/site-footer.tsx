@@ -1,23 +1,85 @@
+"use client";
+
 import Link from "next/link";
+import { Check, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
 import { getSupportMailto, SITE_CONFIG } from "@/lib/config/site";
 
+const TOAST_DURATION_MS = 2200;
+
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "absolute";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  // Legacy fallback for older mobile browsers without Clipboard API support.
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("Unable to copy text");
+  }
+}
+
 export function SiteFooter() {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setCopied(false), TOAST_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const handleCopy = async () => {
+    try {
+      await copyText(SITE_CONFIG.supportEmail);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <footer className="mx-auto w-full max-w-xl px-4 pb-44 pt-2">
+    <footer className="mx-auto w-full max-w-xl px-4 pt-0">
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Contact</h2>
-        <div className="mt-3 space-y-3 text-sm text-slate-600">
-          <div>
+        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+          <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Support Email</p>
-            <Link href={getSupportMailto()} className="font-medium text-slate-900 underline underline-offset-2">
-              {SITE_CONFIG.supportEmail}
-            </Link>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+              aria-label={`Copy support email ${SITE_CONFIG.supportEmail}`}
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Copy"}
+            </button>
           </div>
+          <Link
+            href={getSupportMailto()}
+            className="mt-2 block text-sm font-medium text-slate-900 underline underline-offset-2"
+          >
+            {SITE_CONFIG.supportEmail}
+          </Link>
         </div>
       </section>
-      <p className="mt-6 text-center text-xs text-slate-500">
-        © 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California
-      </p>
+      <div className="mt-6 space-y-1 text-center text-xs text-slate-500">
+        <p>© 2026 RepoMandi</p>
+        <p>Built for Indian trucking marketplace</p>
+        <p>Developed in Los Angeles, California</p>
+      </div>
     </footer>
   );
 }

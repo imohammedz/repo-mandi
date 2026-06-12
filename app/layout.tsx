@@ -44,8 +44,10 @@ export default function RootLayout({
       <body className="overflow-x-hidden bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
-          <div className="mx-auto w-full max-w-xl overflow-x-hidden pb-36 pt-14">{children}</div>
-          <SiteFooter />
+          <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pb-[180px] pt-14">
+            {children}
+            <SiteFooter />
+          </div>
           <StickyWhatsAppCTA />
           <div className="fixed inset-x-0 bottom-[64px] z-50 mx-auto max-w-xl px-3">
             <SellTruckCard />
