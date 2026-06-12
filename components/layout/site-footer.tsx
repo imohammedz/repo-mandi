@@ -75,10 +75,8 @@ export function SiteFooter() {
           </Link>
         </div>
       </section>
-      <div className="mt-6 space-y-1 text-center text-xs text-slate-500">
-        <p>© 2026 RepoMandi</p>
-        <p>Built for Indian trucking marketplace</p>
-        <p>Developed in Los Angeles, California</p>
+      <div className="mt-6 text-center text-xs text-slate-500">
+        <p>© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California</p>
       </div>
     </footer>
   );
