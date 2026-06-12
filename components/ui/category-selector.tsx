@@ -61,34 +61,16 @@ function PrimeMoverIcon({ tint }: { tint: boolean }) {
 }
 
 function TrailerIcon({ tint }: { tint: boolean }) {
-  const body = tint ? "#c2410c" : "#475569";
-  const dark = tint ? "#9a3412" : "#1e293b";
-  const mid = tint ? "#ea580c" : "#64748b";
-  const accent = tint ? "#fed7aa" : "#94a3b8";
+  const imageUrl =
+    "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
   return (
-    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
-      {/* main flatbed platform */}
-      <rect x="3" y="17" width="52" height="5" rx="1" fill={body} />
-      {/* stake sides */}
-      <rect x="6" y="11" width="2" height="8" rx="1" fill={dark} />
-      <rect x="16" y="11" width="2" height="8" rx="1" fill={dark} />
-      <rect x="26" y="11" width="2" height="8" rx="1" fill={dark} />
-      <rect x="36" y="11" width="2" height="8" rx="1" fill={dark} />
-      <rect x="46" y="11" width="2" height="8" rx="1" fill={dark} />
-      {/* top rail */}
-      <rect x="4" y="11" width="48" height="2" rx="1" fill={mid} />
-      {/* king pin / coupling */}
-      <rect x="2" y="18" width="4" height="3" rx="1" fill={accent} />
-      {/* wheels – 2 rear axles */}
-      <circle cx="38" cy="25" r="5" fill={dark} />
-      <circle cx="38" cy="25" r="2" fill={mid} />
-      <circle cx="50" cy="25" r="5" fill={dark} />
-      <circle cx="50" cy="25" r="2" fill={mid} />
-      <circle cx="14" cy="25" r="5" fill={dark} />
-      <circle cx="14" cy="25" r="2" fill={mid} />
-      <circle cx="26" cy="25" r="5" fill={dark} />
-      <circle cx="26" cy="25" r="2" fill={mid} />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={imageUrl}
+      alt="Trailer"
+      className="h-full w-full object-contain"
+      style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
+    />
   );
 }
 
