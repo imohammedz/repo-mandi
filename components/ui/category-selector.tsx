@@ -132,7 +132,7 @@ function BusIcon({ tint }: { tint: boolean }) {
   );
 }
 
-function ExcavatorIcon({ tint }: { tint: boolean }) {
+function EquipmentIcon({ tint }: { tint: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -152,7 +152,7 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
   tippers: TipperIcon,
   container: ContainerIcon,
   buses: BusIcon,
-  equipment: ExcavatorIcon,
+  equipment: EquipmentIcon,
 };
 
 export function CategorySelector() {
