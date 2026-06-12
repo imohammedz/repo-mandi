@@ -20,7 +20,7 @@ const TIPPER_IMAGE_URL =
 const CONTAINER_IMAGE_URL =
   "https://github.com/user-attachments/assets/76a11527-9e12-46aa-9104-5d33a8b3c140";
 const BUS_IMAGE_URL =
-  "https://github.com/user-attachments/assets/dae8065f-977a-4701-a11c-fc111044fffb";
+  "https://github.com/user-attachments/assets/a9cbe926-8ee9-4c31-8b52-b3357c745dff";
 const EQUIPMENT_IMAGE_URL =
   "https://github.com/user-attachments/assets/99b52711-0c50-4b90-a48c-808696099194";
 const SELECTED_IMAGE_STYLE = {
