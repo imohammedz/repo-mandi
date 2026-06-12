@@ -16,7 +16,7 @@ const PRIME_MOVER_IMAGE_URL =
 const TRAILER_IMAGE_URL =
   "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
 const TIPPER_IMAGE_URL =
-  "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
+  "https://github.com/user-attachments/assets/d8c54c16-f2b5-4edb-a41e-eccb65d3e322";
 const CONTAINER_IMAGE_URL =
   "https://github.com/user-attachments/assets/76a11527-9e12-46aa-9104-5d33a8b3c140";
 const BUS_IMAGE_URL =
