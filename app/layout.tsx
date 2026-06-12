@@ -44,7 +44,7 @@ export default function RootLayout({
       <body className="overflow-x-hidden bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
-          <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pb-[180px] pt-14">
+          <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pb-[260px] pt-14">
             {children}
             <SiteFooter />
           </div>

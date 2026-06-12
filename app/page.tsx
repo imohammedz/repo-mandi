@@ -25,8 +25,9 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   let featuredListingVehicles: Vehicle[] = [];
+  let recentVehicles: Vehicle[] = [];
   if (!process.env.DATABASE_URL) {
-    console.warn("Skipping homepage featured listings because DATABASE_URL is not configured.");
+    console.warn("Skipping homepage listings because DATABASE_URL is not configured.");
   } else {
     try {
       const now = new Date();
@@ -49,8 +50,22 @@ export default async function HomePage() {
         .orderBy(desc(vehiclesTable.featuredAt), desc(vehiclesTable.updatedAt))
         .limit(3);
       featuredListingVehicles = featuredListingsRows.map(dbToVehicle);
+
+      const recentListingsRows = await db
+        .select()
+        .from(vehiclesTable)
+        .where(
+          and(
+            eq(vehiclesTable.isPublished, true),
+            eq(vehiclesTable.listingStatus, "VERIFIED"),
+            isNull(vehiclesTable.deletedAt)
+          )
+        )
+        .orderBy(desc(vehiclesTable.createdAt))
+        .limit(3);
+      recentVehicles = recentListingsRows.map(dbToVehicle);
     } catch (error) {
-      console.error("Failed to load featured listings on homepage", error);
+      console.error("Failed to load listings on homepage", error);
     }
   }
 
@@ -82,6 +97,19 @@ export default async function HomePage() {
               ))
             ) : (
               <p className="text-sm text-slate-500">No featured listings yet.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
+          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
+            {recentVehicles.length > 0 ? (
+              recentVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No recent listings yet.</p>
             )}
           </div>
         </section>

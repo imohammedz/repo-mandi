@@ -20,7 +20,7 @@ async function copyText(value: string) {
   textarea.style.left = "-9999px";
   document.body.appendChild(textarea);
   textarea.select();
-  // Legacy fallback for older mobile browsers without Clipboard API support.
+  // Legacy fallback: document.execCommand is deprecated but kept for maximum compatibility with older mobile browsers.
   const copied = document.execCommand("copy");
   document.body.removeChild(textarea);
 
