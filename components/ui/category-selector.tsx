@@ -22,7 +22,7 @@ const CONTAINER_IMAGE_URL =
 const BUS_IMAGE_URL =
   "https://github.com/user-attachments/assets/a9cbe926-8ee9-4c31-8b52-b3357c745dff";
 const EQUIPMENT_IMAGE_URL =
-  "https://github.com/user-attachments/assets/99b52711-0c50-4b90-a48c-808696099194";
+  "https://github.com/user-attachments/assets/72ebe64b-7363-4cf0-9854-35b75021c31f";
 const SELECTED_IMAGE_STYLE = {
   filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))",
 } as const;
