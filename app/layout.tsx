@@ -44,9 +44,12 @@ export default function RootLayout({
       <body className="overflow-x-hidden bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
-          <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pb-[260px] pt-14">
+          <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pt-14">
             {children}
             <SiteFooter />
+            {/* Spacer to ensure footer scrolls fully above the fixed Sell Your Truck CTA (68px)
+                and bottom navigation (64px). Total fixed overlay = 132px; 160px gives clearance. */}
+            <div className="h-[160px]" aria-hidden="true" />
           </div>
           <StickyWhatsAppCTA />
           <div className="fixed inset-x-0 bottom-[64px] z-50 mx-auto max-w-xl px-3">
