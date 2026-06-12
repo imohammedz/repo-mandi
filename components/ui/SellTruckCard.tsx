@@ -20,8 +20,9 @@ export default function SellTruckCard() {
         <Image
           src="/sell-truck-banner.jpg"
           alt="Sell your truck on RepoMandi"
-          width={90}
-          height={52}
+          fill
+          sizes="90px"
+          style={{ objectFit: "cover" }}
         />
       </div>
       <div className="sell-card-content">
