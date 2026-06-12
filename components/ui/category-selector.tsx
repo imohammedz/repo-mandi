@@ -93,36 +93,16 @@ function TrailerIcon({ tint }: { tint: boolean }) {
 }
 
 function TipperIcon({ tint }: { tint: boolean }) {
-  const body = tint ? "#c2410c" : "#475569";
-  const glass = tint ? "#fed7aa" : "#bae6fd";
-  const dark = tint ? "#9a3412" : "#1e293b";
-  const mid = tint ? "#ea580c" : "#64748b";
+  const imageUrl =
+    "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
   return (
-    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
-      {/* chassis */}
-      <rect x="2" y="19" width="50" height="4" rx="1" fill={body} />
-      {/* cab */}
-      <rect x="2" y="7" width="16" height="14" rx="2" fill={body} />
-      {/* windshield */}
-      <rect x="10" y="9" width="7" height="8" rx="1" fill={glass} />
-      {/* tipper body (raised at rear) */}
-      <polygon
-        points="20,5 52,12 52,19 20,19"
-        fill={mid}
-        stroke={dark}
-        strokeWidth="0.5"
-      />
-      {/* tipper interior */}
-      <polygon points="22,7 50,13 50,18 22,18" fill={body} />
-      {/* front wheel */}
-      <circle cx="10" cy="25" r="5" fill={dark} />
-      <circle cx="10" cy="25" r="2" fill={mid} />
-      {/* rear wheels */}
-      <circle cx="36" cy="25" r="5" fill={dark} />
-      <circle cx="36" cy="25" r="2" fill={mid} />
-      <circle cx="47" cy="25" r="5" fill={dark} />
-      <circle cx="47" cy="25" r="2" fill={mid} />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={imageUrl}
+      alt="Tipper"
+      className="h-full w-full object-contain"
+      style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
+    />
   );
 }
 
