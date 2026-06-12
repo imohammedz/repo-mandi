@@ -11,6 +11,16 @@ type Category = {
   href: string;
 };
 
+const PRIME_MOVER_IMAGE_URL =
+  "https://github.com/user-attachments/assets/3263e16e-a3f8-456c-ba9a-fd482fe39486";
+const TRAILER_IMAGE_URL =
+  "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
+const TIPPER_IMAGE_URL =
+  "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
+const SELECTED_IMAGE_STYLE = {
+  filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))",
+} as const;
+
 const categories: Category[] = [
   {
     id: "prime-mover",
@@ -47,43 +57,43 @@ const categories: Category[] = [
 /* ───────── SVG vehicle illustrations (facing right) ───────── */
 
 function PrimeMoverIcon({ tint }: { tint: boolean }) {
-  const imageUrl =
-    "https://github.com/user-attachments/assets/3263e16e-a3f8-456c-ba9a-fd482fe39486";
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={imageUrl}
+      src={PRIME_MOVER_IMAGE_URL}
       alt="Prime Mover"
+      width={52}
+      height={34}
       className="h-full w-full object-contain"
-      style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
+      style={tint ? SELECTED_IMAGE_STYLE : undefined}
     />
   );
 }
 
 function TrailerIcon({ tint }: { tint: boolean }) {
-  const imageUrl =
-    "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={imageUrl}
+      src={TRAILER_IMAGE_URL}
       alt="Trailer"
+      width={52}
+      height={34}
       className="h-full w-full object-contain"
-      style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
+      style={tint ? SELECTED_IMAGE_STYLE : undefined}
     />
   );
 }
 
 function TipperIcon({ tint }: { tint: boolean }) {
-  const imageUrl =
-    "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={imageUrl}
+      src={TIPPER_IMAGE_URL}
       alt="Tipper"
+      width={52}
+      height={34}
       className="h-full w-full object-contain"
-      style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
+      style={tint ? SELECTED_IMAGE_STYLE : undefined}
     />
   );
 }
