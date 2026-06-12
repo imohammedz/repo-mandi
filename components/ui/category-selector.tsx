@@ -47,33 +47,16 @@ const categories: Category[] = [
 /* ───────── SVG vehicle illustrations (facing right) ───────── */
 
 function PrimeMoverIcon({ tint }: { tint: boolean }) {
-  const body = tint ? "#c2410c" : "#475569";
-  const glass = tint ? "#fed7aa" : "#bae6fd";
-  const dark = tint ? "#9a3412" : "#1e293b";
-  const mid = tint ? "#ea580c" : "#64748b";
+  const imageUrl =
+    "https://github.com/user-attachments/assets/3263e16e-a3f8-456c-ba9a-fd482fe39486";
   return (
-    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
-      {/* chassis */}
-      <rect x="2" y="19" width="42" height="4" rx="1" fill={body} />
-      {/* fuel tank */}
-      <rect x="4" y="15" width="7" height="7" rx="1" fill={dark} />
-      {/* cab body */}
-      <rect x="28" y="5" width="22" height="16" rx="3" fill={body} />
-      {/* windshield */}
-      <rect x="39" y="8" width="9" height="9" rx="1" fill={glass} />
-      {/* front bumper */}
-      <rect x="49" y="16" width="6" height="4" rx="1" fill={dark} />
-      {/* exhaust */}
-      <rect x="30" y="1" width="2" height="6" rx="1" fill={mid} />
-      {/* front wheel */}
-      <circle cx="52" cy="25" r="5" fill={dark} />
-      <circle cx="52" cy="25" r="2" fill={mid} />
-      {/* drive wheels */}
-      <circle cx="16" cy="25" r="5" fill={dark} />
-      <circle cx="16" cy="25" r="2" fill={mid} />
-      <circle cx="28" cy="25" r="5" fill={dark} />
-      <circle cx="28" cy="25" r="2" fill={mid} />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={imageUrl}
+      alt="Prime mover"
+      className="h-full w-full object-contain"
+      style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
+    />
   );
 }
 
