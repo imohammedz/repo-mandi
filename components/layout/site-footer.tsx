@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getSupportMailto, SITE_CONFIG } from "@/lib/config/site";
+import { getSupportMailto, SITE_CONFIG, SITE_COPYRIGHT } from "@/lib/config/site";
 
 const TOAST_DURATION_MS = 2200;
 
@@ -76,7 +76,7 @@ export function SiteFooter() {
         </div>
       </section>
       <div className="mt-6 text-center text-xs text-slate-500">
-        <p>© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California</p>
+        <p>{SITE_COPYRIGHT}</p>
       </div>
     </footer>
   );

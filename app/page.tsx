@@ -12,6 +12,7 @@ import SellTruckCard from "@/components/ui/SellTruckCard";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
+import { SITE_COPYRIGHT } from "@/lib/config/site";
 import { and, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 import type { Vehicle } from "@/types/vehicle";
 
@@ -142,7 +143,7 @@ export default async function HomePage() {
       </div>
 
       <footer className="px-4 pb-6 text-center text-xs text-slate-500">
-        © 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California
+        {SITE_COPYRIGHT}
       </footer>
     </div>
   );
