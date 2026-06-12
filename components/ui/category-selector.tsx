@@ -17,6 +17,8 @@ const TRAILER_IMAGE_URL =
   "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
 const TIPPER_IMAGE_URL =
   "https://github.com/user-attachments/assets/5736baad-97f9-4d3c-b513-2595dff5cceb";
+const CONTAINER_IMAGE_URL =
+  "https://github.com/user-attachments/assets/76a11527-9e12-46aa-9104-5d33a8b3c140";
 const BUS_IMAGE_URL =
   "https://github.com/user-attachments/assets/dae8065f-977a-4701-a11c-fc111044fffb";
 const EQUIPMENT_IMAGE_URL =
@@ -103,36 +105,16 @@ function TipperIcon({ tint }: { tint: boolean }) {
 }
 
 function ContainerIcon({ tint }: { tint: boolean }) {
-  const body = tint ? "#c2410c" : "#475569";
-  const glass = tint ? "#fed7aa" : "#bae6fd";
-  const dark = tint ? "#9a3412" : "#1e293b";
-  const mid = tint ? "#ea580c" : "#64748b";
-  const box = tint ? "#fb923c" : "#94a3b8";
   return (
-    <svg viewBox="0 0 58 30" fill="none" className="h-full w-full">
-      {/* chassis */}
-      <rect x="2" y="19" width="52" height="4" rx="1" fill={body} />
-      {/* cab */}
-      <rect x="2" y="7" width="14" height="14" rx="2" fill={body} />
-      {/* windshield */}
-      <rect x="9" y="9" width="6" height="8" rx="1" fill={glass} />
-      {/* container box */}
-      <rect x="18" y="5" width="36" height="16" rx="1" fill={box} />
-      {/* container ribs */}
-      <line x1="26" y1="5" x2="26" y2="21" stroke={dark} strokeWidth="1" />
-      <line x1="34" y1="5" x2="34" y2="21" stroke={dark} strokeWidth="1" />
-      <line x1="42" y1="5" x2="42" y2="21" stroke={dark} strokeWidth="1" />
-      {/* container door frame */}
-      <rect x="48" y="7" width="5" height="12" rx="1" fill={mid} />
-      {/* front wheel */}
-      <circle cx="10" cy="25" r="5" fill={dark} />
-      <circle cx="10" cy="25" r="2" fill={mid} />
-      {/* rear wheels */}
-      <circle cx="36" cy="25" r="5" fill={dark} />
-      <circle cx="36" cy="25" r="2" fill={mid} />
-      <circle cx="47" cy="25" r="5" fill={dark} />
-      <circle cx="47" cy="25" r="2" fill={mid} />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={CONTAINER_IMAGE_URL}
+      alt="Container"
+      width={52}
+      height={34}
+      className="h-full w-full object-contain"
+      style={tint ? SELECTED_IMAGE_STYLE : undefined}
+    />
   );
 }
 
