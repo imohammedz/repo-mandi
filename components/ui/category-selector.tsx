@@ -53,7 +53,7 @@ function PrimeMoverIcon({ tint }: { tint: boolean }) {
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={imageUrl}
-      alt="Prime mover"
+      alt="Prime Mover"
       className="h-full w-full object-contain"
       style={tint ? { filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))" } : undefined}
     />
