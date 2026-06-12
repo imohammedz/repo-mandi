@@ -16,13 +16,25 @@ export default function SellTruckCard() {
 
   return (
     <div className="sell-card">
-      <div className="sell-card-img">
+      <div
+        className="sell-card-img"
+        style={{
+          width: 90,
+          height: 68,
+          flexShrink: 0,
+          overflow: "hidden",
+          background: "#fff3e4",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Image
           src="/sell-truck-banner.jpg"
           alt="Sell your truck on RepoMandi"
           width={90}
           height={68}
-          style={{ display: "block", objectFit: "cover" }}
+          style={{ display: "block", objectFit: "contain", width: "100%", height: "100%" }}
         />
       </div>
       <div className="sell-card-content">
@@ -31,7 +43,23 @@ export default function SellTruckCard() {
       </div>
       <Link href="/sell" className="sell-card-btn">
         Sell Now
-        <span>+</span>
+        <span
+          style={{
+            width: 18,
+            height: 18,
+            border: "1.5px solid white",
+            borderRadius: "50%",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            fontWeight: 400,
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+        >
+          +
+        </span>
       </Link>
     </div>
   );
