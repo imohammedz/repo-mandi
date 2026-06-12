@@ -140,6 +140,10 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
+
+      <footer className="px-4 pb-6 text-center text-xs text-slate-500">
+        © 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California
+      </footer>
     </div>
   );
 }
