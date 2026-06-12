@@ -4,7 +4,6 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { TopHeader } from "@/components/layout/top-header";
 import { StickyWhatsAppCTA } from "@/components/layout/sticky-whatsapp-cta";
-import SellTruckCard from "@/components/ui/SellTruckCard";
 import { SavedListingsProvider } from "@/components/providers/saved-listings-provider";
 import { SITE_CONFIG } from "@/lib/config/site";
 import "./globals.css";
@@ -47,14 +46,10 @@ export default function RootLayout({
           <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pt-14">
             {children}
             <SiteFooter />
-            {/* Spacer to ensure footer scrolls fully above the fixed Sell Your Truck CTA (68px)
-                and bottom navigation (64px). Total fixed overlay = 132px; 160px gives clearance. */}
-            <div className="h-[160px]" aria-hidden="true" />
+            {/* Spacer to ensure footer scrolls fully above the fixed bottom navigation (64px). */}
+            <div className="h-[80px]" aria-hidden="true" />
           </div>
           <StickyWhatsAppCTA />
-          <div className="fixed inset-x-0 bottom-[64px] z-50 mx-auto max-w-xl px-3">
-            <SellTruckCard />
-          </div>
           <BottomNav />
         </SavedListingsProvider>
       </body>

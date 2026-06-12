@@ -8,6 +8,7 @@ import {
 import { SearchBar } from "@/components/ui/search-bar";
 import { CategorySelector } from "@/components/ui/category-selector";
 import { VehicleCard } from "@/components/ui/vehicle-card";
+import SellTruckCard from "@/components/ui/SellTruckCard";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
@@ -114,7 +115,14 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="space-y-3">
+        {/* Sticky banner: sits in page flow after Recent Listings and sticks just above
+            the bottom nav (64px) while the user scrolls through the rest of the page.
+            Subsequent sections have bg-slate-50 + z-10 so they slide over the stuck banner. */}
+        <div className="sticky bottom-[64px] z-30 -mx-4 bg-slate-50 px-3 py-2">
+          <SellTruckCard />
+        </div>
+
+        <section className="relative z-10 space-y-3 bg-slate-50">
           <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
           <div className="grid grid-cols-2 gap-3">
             {trustItems.map((item) => {
