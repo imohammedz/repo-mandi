@@ -67,7 +67,7 @@ export function SiteFooter() {
             type="button"
             onClick={handleCopy}
             className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-            aria-label={`Copy support email ${SITE_CONFIG.supportEmail}`}
+            aria-label={copied ? "Support email copied" : `Copy support email ${SITE_CONFIG.supportEmail}`}
           >
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? "Copied" : "Copy"}
@@ -77,6 +77,9 @@ export function SiteFooter() {
       <div className="mt-4 text-center text-xs text-slate-500">
         <p>{SITE_COPYRIGHT}</p>
       </div>
+      <span className="sr-only" aria-live="polite">
+        {copied ? "Support email copied" : ""}
+      </span>
     </footer>
   );
 }

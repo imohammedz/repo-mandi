@@ -22,6 +22,8 @@ const trustItems = [
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
 
+const STICKY_SELL_CARD_BOTTOM_OFFSET = "72px";
+
 export const revalidate = 60;
 
 export default async function HomePage() {
@@ -71,7 +73,7 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-clip">
+    <div className="w-full overflow-x-clip">
       {/* Sections above the sticky banner: hero, featured listings, recent listings */}
       <div className="space-y-10 px-4 pb-0 pt-6">
         <section className="space-y-3">
@@ -121,7 +123,7 @@ export default async function HomePage() {
           Once this container scrolls out of view, the banner naturally releases and scrolls away,
           leaving Contact and copyright fully visible. No overflow or transform on this div. */}
       <div>
-        <div className="sticky bottom-[72px] z-30 mt-6 px-3">
+        <div className="sticky z-30 mt-6 px-3" style={{ bottom: STICKY_SELL_CARD_BOTTOM_OFFSET }}>
           <SellTruckCard />
         </div>
 
