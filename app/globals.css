@@ -39,6 +39,7 @@ section {
   height: 68px;
   flex-shrink: 0;
   overflow: hidden;
+  position: relative;
 }
 .sell-card-img img {
   width: 100%;
