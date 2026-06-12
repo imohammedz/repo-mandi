@@ -46,8 +46,6 @@ export default function RootLayout({
           <div className="mx-auto w-full max-w-xl overflow-x-clip px-0 pt-14">
             {children}
             <SiteFooter />
-            {/* Spacer to ensure footer scrolls fully above the fixed bottom navigation (64px). */}
-            <div className="h-[80px]" aria-hidden="true" />
           </div>
           <StickyWhatsAppCTA />
           <BottomNav />

@@ -20,7 +20,7 @@ async function copyText(value: string) {
   textarea.style.left = "-9999px";
   document.body.appendChild(textarea);
   textarea.select();
-  // Legacy fallback: document.execCommand is deprecated but kept for maximum compatibility with older mobile browsers.
+  // Legacy fallback when the Clipboard API is unavailable, kept for older mobile browser compatibility.
   const copied = document.execCommand("copy");
   document.body.removeChild(textarea);
 
@@ -51,31 +51,30 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="mx-auto w-full max-w-xl px-4 pt-0">
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Contact</h2>
-        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Support Email</p>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-              aria-label={`Copy support email ${SITE_CONFIG.supportEmail}`}
+    <footer className="mx-auto w-full max-w-xl px-4 pb-24 pt-2">
+      <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-slate-900">Contact</h2>
+            <Link
+              href={getSupportMailto()}
+              className="mt-1 block truncate text-sm font-medium text-slate-900 underline underline-offset-2"
             >
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? "Copied" : "Copy"}
-            </button>
+              {SITE_CONFIG.supportEmail}
+            </Link>
           </div>
-          <Link
-            href={getSupportMailto()}
-            className="mt-2 block text-sm font-medium text-slate-900 underline underline-offset-2"
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            aria-label={`Copy support email ${SITE_CONFIG.supportEmail}`}
           >
-            {SITE_CONFIG.supportEmail}
-          </Link>
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
         </div>
       </section>
-      <div className="mt-6 text-center text-xs text-slate-500">
+      <div className="mt-4 text-center text-xs text-slate-500">
         <p>{SITE_COPYRIGHT}</p>
       </div>
     </footer>

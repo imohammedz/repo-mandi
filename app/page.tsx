@@ -12,7 +12,6 @@ import SellTruckCard from "@/components/ui/SellTruckCard";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
-import { SITE_COPYRIGHT } from "@/lib/config/site";
 import { and, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 import type { Vehicle } from "@/types/vehicle";
 
@@ -141,10 +140,6 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
-
-      <footer className="px-4 pb-6 text-center text-xs text-slate-500">
-        {SITE_COPYRIGHT}
-      </footer>
     </div>
   );
 }
