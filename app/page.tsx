@@ -122,7 +122,7 @@ export default async function HomePage() {
           <SellTruckCard />
         </div>
 
-        <section className="relative z-10 space-y-3 bg-slate-50">
+        <section className="relative z-40 space-y-3 bg-slate-50">
           <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
           <div className="grid grid-cols-2 gap-3">
             {trustItems.map((item) => {

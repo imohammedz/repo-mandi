@@ -45,7 +45,9 @@ export default function RootLayout({
           <TopHeader />
           <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pt-14">
             {children}
-            <SiteFooter />
+            <div className="relative z-40 bg-slate-50">
+              <SiteFooter />
+            </div>
             {/* Spacer to ensure footer scrolls fully above the fixed bottom navigation (64px). */}
             <div className="h-[80px]" aria-hidden="true" />
           </div>
