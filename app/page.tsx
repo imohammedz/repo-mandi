@@ -102,6 +102,19 @@ export default async function HomePage() {
         </section>
 
         <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
+          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
+            {recentVehicles.length > 0 ? (
+              recentVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No recent listings yet.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="space-y-3">
           <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
           <div className="grid grid-cols-2 gap-3">
             {trustItems.map((item) => {
@@ -115,21 +128,6 @@ export default async function HomePage() {
             })}
           </div>
         </section>
-
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
-          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
-            {recentVehicles.length > 0 ? (
-              recentVehicles.map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
-              ))
-            ) : (
-              <p className="text-sm text-slate-500">No recent listings yet.</p>
-            )}
-          </div>
-        </section>
-
-        <footer className="pb-2 pt-3 text-xs text-slate-500">© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California</footer>
       </main>
     </div>
   );
