@@ -14,7 +14,7 @@ type Category = {
 const PRIME_MOVER_IMAGE_URL =
   "https://github.com/user-attachments/assets/3263e16e-a3f8-456c-ba9a-fd482fe39486";
 const TRAILER_IMAGE_URL =
-  "https://github.com/user-attachments/assets/2259ee2f-5714-4f3b-bc4b-f817d362f083";
+  "https://github.com/user-attachments/assets/18678ed2-6043-41d6-a3c5-8bc64a7db243";
 const TIPPER_IMAGE_URL =
   "https://github.com/user-attachments/assets/d8c54c16-f2b5-4edb-a41e-eccb65d3e322";
 const CONTAINER_IMAGE_URL =
