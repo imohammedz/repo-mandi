@@ -71,8 +71,9 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
-      <main className="w-full max-w-full space-y-10 overflow-x-hidden px-4 pb-8 pt-6">
+    <div className="w-full max-w-full overflow-x-clip">
+      {/* Sections above the sticky banner: hero, featured listings, recent listings */}
+      <div className="space-y-10 px-4 pb-0 pt-6">
         <section className="space-y-3">
           <h1 className="text-3xl font-semibold leading-tight text-slate-900">
             Verified Bank-Seized Commercial Vehicles
@@ -91,7 +92,7 @@ export default async function HomePage() {
               View all
             </Link>
           </div>
-          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
+          <div className="w-full max-w-full space-y-2 overflow-x-clip">
             {featuredListingVehicles.length > 0 ? (
               featuredListingVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
@@ -104,7 +105,7 @@ export default async function HomePage() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
-          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
+          <div className="w-full max-w-full space-y-2 overflow-x-clip">
             {recentVehicles.length > 0 ? (
               recentVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
@@ -114,15 +115,17 @@ export default async function HomePage() {
             )}
           </div>
         </section>
+      </div>
 
-        {/* Sticky banner: sits in page flow after Recent Listings and sticks just above
-            the bottom nav (64px) while the user scrolls through the rest of the page.
-            Subsequent sections have bg-slate-50 + z-10 so they slide over the stuck banner. */}
-        <div className="sticky bottom-[64px] z-30 -mx-4 bg-slate-50 px-3 py-2">
+      {/* Sticky boundary: banner sticks above bottom nav while scrolling through Why trust us.
+          Once this container scrolls out of view, the banner naturally releases and scrolls away,
+          leaving Contact and copyright fully visible. No overflow or transform on this div. */}
+      <div>
+        <div className="sticky bottom-[72px] z-30 mt-6 px-3">
           <SellTruckCard />
         </div>
 
-        <section className="relative z-40 space-y-3 bg-slate-50">
+        <section className="mt-10 space-y-3 px-4 pb-8">
           <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
           <div className="grid grid-cols-2 gap-3">
             {trustItems.map((item) => {
@@ -136,7 +139,7 @@ export default async function HomePage() {
             })}
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

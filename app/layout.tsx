@@ -40,14 +40,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} antialiased`}>
-      <body className="overflow-x-hidden bg-slate-50 font-sans text-slate-900">
+      <body className="overflow-x-clip bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
-          <div className="mx-auto w-full max-w-xl overflow-x-hidden px-0 pt-14">
+          <div className="mx-auto w-full max-w-xl overflow-x-clip px-0 pt-14">
             {children}
-            <div className="relative z-40 bg-slate-50">
-              <SiteFooter />
-            </div>
+            <SiteFooter />
             {/* Spacer to ensure footer scrolls fully above the fixed bottom navigation (64px). */}
             <div className="h-[80px]" aria-hidden="true" />
           </div>
