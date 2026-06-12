@@ -8,6 +8,7 @@ import {
 import { SearchBar } from "@/components/ui/search-bar";
 import { CategorySelector } from "@/components/ui/category-selector";
 import { VehicleCard } from "@/components/ui/vehicle-card";
+import SellTruckCard from "@/components/ui/SellTruckCard";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
@@ -21,13 +22,15 @@ const trustItems = [
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
 
+const STICKY_SELL_CARD_BOTTOM_OFFSET = "72px";
+
 export const revalidate = 60;
 
 export default async function HomePage() {
   let featuredListingVehicles: Vehicle[] = [];
   let recentVehicles: Vehicle[] = [];
   if (!process.env.DATABASE_URL) {
-    console.warn("Skipping homepage recent listings because DATABASE_URL is not configured.");
+    console.warn("Skipping homepage listings because DATABASE_URL is not configured.");
   } else {
     try {
       const now = new Date();
@@ -65,13 +68,14 @@ export default async function HomePage() {
         .limit(3);
       recentVehicles = recentListingsRows.map(dbToVehicle);
     } catch (error) {
-      console.error("Failed to load recent listings on homepage", error);
+      console.error("Failed to load listings on homepage", error);
     }
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
-      <main className="w-full max-w-full space-y-10 overflow-x-hidden px-4 pb-8 pt-6">
+    <div className="w-full overflow-x-clip">
+      {/* Sections above the sticky banner: hero, featured listings, recent listings */}
+      <div className="space-y-10 px-4 pb-0 pt-6">
         <section className="space-y-3">
           <h1 className="text-3xl font-semibold leading-tight text-slate-900">
             Verified Bank-Seized Commercial Vehicles
@@ -90,7 +94,7 @@ export default async function HomePage() {
               View all
             </Link>
           </div>
-          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
+          <div className="w-full max-w-full space-y-2 overflow-x-clip">
             {featuredListingVehicles.length > 0 ? (
               featuredListingVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
@@ -102,6 +106,28 @@ export default async function HomePage() {
         </section>
 
         <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
+          <div className="w-full max-w-full space-y-2 overflow-x-clip">
+            {recentVehicles.length > 0 ? (
+              recentVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No recent listings yet.</p>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Sticky boundary: banner sticks above bottom nav while scrolling through Why trust us.
+          Once this container scrolls out of view, the banner naturally releases and scrolls away,
+          leaving Contact and copyright fully visible. No overflow or transform on this div. */}
+      <div>
+        <div className="sticky z-30 mt-6 px-3" style={{ bottom: STICKY_SELL_CARD_BOTTOM_OFFSET }}>
+          <SellTruckCard />
+        </div>
+
+        <section className="mt-10 space-y-3 px-4 pb-8">
           <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
           <div className="grid grid-cols-2 gap-3">
             {trustItems.map((item) => {
@@ -115,22 +141,7 @@ export default async function HomePage() {
             })}
           </div>
         </section>
-
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
-          <div className="w-full max-w-full space-y-2 overflow-x-hidden">
-            {recentVehicles.length > 0 ? (
-              recentVehicles.map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
-              ))
-            ) : (
-              <p className="text-sm text-slate-500">No recent listings yet.</p>
-            )}
-          </div>
-        </section>
-
-        <footer className="pb-2 pt-3 text-xs text-slate-500">© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California</footer>
-      </main>
+      </div>
     </div>
   );
 }

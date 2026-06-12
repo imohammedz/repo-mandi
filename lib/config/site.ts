@@ -9,6 +9,9 @@ export const SITE_CONFIG = {
   secondaryDomain: process.env.NEXT_PUBLIC_SECONDARY_DOMAIN || DEFAULT_SECONDARY_DOMAIN,
 } as const;
 
+export const SITE_COPYRIGHT =
+  "© 2026 RepoMandi • Built for Indian trucking marketplace • Developed in Los Angeles, California" as const;
+
 export const SUPPORT_SUBJECTS = {
   general: "RepoMandi Support",
   sellerVerification: "RepoMandi Seller Verification Support",
