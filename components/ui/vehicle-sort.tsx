@@ -24,6 +24,7 @@ export function VehicleSort({ value }: Props) {
           const selected = event.target.value;
           if (selected === "newest") next.delete("sort");
           else next.set("sort", selected);
+          next.delete("page");
           const query = next.toString();
           router.push(query ? `${pathname}?${query}` : pathname);
         }}

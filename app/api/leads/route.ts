@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { leads, vehicles } from "@/lib/schema";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, isNull, ne, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 
 type LeadSource = "CALL" | "WHATSAPP" | "REQUEST_DETAILS";
@@ -93,11 +93,12 @@ export async function POST(request: Request) {
       })
       .from(vehicles)
       .where(
-      and(
-        eq(vehicles.id, body.vehicleId),
-        eq(vehicles.isPublished, true),
-        eq(vehicles.listingStatus, "VERIFIED")
-      )
+        and(
+          eq(vehicles.id, body.vehicleId),
+          eq(vehicles.isPublished, true),
+          isNull(vehicles.deletedAt),
+          ne(vehicles.status, "SOLD")
+        )
       );
 
     if (!vehicle?.sellerId) {

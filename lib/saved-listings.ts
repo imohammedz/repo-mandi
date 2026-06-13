@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dbToVehicle } from "@/lib/mappers";
 import { savedListings, vehicles } from "@/lib/schema";
@@ -52,8 +52,9 @@ export async function getSavedListingsForUser(userId: number, options?: { limit?
       and(
         inArray(vehicles.id, vehicleIds),
         eq(vehicles.isPublished, true),
-        eq(vehicles.listingStatus, "VERIFIED")
-      )
+      isNull(vehicles.deletedAt),
+      ne(vehicles.status, "SOLD")
+    )
     );
 
   const vehicleMap = new Map(vehicleRows.map((row) => [row.id, row]));
@@ -82,8 +83,9 @@ export async function getSavedListingForUser(userId: number, vehicleId: string) 
       and(
         eq(vehicles.id, vehicleId),
         eq(vehicles.isPublished, true),
-        eq(vehicles.listingStatus, "VERIFIED")
-      )
+      isNull(vehicles.deletedAt),
+      ne(vehicles.status, "SOLD")
+    )
     );
 
   if (!vehicleRow) return null;
@@ -99,8 +101,9 @@ export async function saveListingForUser(userId: number, vehicleId: string) {
       and(
         eq(vehicles.id, vehicleId),
         eq(vehicles.isPublished, true),
-        eq(vehicles.listingStatus, "VERIFIED")
-      )
+      isNull(vehicles.deletedAt),
+      ne(vehicles.status, "SOLD")
+    )
     );
 
   if (!vehicleRow) {

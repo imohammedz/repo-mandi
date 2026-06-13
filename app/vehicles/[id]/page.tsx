@@ -437,8 +437,8 @@ export default async function VehicleDetailPage({
       and(
         ne(vehiclesTable.id, id),
         eq(vehiclesTable.isPublished, true),
-        eq(vehiclesTable.listingStatus, "VERIFIED"),
-        isNull(vehiclesTable.deletedAt)
+        isNull(vehiclesTable.deletedAt),
+        ne(vehiclesTable.status, "SOLD")
       )
     )
     .orderBy(desc(vehiclesTable.createdAt))
