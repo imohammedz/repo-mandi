@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { PlusCircle } from "lucide-react";
 
 export default function SellTruckCard() {
   const pathname = usePathname();
@@ -29,8 +30,8 @@ export default function SellTruckCard() {
         <p>Reach 50,000+ verified buyers across India</p>
       </div>
       <Link href="/sell" className="sell-card-btn">
-        List Your Truck Now
-        <span>+</span>
+        <span className="sell-card-btn-label">List Your Truck Now</span>
+        <PlusCircle className="sell-card-btn-icon" />
       </Link>
     </div>
   );

@@ -22,13 +22,13 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 px-2 pb-2 backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(8px+env(safe-area-inset-bottom))]">
       <div className="relative mx-auto max-w-xl">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-16 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-50"
+          className="pointer-events-none absolute left-1/2 top-0 h-16 w-[92px] -translate-x-1/2 -translate-y-[42%] rounded-full bg-slate-50"
         />
-        <ul className="relative grid grid-cols-5 rounded-[22px] border border-slate-200 bg-white px-1 pb-3 pt-4 shadow-[0_-8px_20px_rgba(15,23,42,0.06)]">
+        <ul className="relative grid grid-cols-5 rounded-[26px] border border-slate-200/90 bg-white px-2 pb-3 pt-4 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
         {items.map((item) => {
           const Icon = item.icon;
           const active =
@@ -41,16 +41,21 @@ export function BottomNav() {
           return (
             <li key={item.href} className="relative">
               {item.isCenter ? (
-                <Link href={item.href} className="flex min-h-12 flex-col items-center justify-center text-[11px] font-medium text-slate-600">
-                  <span className="mb-1 -mt-10 inline-flex h-14 w-14 items-center justify-center rounded-full border-4 border-slate-50 bg-[#ff8a00] text-white shadow-[0_10px_18px_rgba(255,138,0,0.35)]">
-                    <Icon className="h-7 w-7" />
+                <Link
+                  href={item.href}
+                  className={`relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium ${
+                    active ? "text-[#ff8a00]" : "text-slate-500"
+                  }`}
+                >
+                  <span className="inline-flex h-[60px] w-[60px] -translate-y-8 items-center justify-center rounded-full border-4 border-white bg-[#ff8a00] text-white shadow-[0_10px_20px_rgba(255,138,0,0.32)]">
+                    <Icon className="h-7 w-7 stroke-[2.4]" />
                   </span>
-                  {item.label}
+                  <span className="-mt-8">{item.label}</span>
                 </Link>
               ) : (
                 <Link
                   href={item.href}
-                  className={`flex min-h-12 flex-col items-center justify-center rounded-xl text-[11px] font-medium ${
+                  className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium ${
                     active ? "text-[#ff8a00]" : "text-slate-500"
                   }`}
                 >
