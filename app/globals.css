@@ -56,12 +56,18 @@ section {
   font-weight: 700;
   color: #0f172a;
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .sell-card-content p {
   margin: 0;
   font-size: 11px;
   color: #475569;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .sell-card-btn {
   height: 48px;

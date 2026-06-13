@@ -24,7 +24,10 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 px-2 pb-2 backdrop-blur">
       <div className="relative mx-auto max-w-xl">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-16 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-50" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-0 h-16 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-50"
+        />
         <ul className="relative grid grid-cols-5 rounded-[22px] border border-slate-200 bg-white px-1 pb-3 pt-4 shadow-[0_-8px_20px_rgba(15,23,42,0.06)]">
         {items.map((item) => {
           const Icon = item.icon;
