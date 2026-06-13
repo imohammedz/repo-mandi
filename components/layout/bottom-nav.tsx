@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import { CircleUserRound, Heart, House, Plus, Search } from "lucide-react";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
+const SELL_ORANGE = "#ff8a00";
+const CENTER_CUTOUT_TRANSLATE_Y = "-42%";
+
 const items = [
   { label: "Home", href: "/", icon: House },
   { label: "Search", href: "/vehicles", icon: Search },
@@ -26,7 +29,8 @@ export function BottomNav() {
       <div className="relative mx-auto max-w-xl">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-16 w-[92px] -translate-x-1/2 -translate-y-[42%] rounded-full bg-slate-50"
+          className="pointer-events-none absolute left-1/2 top-0 h-16 w-[92px] -translate-x-1/2 rounded-full bg-slate-50"
+          style={{ transform: `translate(-50%, ${CENTER_CUTOUT_TRANSLATE_Y})` }}
         />
         <ul className="relative grid grid-cols-5 rounded-[26px] border border-slate-200/90 bg-white px-2 pb-3 pt-4 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
         {items.map((item) => {
@@ -43,11 +47,13 @@ export function BottomNav() {
               {item.isCenter ? (
                 <Link
                   href={item.href}
-                  className={`relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium ${
-                    active ? "text-[#ff8a00]" : "text-slate-500"
-                  }`}
+                  className="relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium text-slate-500"
+                  style={active ? { color: SELL_ORANGE } : undefined}
                 >
-                  <span className="inline-flex h-[60px] w-[60px] -translate-y-8 items-center justify-center rounded-full border-4 border-white bg-[#ff8a00] text-white shadow-[0_10px_20px_rgba(255,138,0,0.32)]">
+                  <span
+                    className="inline-flex h-[60px] w-[60px] -translate-y-8 items-center justify-center rounded-full border-4 border-white text-white shadow-[0_10px_20px_rgba(255,138,0,0.32)]"
+                    style={{ backgroundColor: SELL_ORANGE }}
+                  >
                     <Icon className="h-7 w-7 stroke-[2.4]" />
                   </span>
                   <span className="-mt-8">{item.label}</span>
@@ -55,9 +61,8 @@ export function BottomNav() {
               ) : (
                 <Link
                   href={item.href}
-                  className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium ${
-                    active ? "text-[#ff8a00]" : "text-slate-500"
-                  }`}
+                  className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium text-slate-500"
+                  style={active ? { color: SELL_ORANGE } : undefined}
                 >
                   <span className="relative">
                     <Icon className="h-5 w-5" />
