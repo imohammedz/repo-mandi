@@ -235,7 +235,6 @@ const buildVehicleSpecChips = (
     !tyreMountShownInMetadata ? buildDetailChip("Tyre Mount Status", tyreMountStatusLabel) : "",
     hasTyresMounted ? buildDetailChip("Tyre Condition", vehicle.tyreCondition) : "",
     !cabinTypeShownInMetadata ? buildDetailChip("Cabin Type", cabinTypeLabel) : "",
-    buildDetailChip("Ownership Details", vehicle.sellerType || vehicle.sellerRole),
     vehicle.listingType === "REPO" ? buildDetailChip("Finance Status", vehicle.repoStatus) : "",
     vehicle.listingType === "REPO" ? buildDetailChip("Finance Company", vehicle.financeCompany) : "",
     buildDetailChip("Road Safety", vehicle.roadSafeStatus),
