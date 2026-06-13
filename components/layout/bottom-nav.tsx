@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleUserRound, House, PlusCircle, Search, Heart } from "lucide-react";
+import { CircleUserRound, House, PackagePlus, Search, Heart } from "lucide-react";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
 const items = [
   { label: "Home", href: "/", icon: House },
   { label: "Search", href: "/vehicles", icon: Search },
-  { label: "Sell", href: "/sell", icon: PlusCircle },
+  { label: "Sell", href: "/sell", icon: PackagePlus },
   { label: "Saved", href: "/saved", icon: Heart },
   { label: "Profile", href: "/profile", icon: CircleUserRound },
 ];

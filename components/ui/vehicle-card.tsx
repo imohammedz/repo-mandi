@@ -200,9 +200,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
+      className={`flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white pr-3 pt-3 pb-3 shadow-sm box-border`}
     >
-      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
+      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-l-2xl rounded-r-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
         {selectedImage ? (
           <>
             <SafeImage
