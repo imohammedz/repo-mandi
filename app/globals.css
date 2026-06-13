@@ -30,16 +30,18 @@ section {
   padding: 0 10px 0 0;
   border-radius: 14px;
   border: 1px solid #f1dcc5;
+  border-left: 0;
   background: linear-gradient(90deg, #fff3e4 0%, #fffaf5 100%);
   box-shadow: 0 2px 8px rgba(20, 31, 54, 0.07);
   overflow: hidden;
 }
 .sell-card-img {
-  width: 90px;
+  width: 91px;
   height: 68px;
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
+  margin-left: -1px;
 }
 .sell-card-img img {
   width: 100%;
