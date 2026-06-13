@@ -6,6 +6,7 @@ import { CircleUserRound, Heart, House, Plus, Search } from "lucide-react";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
 const SELL_ORANGE = "#ff8a00";
+// Tuned so the circular cutout visually hugs the raised Sell button like the provided reference.
 const CENTER_CUTOUT_TRANSLATE_Y = "-42%";
 
 const items = [

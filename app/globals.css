@@ -35,8 +35,8 @@ section {
   overflow: hidden;
 }
 .sell-card-img {
-  width: clamp(92px, 26vw, 240px);
-  height: clamp(58px, 18vw, 92px);
+  width: 96px;
+  height: 60px;
   flex-shrink: 0;
   border-radius: 14px;
   background: #f6e7d5;
@@ -54,7 +54,7 @@ section {
 }
 .sell-card-content h3 {
   margin: 0 0 6px;
-  font-size: clamp(14px, 3vw, 19px);
+  font-size: 14px;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.15;
@@ -65,7 +65,7 @@ section {
 }
 .sell-card-content p {
   margin: 0;
-  font-size: clamp(10px, 2vw, 14px);
+  font-size: 10px;
   color: #475569;
   line-height: 1.2;
   white-space: nowrap;
@@ -80,7 +80,7 @@ section {
   border: none;
   border-radius: 14px;
   padding: 0 16px;
-  font-size: clamp(11px, 2vw, 14px);
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
   display: flex;
@@ -106,10 +106,24 @@ section {
     padding: 14px 18px;
   }
 
+  .sell-card-img {
+    width: 240px;
+    height: 92px;
+  }
+
+  .sell-card-content h3 {
+    font-size: 19px;
+  }
+
+  .sell-card-content p {
+    font-size: 14px;
+  }
+
   .sell-card-btn {
     height: 56px;
     padding: 0 22px;
     border-radius: 16px;
+    font-size: 14px;
   }
 
   .sell-card-btn-icon {
