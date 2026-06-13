@@ -397,6 +397,7 @@ export const vehicles = pgTable("vehicles", {
   parkingDue: integer("parking_due").default(0),
   verifiedBadges: text("verified_badges").array().notNull().default([]),
   inspectionNotes: text("inspection_notes").array().notNull().default([]),
+  viewCount: integer("view_count").notNull().default(0),
   inquiries: integer("inquiries").notNull().default(0),
   listingStatus: listingStatusEnum("listing_status").notNull().default("PENDING"),
   verificationStatus: verificationStatusEnum("verification_status").notNull().default("PENDING_VERIFICATION"),
