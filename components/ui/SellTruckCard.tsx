@@ -20,16 +20,16 @@ export default function SellTruckCard() {
         <Image
           src="/sell-truck-banner.jpg"
           alt="Sell your truck on RepoMandi"
-          width={90}
-          height={52}
+          width={130}
+          height={74}
         />
       </div>
       <div className="sell-card-content">
-        <h3>Sell Your Truck</h3>
-        <p>List for free & reach buyers fast</p>
+        <h3>Sell Your Truck Faster</h3>
+        <p>Reach 50,000+ verified buyers across India</p>
       </div>
       <Link href="/sell" className="sell-card-btn">
-        Sell Now
+        List Your Truck Now
         <span>+</span>
       </Link>
     </div>
