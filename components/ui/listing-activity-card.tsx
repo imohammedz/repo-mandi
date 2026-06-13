@@ -48,11 +48,11 @@ export function ListingActivityCard({
   const items = [
     {
       icon: <Eye className="h-3.5 w-3.5 shrink-0 text-blue-500" />,
-      label: `${formatCount(viewCount)} Views`,
+      label: formatCount(viewCount),
     },
     {
       icon: <Heart className="h-3.5 w-3.5 shrink-0 text-rose-500" />,
-      label: `${formatCount(saveCount)} Saves`,
+      label: formatCount(saveCount),
     },
     {
       icon: <Calendar className="h-3.5 w-3.5 shrink-0 text-emerald-600" />,
