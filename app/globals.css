@@ -3,6 +3,7 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --repomandi-orange: #ff8a00;
 }
 
 @theme inline {
@@ -35,6 +36,7 @@ section {
   overflow: hidden;
 }
 .sell-card-img {
+  position: relative;
   width: 96px;
   height: 60px;
   flex-shrink: 0;

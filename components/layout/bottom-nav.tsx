@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { CircleUserRound, Heart, House, Plus, Search } from "lucide-react";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
-const SELL_ORANGE = "#ff8a00";
+const SELL_ORANGE = "var(--repomandi-orange)";
 // Tuned so the circular cutout visually hugs the raised Sell button like the provided reference.
-const CENTER_CUTOUT_TRANSLATE_Y = "-42%";
+const CENTER_CUTOUT_Y_OFFSET = "-42%";
 
 const items = [
   { label: "Home", href: "/", icon: House },
@@ -31,7 +31,7 @@ export function BottomNav() {
         <div
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 h-16 w-[92px] -translate-x-1/2 rounded-full bg-slate-50"
-          style={{ transform: `translate(-50%, ${CENTER_CUTOUT_TRANSLATE_Y})` }}
+          style={{ transform: `translate(-50%, ${CENTER_CUTOUT_Y_OFFSET})` }}
         />
         <ul className="relative grid grid-cols-5 rounded-[26px] border border-slate-200/90 bg-white px-2 pb-3 pt-4 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
         {items.map((item) => {
