@@ -6,7 +6,12 @@ import { CircleUserRound, Heart, House, Plus, Search } from "lucide-react";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
 const SELL_ORANGE = "var(--repomandi-orange)";
-// Tuned so the circular cutout visually hugs the raised Sell button like the provided reference.
+const SELL_BUTTON_SIZE_PX = 60;
+const SELL_BUTTON_RAISE_PX = 32;
+const CENTER_CUTOUT_WIDTH_PX = 92;
+const CENTER_CUTOUT_HEIGHT_PX = 64;
+// Tuned so roughly 27px of the 64px cutout remains visible above the raised 60px Sell button,
+// which matches the reference balance between the notch and the floating action button.
 const CENTER_CUTOUT_Y_OFFSET = "-42%";
 
 const items = [
@@ -30,8 +35,12 @@ export function BottomNav() {
       <div className="relative mx-auto max-w-xl">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-16 w-[92px] -translate-x-1/2 rounded-full bg-slate-50"
-          style={{ transform: `translate(-50%, ${CENTER_CUTOUT_Y_OFFSET})` }}
+          className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-full bg-slate-50"
+          style={{
+            width: CENTER_CUTOUT_WIDTH_PX,
+            height: CENTER_CUTOUT_HEIGHT_PX,
+            transform: `translate(-50%, ${CENTER_CUTOUT_Y_OFFSET})`,
+          }}
         />
         <ul className="relative grid grid-cols-5 rounded-[26px] border border-slate-200/90 bg-white px-2 pb-3 pt-4 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
         {items.map((item) => {
@@ -52,12 +61,17 @@ export function BottomNav() {
                   style={active ? { color: SELL_ORANGE } : undefined}
                 >
                   <span
-                    className="inline-flex h-[60px] w-[60px] -translate-y-8 items-center justify-center rounded-full border-4 border-white text-white shadow-[0_10px_20px_rgba(255,138,0,0.32)]"
-                    style={{ backgroundColor: SELL_ORANGE }}
+                    className="inline-flex items-center justify-center rounded-full border-4 border-white text-white shadow-[0_10px_20px_rgba(255,138,0,0.32)]"
+                    style={{
+                      width: SELL_BUTTON_SIZE_PX,
+                      height: SELL_BUTTON_SIZE_PX,
+                      transform: `translateY(-${SELL_BUTTON_RAISE_PX}px)`,
+                      backgroundColor: SELL_ORANGE,
+                    }}
                   >
                     <Icon className="h-7 w-7 stroke-[2.4]" />
                   </span>
-                  <span className="-mt-8">{item.label}</span>
+                  <span style={{ marginTop: -SELL_BUTTON_RAISE_PX }}>{item.label}</span>
                 </Link>
               ) : (
                 <Link

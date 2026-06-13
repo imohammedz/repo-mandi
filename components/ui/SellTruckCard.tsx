@@ -5,6 +5,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { PlusCircle } from "lucide-react";
 
+const SELL_CARD_DESKTOP_BREAKPOINT_PX = 768;
+
 export default function SellTruckCard() {
   const pathname = usePathname();
 
@@ -22,7 +24,7 @@ export default function SellTruckCard() {
           src="/sell-truck-banner.jpg"
           alt="Sell your truck on RepoMandi"
           fill
-          sizes="(min-width: 768px) 240px, 96px"
+          sizes={`(min-width: ${SELL_CARD_DESKTOP_BREAKPOINT_PX}px) 240px, 96px`}
         />
       </div>
       <div className="sell-card-content">
