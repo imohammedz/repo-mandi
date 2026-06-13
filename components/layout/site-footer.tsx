@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSupportMailto, SITE_CONFIG, SITE_COPYRIGHT } from "@/lib/config/site";
 
 const TOAST_DURATION_MS = 2200;
+const DEFAULT_BOTTOM_PADDING = "calc(6rem + env(safe-area-inset-bottom, 0px))";
+const DETAIL_PAGE_BOTTOM_PADDING = "calc(11rem + env(safe-area-inset-bottom, 0px))";
 
 async function copyText(value: string) {
   if (navigator.clipboard?.writeText) {
@@ -30,7 +33,10 @@ async function copyText(value: string) {
 }
 
 export function SiteFooter() {
+  const pathname = usePathname();
   const [copied, setCopied] = useState(false);
+
+  const footerBottomPadding = pathname.startsWith("/vehicles/") ? DETAIL_PAGE_BOTTOM_PADDING : DEFAULT_BOTTOM_PADDING;
 
   useEffect(() => {
     if (!copied) {
@@ -51,7 +57,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="mx-auto w-full max-w-xl px-4 pb-24 pt-2">
+    <footer className="mx-auto w-full max-w-xl px-4 pt-2" style={{ paddingBottom: footerBottomPadding }}>
       <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
