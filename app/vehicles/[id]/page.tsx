@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/data/vehicles";
 import { db } from "@/lib/db";
-import { vehicleMedia, vehicles as vehiclesTable, users as usersTable } from "@/lib/schema";
+import { vehicleMedia, vehicles as vehiclesTable, users as usersTable, savedListings as savedListingsTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
 import { eq, ne, desc, and, isNull, asc, count } from "drizzle-orm";
 import { ImageGallery, type GalleryMediaItem } from "@/components/ui/image-gallery";
@@ -23,6 +23,8 @@ import { VehicleStickyContactCta } from "@/components/ui/vehicle-sticky-contact-
 import { FinanceEstimateCard } from "@/components/ui/finance-estimate-card";
 import { InsuranceRenewalCard } from "@/components/ui/insurance-renewal-card";
 import { VehicleDetailChips } from "@/components/ui/vehicle-detail-chips";
+import { ListingActivityCard } from "@/components/ui/listing-activity-card";
+import { ViewTracker } from "@/components/ui/view-tracker";
 import {
   getAssetStructureLabel,
   getDetachableTypeLabel,
@@ -471,6 +473,13 @@ export default async function VehicleDetailPage({
     trucksSold = soldResult?.count ?? 0;
   }
 
+  // Listing activity stats
+  const [saveResult] = await db
+    .select({ count: count() })
+    .from(savedListingsTable)
+    .where(eq(savedListingsTable.vehicleId, vehicle.id));
+  const saveCount = saveResult?.count ?? 0;
+
   const heroTitle = buildHeroTitle(vehicle);
   const listingTypeTag = vehicle.listingType === "REPO" ? "REPO" : "NON REPO";
   const sellerRoleChip = getSellerRoleChip(vehicle);
@@ -686,6 +695,14 @@ export default async function VehicleDetailPage({
       </section>
 
       <VehicleDetailChips chips={allDetailChips} />
+
+      <ListingActivityCard
+        viewCount={row.viewCount}
+        saveCount={saveCount}
+        createdAt={row.createdAt.toISOString()}
+        updatedAt={row.updatedAt.toISOString()}
+      />
+      <ViewTracker vehicleId={vehicle.id} />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">Document Validity</h2>

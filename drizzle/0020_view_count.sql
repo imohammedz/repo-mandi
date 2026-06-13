@@ -1,0 +1,1 @@
+ALTER TABLE "vehicles" ADD COLUMN IF NOT EXISTS "view_count" integer DEFAULT 0 NOT NULL;
