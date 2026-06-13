@@ -47,18 +47,22 @@ export function ListingActivityCard({
 }: ListingActivityCardProps) {
   const items = [
     {
+      id: "views",
       icon: <Eye className="h-3.5 w-3.5 shrink-0 text-blue-500" />,
       label: formatCount(viewCount),
     },
     {
+      id: "saves",
       icon: <Heart className="h-3.5 w-3.5 shrink-0 text-rose-500" />,
       label: formatCount(saveCount),
     },
     {
+      id: "listed",
       icon: <Calendar className="h-3.5 w-3.5 shrink-0 text-emerald-600" />,
       label: `Listed ${formatListedDate(createdAt)}`,
     },
     {
+      id: "updated",
       icon: <Clock className="h-3.5 w-3.5 shrink-0 text-orange-500" />,
       label: `Updated ${formatUpdatedAgo(updatedAt)}`,
     },
@@ -68,7 +72,7 @@ export function ListingActivityCard({
     <div className="flex items-center gap-4 overflow-x-auto rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
       {items.map((item) => (
         <div
-          key={item.label}
+          key={item.id}
           className="flex shrink-0 items-center gap-1.5"
         >
           {item.icon}
