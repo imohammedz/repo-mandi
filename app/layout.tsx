@@ -3,7 +3,6 @@ import { Geist } from "next/font/google";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { TopHeader } from "@/components/layout/top-header";
-import { StickyWhatsAppCTA } from "@/components/layout/sticky-whatsapp-cta";
 import { SavedListingsProvider } from "@/components/providers/saved-listings-provider";
 import { SITE_CONFIG } from "@/lib/config/site";
 import "./globals.css";
@@ -47,7 +46,6 @@ export default function RootLayout({
             {children}
             <SiteFooter />
           </div>
-          <StickyWhatsAppCTA />
           <BottomNav />
         </SavedListingsProvider>
       </body>
