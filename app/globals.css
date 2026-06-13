@@ -40,7 +40,6 @@ section {
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
-  border-radius: 13px 0 0 13px;
 }
 .sell-card-img img {
   width: 100%;
