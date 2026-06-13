@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function SellTruckCard() {
@@ -32,7 +32,7 @@ export default function SellTruckCard() {
       <Link href="/sell" className="sell-card-btn">
         Sell Now
         <span>
-          <Plus size={11} strokeWidth={2.5} aria-hidden="true" />
+          <ArrowRight size={11} strokeWidth={2.5} aria-hidden="true" />
         </span>
       </Link>
     </div>

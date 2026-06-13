@@ -40,12 +40,13 @@ section {
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
+  border-radius: 13px 0 0 13px;
 }
 .sell-card-img img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: left center;
   display: block;
 }
 .sell-card-content {
