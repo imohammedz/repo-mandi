@@ -36,7 +36,7 @@ export function SiteFooter() {
   const pathname = usePathname();
   const [copied, setCopied] = useState(false);
 
-  const footerBottomPadding = pathname.startsWith("/vehicles/") ? DETAIL_PAGE_BOTTOM_PADDING : DEFAULT_BOTTOM_PADDING;
+  const footerPaddingBottom = pathname.startsWith("/vehicles/") ? DETAIL_PAGE_BOTTOM_PADDING : DEFAULT_BOTTOM_PADDING;
 
   useEffect(() => {
     if (!copied) {
@@ -57,7 +57,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="mx-auto w-full max-w-xl px-4 pt-2" style={{ paddingBottom: footerBottomPadding }}>
+    <footer className="mx-auto w-full max-w-xl px-4 pt-2" style={{ paddingBottom: footerPaddingBottom }}>
       <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
