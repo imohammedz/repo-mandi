@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SupportContactInline } from "@/components/ui/support-contact-inline";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { SUPPORT_SUBJECTS } from "@/lib/config/site";
@@ -17,7 +17,6 @@ type Props = {
 
 export function VehicleListingsResults({ initialItems, initialPagination }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [items, setItems] = useState(initialItems);
   const [pagination, setPagination] = useState(initialPagination);
@@ -52,7 +51,7 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
         return [...current, ...appended];
       });
       setPagination(data.pagination);
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      window.history.replaceState(null, "", `${pathname}?${nextParams.toString()}`);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to load more listings.");
     } finally {
@@ -64,7 +63,8 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
     return (
       <section className="space-y-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-          <p className="text-base font-semibold text-slate-900">No vehicles found</p>
+          <p className="text-base font-semibold text-slate-900">No Listings Available</p>
+          <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or check back soon for new inventory.</p>
           <SupportContactInline className="mt-2 text-xs text-slate-500" subject={SUPPORT_SUBJECTS.general} />
           <Link
             href="/vehicles"
@@ -101,10 +101,10 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
             type="button"
             onClick={handleLoadMore}
             disabled={loading}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-70"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-70"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {loading ? "Loading..." : "Load More Listings"}
+            {loading ? "Loading Listings..." : "Load More Listings"}
           </button>
         </div>
       ) : null}
