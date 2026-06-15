@@ -96,7 +96,7 @@ export function FeatureListingButton({
     <>
       <button
         type="button"
-        disabled={isPending}
+        disabled={isPending || (!menuItem && isFeatured)}
         className={buttonClassName}
         onClick={handleOpen}
       >

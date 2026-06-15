@@ -67,12 +67,12 @@ function getSort(value?: string | null): SellerListingSort {
   return "newest";
 }
 
-function getPage(value?: string | null) {
+export function getSellerListingPage(value?: string | null) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
-function getLimit(value?: string | null) {
+export function getSellerListingLimit(value?: string | null) {
   const parsed = Number.parseInt(value ?? "", 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return SELLER_LISTINGS_PAGE_SIZE;
   return Math.min(parsed, 50);
@@ -166,9 +166,9 @@ export async function getSellerListings(
   const sort = getSort(params.sort);
   const sortedItems = [...items].sort((a, b) => compareListings(a, b, sort));
   const total = sortedItems.length;
-  const limit = options?.limit ?? getLimit(params.limit);
+  const limit = options?.limit ?? getSellerListingLimit(params.limit);
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
-  const requestedPage = options?.page ?? getPage(params.page);
+  const requestedPage = options?.page ?? getSellerListingPage(params.page);
   const page = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1;
   const queryLimit = options?.includePagesUpToCurrent ? page * limit : limit;
   const offset = options?.includePagesUpToCurrent ? 0 : (page - 1) * limit;

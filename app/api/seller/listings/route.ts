@@ -1,5 +1,10 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getSellerListings, type SellerListingSearchParams } from "@/lib/seller-listings";
+import {
+  getSellerListingLimit,
+  getSellerListingPage,
+  getSellerListings,
+  type SellerListingSearchParams,
+} from "@/lib/seller-listings";
 
 export const runtime = "nodejs";
 
@@ -26,8 +31,8 @@ export async function GET(request: Request) {
     };
 
     const result = await getSellerListings(currentUser.id, params, {
-      page: Number.parseInt(params.page ?? "1", 10) || 1,
-      limit: Number.parseInt(params.limit ?? "10", 10) || 10,
+      page: getSellerListingPage(params.page),
+      limit: getSellerListingLimit(params.limit),
     });
 
     return Response.json({ items: result.items, pagination: result.pagination }, { status: 200 });

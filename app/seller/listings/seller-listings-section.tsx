@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Eye, ExternalLink, Loader2, MessageSquareMore } from "lucide-react";
 import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
@@ -263,6 +263,7 @@ export function SellerListingsSection({
   initialPagination,
 }: SellerListingsSectionProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [items, setItems] = useState(initialItems);
   const [pagination, setPagination] = useState(initialPagination);
@@ -301,7 +302,7 @@ export function SellerListingsSection({
         return [...current, ...appended];
       });
       setPagination(data.pagination);
-      window.history.replaceState(null, "", `${pathname}?${nextParams.toString()}`);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to load more listings.");
     } finally {
