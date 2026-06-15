@@ -26,7 +26,7 @@ export function FeatureListingButton({
 
   const buttonClassName = [
     "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
-    isFeatured || hasPendingRequest
+    isFeatured
       ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
       : "bg-amber-500 text-white hover:bg-amber-600",
     className ?? "",
@@ -78,21 +78,22 @@ export function FeatureListingButton({
     });
   };
 
+  // When there's a pending request, don't show this button — the parent shows Cancel instead
+  if (hasPendingRequest) return null;
+
   return (
     <>
       <button
         type="button"
-        disabled={isPending || hasPendingRequest}
+        disabled={isPending || isFeatured}
         className={buttonClassName}
         onClick={handleOpen}
       >
         {isPending
           ? "Submitting..."
-          : hasPendingRequest
-            ? "Feature Requested"
-            : isFeatured
-              ? "Manage"
-              : "⭐ Feature Listing"}
+          : isFeatured
+            ? "⭐ Featured"
+            : "⭐ Feature Listing"}
       </button>
 
       {successMessage ? (

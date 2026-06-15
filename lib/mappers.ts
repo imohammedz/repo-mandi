@@ -177,6 +177,8 @@ export function dbToVehicle(row: DbVehicle): Vehicle {
     missingYardLocation: row.missingYardLocation,
     inspectionNotes: row.inspectionNotes as string[],
     inquiries: row.inquiries,
+    viewCount: row.viewCount,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : null,
     listingStatus: row.listingStatus as Vehicle["listingStatus"],
   };
 }

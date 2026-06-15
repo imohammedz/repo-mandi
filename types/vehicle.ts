@@ -179,6 +179,8 @@ export type Vehicle = {
   missingYardLocation?: boolean;
   inspectionNotes: string[];
   inquiries: number;
+  viewCount?: number;
+  createdAt?: string | null;
   listingStatus?:
     | "PENDING"
     | "VERIFIED"
