@@ -27,6 +27,7 @@ export function FeatureListingButton({
   const [showModal, setShowModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const isDisabled = isPending || (!menuItem && isFeatured);
 
   const buttonClassName = [
     menuItem
@@ -96,7 +97,7 @@ export function FeatureListingButton({
     <>
       <button
         type="button"
-        disabled={isPending || (!menuItem && isFeatured)}
+        disabled={isDisabled}
         className={buttonClassName}
         onClick={handleOpen}
       >

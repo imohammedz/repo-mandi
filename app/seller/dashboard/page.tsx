@@ -109,7 +109,6 @@ export default async function SellerDashboardPage({
               fill
               sizes="(max-width: 1024px) 100vw, 320px"
               className="object-cover"
-              priority
             />
             <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-white/90 px-4 py-3 shadow-sm backdrop-blur">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
