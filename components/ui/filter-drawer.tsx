@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
+import { formatEnumLabel } from "@/lib/formatting";
 
 type FilterField = {
   key: string;
@@ -10,6 +11,12 @@ type FilterField = {
   options?: Array<{ label: string; value: string }>;
   type?: "text" | "number";
 };
+
+const buildOptions = (values: readonly string[]) =>
+  values.map((value) => ({
+    value,
+    label: formatEnumLabel(value) || value,
+  }));
 
 const FILTER_FIELDS: FilterField[] = [
   {
@@ -52,6 +59,27 @@ const FILTER_FIELDS: FilterField[] = [
   { key: "model", label: "Model", type: "text" },
   { key: "location", label: "Location / Yard", type: "text" },
   {
+    key: "tyreInspectionReport",
+    label: "Tyre Inspection Report",
+    options: buildOptions(["AVAILABLE", "NOT_AVAILABLE", "UNKNOWN"]),
+  },
+  { key: "totalTyres", label: "Tyre Count", type: "number" },
+  {
+    key: "tyreMountStatus",
+    label: "Tyre Mount Status",
+    options: buildOptions(["ON_DISC", "WITH_TYRES", "WITHOUT_DISC_AND_TYRES", "PARTIAL", "UNKNOWN"]),
+  },
+  {
+    key: "tyreCondition",
+    label: "Tyre Condition",
+    options: buildOptions(["NEW", "GOOD", "FAIR", "AROUND_50", "POOR", "MIXED", "UNKNOWN"]),
+  },
+  {
+    key: "tyresIncluded",
+    label: "Tyres Included",
+    options: buildOptions(["YES", "NO", "UNKNOWN"]),
+  },
+  {
     key: "runningCondition",
     label: "Running Condition",
     options: [
@@ -78,6 +106,11 @@ const CHIP_LABELS: Record<string, string> = {
   brand: "Brand",
   model: "Model",
   location: "Location",
+  tyreInspectionReport: "Tyre Report",
+  totalTyres: "Tyres",
+  tyreMountStatus: "Tyre Mount",
+  tyreCondition: "Tyre Condition",
+  tyresIncluded: "Tyres Included",
   runningCondition: "Running",
   repoStatus: "Repo",
   sellerRole: "Seller Role",

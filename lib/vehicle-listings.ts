@@ -8,6 +8,112 @@ export const DEFAULT_VEHICLE_LISTING_PAGE = 1;
 export const DEFAULT_VEHICLE_LISTING_LIMIT = 10;
 const MAX_VEHICLE_LISTING_LIMIT = 50;
 
+const TYRE_KEYWORD_PATTERN = /\b(tyre|tyres|tire|tires|wheel|wheels|wheeler|wheelers)\b/i;
+const TYRE_CONTEXT_PATTERN = /\b(TYRE|TYRES|TIRE|TIRES|WHEEL|WHEELS|WHEELER|WHEELERS|MOUNT|STATUS|CONDITION|INCLUDED|INSPECTION|REPORT)\b/g;
+
+const TYRE_MOUNT_STATUS_ALIASES = [
+  { value: "ON_DISC", aliases: ["ON_DISC", "ON DISC", "ONDISC", "DISC", "DISC TYRE", "DISC TYRES"] },
+  { value: "WITH_TYRES", aliases: ["WITH_TYRES", "WITH TYRE", "WITH TYRES", "TYRE FITTED", "TYRES FITTED"] },
+  {
+    value: "WITHOUT_DISC_AND_TYRES",
+    aliases: [
+      "WITHOUT_DISC_AND_TYRES",
+      "WITHOUT DISC AND TYRES",
+      "WITHOUT TYRES",
+      "WITHOUT TYRE",
+      "NO TYRES",
+      "NO TYRE",
+      "NO DISC",
+      "NO DISC AND TYRES",
+    ],
+  },
+  { value: "PARTIAL", aliases: ["PARTIAL", "PARTIAL TYRE", "PARTIAL TYRES", "SOME TYRES", "SOME TYRE"] },
+] as const;
+
+const TYRE_CONDITION_ALIASES = [
+  { value: "NEW", aliases: ["NEW", "BRAND NEW"] },
+  { value: "GOOD", aliases: ["GOOD"] },
+  { value: "FAIR", aliases: ["FAIR"] },
+  { value: "AROUND_50", aliases: ["AROUND_50", "AROUND 50", "50", "50%", "AROUND 50 PERCENT"] },
+  { value: "POOR", aliases: ["POOR", "BAD"] },
+  { value: "MIXED", aliases: ["MIXED", "MIX"] },
+  { value: "UNKNOWN", aliases: ["UNKNOWN"] },
+] as const;
+
+const TYRES_INCLUDED_ALIASES = [
+  { value: "YES", aliases: ["YES", "INCLUDED", "WITH TYRES", "TYRES INCLUDED", "TYRE INCLUDED"] },
+  { value: "NO", aliases: ["NO", "NOT INCLUDED", "WITHOUT TYRES", "WITHOUT TYRE", "NO TYRES", "NO TYRE"] },
+  { value: "UNKNOWN", aliases: ["UNKNOWN"] },
+] as const;
+
+const DETACHABLE_TYPE_ALIASES = [
+  { value: "PRIME_MOVER", aliases: ["PRIME_MOVER", "PRIME MOVER", "PRIMEMOVER"] },
+  { value: "TRAILER", aliases: ["TRAILER", "TRAILERS"] },
+] as const;
+
+const ASSET_STRUCTURE_ALIASES = [
+  { value: "STANDALONE", aliases: ["STANDALONE", "STAND ALONE"] },
+  { value: "DETACHABLE", aliases: ["DETACHABLE"] },
+  { value: "EQUIPMENT", aliases: ["EQUIPMENT"] },
+] as const;
+
+const normalizeSearchKeyword = (value: string) =>
+  value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normalizeTyreSearchKeyword = (value: string) =>
+  normalizeSearchKeyword(value)
+    .replace(TYRE_CONTEXT_PATTERN, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+function getExactAliasMatches<T extends string>(
+  query: string,
+  options: readonly { value: T; aliases: readonly string[] }[]
+) {
+  const normalizedQuery = normalizeSearchKeyword(query);
+  if (!normalizedQuery) return [] as T[];
+
+  return options
+    .filter(({ aliases }) => aliases.some((alias) => normalizeSearchKeyword(alias) === normalizedQuery))
+    .map(({ value }) => value);
+}
+
+function getTyreAliasMatches<T extends string>(
+  query: string,
+  options: readonly { value: T; aliases: readonly string[] }[]
+) {
+  const normalizedCandidates = [normalizeSearchKeyword(query), normalizeTyreSearchKeyword(query)].filter(Boolean);
+  if (!normalizedCandidates.length) return [] as T[];
+
+  return options
+    .filter(({ aliases }) =>
+      aliases.some((alias) => {
+        const normalizedAlias = normalizeSearchKeyword(alias);
+        return normalizedCandidates.includes(normalizedAlias);
+      })
+    )
+    .map(({ value }) => value);
+}
+
+function getTyreCountSearchValue(query: string) {
+  if (!TYRE_KEYWORD_PATTERN.test(query)) return null;
+  const match = query.match(/\d+/);
+  if (!match) return null;
+
+  const parsed = Number.parseInt(match[0], 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function getIntegerFilterValue(value?: string | null) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export type VehicleListingSearchParams = {
   q?: string;
   type?: string;
@@ -27,6 +133,11 @@ export type VehicleListingSearchParams = {
   repoStatus?: string;
   sellerRole?: string;
   financeCompany?: string;
+  tyreInspectionReport?: string;
+  totalTyres?: string;
+  tyreMountStatus?: string;
+  tyreCondition?: string;
+  tyresIncluded?: string;
   minPrice?: string;
   maxPrice?: string;
   verifiedOnly?: string;
@@ -152,19 +263,58 @@ export function buildPublicVehicleConditions(params: VehicleListingSearchParams)
   ];
 
   if (params.q) {
+    const keywordConditions: SQL[] = [
+      ilike(vehicles.title, `%${params.q}%`),
+      ilike(vehicles.brand, `%${params.q}%`),
+      ilike(vehicles.model, `%${params.q}%`),
+      ilike(vehicles.assetCategory, `%${params.q}%`),
+      ilike(vehicles.vehicleSubType, `%${params.q}%`),
+      ilike(vehicles.bodyType, `%${params.q}%`),
+      ilike(vehicles.bodyApplicationType, `%${params.q}%`),
+      ilike(vehicles.trailerType, `%${params.q}%`),
+      ilike(vehicles.vehicleOrYardLocation, `%${params.q}%`),
+      ilike(vehicles.yardLocation, `%${params.q}%`),
+      ilike(vehicles.city, `%${params.q}%`),
+      ilike(vehicles.state, `%${params.q}%`),
+      ilike(vehicles.vehicleRegistrationNumber, `%${params.q}%`),
+      ilike(vehicles.repoStatus, `%${params.q}%`),
+      ilike(vehicles.sellerRole, `%${params.q}%`),
+      ilike(vehicles.financeCompany, `%${params.q}%`),
+    ];
+
+    const tyreCountSearchValue = getTyreCountSearchValue(params.q);
+    if (tyreCountSearchValue !== null) {
+      keywordConditions.push(
+        or(
+          eq(vehicles.totalTyres, tyreCountSearchValue),
+          eq(vehicles.tyreCount, tyreCountSearchValue),
+          eq(vehicles.currentTyreCount, tyreCountSearchValue)
+        )!
+      );
+    }
+
+    for (const detachableType of getExactAliasMatches(params.q, DETACHABLE_TYPE_ALIASES)) {
+      keywordConditions.push(eq(vehicles.detachableType, detachableType as typeof vehicles.detachableType._.data));
+    }
+
+    for (const assetStructure of getExactAliasMatches(params.q, ASSET_STRUCTURE_ALIASES)) {
+      keywordConditions.push(eq(vehicles.assetStructure, assetStructure as typeof vehicles.assetStructure._.data));
+    }
+
+    for (const tyreMountStatus of getTyreAliasMatches(params.q, TYRE_MOUNT_STATUS_ALIASES)) {
+      keywordConditions.push(eq(vehicles.tyreMountStatus, tyreMountStatus as typeof vehicles.tyreMountStatus._.data));
+    }
+
+    for (const tyreCondition of getTyreAliasMatches(params.q, TYRE_CONDITION_ALIASES)) {
+      keywordConditions.push(eq(vehicles.tyreCondition, tyreCondition as typeof vehicles.tyreCondition._.data));
+    }
+
+    for (const tyresIncluded of getTyreAliasMatches(params.q, TYRES_INCLUDED_ALIASES)) {
+      keywordConditions.push(eq(vehicles.tyresIncluded, tyresIncluded as typeof vehicles.tyresIncluded._.data));
+    }
+
     conditions.push(
-      or(
-        ilike(vehicles.title, `%${params.q}%`),
-        ilike(vehicles.brand, `%${params.q}%`),
-        ilike(vehicles.model, `%${params.q}%`),
-        ilike(vehicles.assetCategory, `%${params.q}%`),
-        ilike(vehicles.bodyApplicationType, `%${params.q}%`),
-        ilike(vehicles.vehicleOrYardLocation, `%${params.q}%`),
-        ilike(vehicles.yardLocation, `%${params.q}%`),
-        ilike(vehicles.city, `%${params.q}%`),
-        ilike(vehicles.state, `%${params.q}%`),
-        ilike(vehicles.vehicleRegistrationNumber, `%${params.q}%`)
-      )!
+      or(...keywordConditions)!
     );
   }
 
@@ -194,6 +344,22 @@ export function buildPublicVehicleConditions(params: VehicleListingSearchParams)
   if (params.repoStatus) conditions.push(ilike(vehicles.repoStatus, `%${params.repoStatus}%`));
   if (params.sellerRole) conditions.push(ilike(vehicles.sellerRole, `%${params.sellerRole}%`));
   if (params.financeCompany) conditions.push(ilike(vehicles.financeCompany, `%${params.financeCompany}%`));
+  if (params.tyreInspectionReport) {
+    conditions.push(eq(vehicles.tyreInspectionReport, params.tyreInspectionReport as typeof vehicles.tyreInspectionReport._.data));
+  }
+  const totalTyres = getIntegerFilterValue(params.totalTyres);
+  if (totalTyres !== null) {
+    conditions.push(
+      or(
+        eq(vehicles.totalTyres, totalTyres),
+        eq(vehicles.tyreCount, totalTyres),
+        eq(vehicles.currentTyreCount, totalTyres)
+      )!
+    );
+  }
+  if (params.tyreMountStatus) conditions.push(eq(vehicles.tyreMountStatus, params.tyreMountStatus as typeof vehicles.tyreMountStatus._.data));
+  if (params.tyreCondition) conditions.push(eq(vehicles.tyreCondition, params.tyreCondition as typeof vehicles.tyreCondition._.data));
+  if (params.tyresIncluded) conditions.push(eq(vehicles.tyresIncluded, params.tyresIncluded as typeof vehicles.tyresIncluded._.data));
   if (params.minPrice) conditions.push(gte(vehicles.price, params.minPrice));
   if (params.maxPrice) conditions.push(lte(vehicles.price, params.maxPrice));
   if (params.verifiedOnly === "1") conditions.push(eq(vehicles.sellerVerified, true));
