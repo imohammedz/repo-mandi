@@ -1,81 +1,57 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, desc, eq, isNull } from "drizzle-orm";
-import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { vehicles } from "@/lib/schema";
-import { dbToVehicle } from "@/lib/mappers";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ShareListingButton } from "@/components/ui/share-listing-button";
-import { formatCurrency } from "@/data/vehicles";
-import { MarkSoldButton } from "./mark-sold-button";
-import { DeleteListingButton } from "./delete-listing-button";
+import { getSellerListings, type SellerListingSearchParams } from "@/lib/seller-listings";
+import { SellerListingsSection } from "./seller-listings-section";
+import { SellerListingsSort } from "./seller-listings-sort";
 
 export const dynamic = "force-dynamic";
 
-export default async function SellerListingsPage() {
+function formatCount(value: number) {
+  return new Intl.NumberFormat("en-IN").format(value);
+}
+
+export default async function SellerListingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SellerListingSearchParams>;
+}) {
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect("/auth/login");
   if (!["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) redirect("/sell");
   if (!currentUser.isProfileComplete) redirect("/onboarding");
 
-  const rows = await db
-    .select()
-    .from(vehicles)
-    .where(and(eq(vehicles.sellerId, currentUser.id), isNull(vehicles.deletedAt)))
-    .orderBy(desc(vehicles.createdAt));
-  const listingRows = rows.map(dbToVehicle);
+  const params = await searchParams;
+  const { items, pagination, sort } = await getSellerListings(currentUser.id, params, {
+    includePagesUpToCurrent: true,
+  });
 
   return (
     <main className="space-y-4 px-4 pb-8 pt-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">My Listings</h1>
-        <Link href="/seller/listings/new" className="inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">My Listings</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Track listing performance, feature status, and buyer activity in one place.
+          </p>
+        </div>
+        <Link
+          href="/seller/listings/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-semibold text-white"
+        >
           Add Vehicle
         </Link>
       </header>
 
-      <section className="space-y-3">
-        {listingRows.length === 0 ? (
-          <EmptyState title="No listings found." description="Add your first vehicle listing to get started." />
-        ) : null}
-        {listingRows.map((item) => (
-          <article key={item.id} className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">{item.title}</h3>
-                <p className="text-xs text-slate-500">{formatCurrency(item.price)} • {item.city}, {item.state}</p>
-              </div>
-              {item.listingStatus ? <StatusBadge status={item.listingStatus} /> : null}
-            </div>
-            {item.rejectionReason ? (
-              <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                Rejection reason: {item.rejectionReason}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              <ShareListingButton
-                listingId={item.id}
-                title={item.title}
-                price={item.expectedPrice ?? item.price}
-                location={[item.city, item.state].filter(Boolean).join(", ")}
-                label="Share Listing"
-              />
-              <Link href={`/vehicles/${item.id}`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
-                View
-              </Link>
-              <Link href={`/seller/listings/${item.id}/edit`} className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
-                Edit
-              </Link>
-              <DeleteListingButton vehicleId={item.id} />
-              {(item.listingStatus === "VERIFIED" || item.listingStatus === "PENDING") && (
-                <MarkSoldButton vehicleId={item.id} />
-              )}
-            </div>
-          </article>
-        ))}
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-500">
+          <span className="font-semibold text-slate-900">{formatCount(pagination.total)}</span>{" "}
+          vehicle{pagination.total === 1 ? "" : "s"} in your inventory
+        </p>
+        <SellerListingsSort value={sort} />
       </section>
+
+      <SellerListingsSection initialItems={items} initialPagination={pagination} />
     </main>
   );
 }

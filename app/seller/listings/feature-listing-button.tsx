@@ -9,6 +9,8 @@ interface FeatureListingButtonProps {
   hasPendingRequest?: boolean;
   featuredUntil?: string | null;
   className?: string;
+  menuItem?: boolean;
+  onAction?: () => void;
 }
 
 export function FeatureListingButton({
@@ -17,6 +19,8 @@ export function FeatureListingButton({
   hasPendingRequest = false,
   featuredUntil,
   className,
+  menuItem = false,
+  onAction,
 }: FeatureListingButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -25,16 +29,23 @@ export function FeatureListingButton({
   const [errorMessage, setErrorMessage] = useState("");
 
   const buttonClassName = [
-    "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
-    isFeatured
-      ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-      : "bg-amber-500 text-white hover:bg-amber-600",
+    menuItem
+      ? "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm disabled:opacity-60"
+      : "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
+    menuItem
+      ? isFeatured
+        ? "bg-amber-50 text-amber-800 hover:bg-amber-100"
+        : "text-slate-700 hover:bg-slate-50"
+      : isFeatured
+        ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+        : "bg-amber-500 text-white hover:bg-amber-600",
     className ?? "",
   ]
     .filter(Boolean)
     .join(" ");
 
   const handleOpen = () => {
+    onAction?.();
     if (isFeatured) {
       window.alert(
         featuredUntil
@@ -85,7 +96,7 @@ export function FeatureListingButton({
     <>
       <button
         type="button"
-        disabled={isPending || isFeatured}
+        disabled={isPending}
         className={buttonClassName}
         onClick={handleOpen}
       >
@@ -96,7 +107,7 @@ export function FeatureListingButton({
             : "⭐ Feature Listing"}
       </button>
 
-      {successMessage ? (
+      {!menuItem && successMessage ? (
         <p className="mt-1 w-full text-xs text-emerald-600">{successMessage}</p>
       ) : null}
 
