@@ -8,8 +8,6 @@ import { dbToVehicle } from "@/lib/mappers";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { SupportContactCard } from "@/components/ui/support-contact-card";
-import { SUPPORT_SUBJECTS } from "@/lib/config/site";
 import { FeatureListingButton } from "../listings/feature-listing-button";
 import { ListingActionsMenu } from "../listings/listing-actions-menu";
 
@@ -154,13 +152,6 @@ export default async function SellerDashboardPage() {
           );
         })}
       </section>
-
-      <SupportContactCard
-        title="Need help?"
-        description="Listing verification • RC verification • Seller verification • Inspection requests"
-        subject={SUPPORT_SUBJECTS.sellerVerification}
-        ctaLabel="Email Support"
-      />
     </main>
   );
 }
