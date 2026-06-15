@@ -21,7 +21,10 @@ export function CancelFeatureRequestButton({ listingId, className }: CancelFeatu
         const response = await fetch(`/api/seller/vehicles/${listingId}/cancel-feature-request`, {
           method: "POST",
         });
-        const body = (await response.json().catch(() => null)) as { message?: string } | null;
+        const body = (await response.json().catch((error: unknown) => {
+          console.error("Failed to parse cancel feature request response", error);
+          return null;
+        })) as { message?: string } | null;
         if (!response.ok) {
           setErrorMessage(body?.message?.trim() || "Unable to cancel feature request. Please try again.");
           return;

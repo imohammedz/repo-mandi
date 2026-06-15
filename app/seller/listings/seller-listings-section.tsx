@@ -124,18 +124,23 @@ export function SellerListingsSection({ listings }: SellerListingsSectionProps) 
         const isFeatured = featureStatus === "FEATURED";
         const hasPendingRequest = featureStatus === "PENDING";
         const canMarkSold = vehicle.listingStatus === "VERIFIED" || vehicle.listingStatus === "PENDING";
-        const previewImage =
-          [
-            vehicle.image,
-            vehicle.frontPhoto,
-            vehicle.leftSidePhoto,
-            vehicle.rightSidePhoto,
-            vehicle.backPhoto,
-            vehicle.sidePhoto,
-            ...(vehicle.gallery ?? []),
-          ]
-            .map((src) => resolveImageSrcForRender(src))
-            .find((src) => src !== VEHICLE_IMAGE_PLACEHOLDER_SRC) ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
+        const imageCandidates = [
+          vehicle.image,
+          vehicle.frontPhoto,
+          vehicle.leftSidePhoto,
+          vehicle.rightSidePhoto,
+          vehicle.backPhoto,
+          vehicle.sidePhoto,
+          ...(vehicle.gallery ?? []),
+        ];
+        let previewImage = VEHICLE_IMAGE_PLACEHOLDER_SRC;
+        for (const candidate of imageCandidates) {
+          const resolvedImage = resolveImageSrcForRender(candidate);
+          if (resolvedImage !== VEHICLE_IMAGE_PLACEHOLDER_SRC) {
+            previewImage = resolvedImage;
+            break;
+          }
+        }
 
         return (
           <article
@@ -181,8 +186,12 @@ export function SellerListingsSection({ listings }: SellerListingsSectionProps) 
 
                 {/* Quick insights */}
                 <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                  <span>👁 {vehicle.viewCount ?? 0} Views</span>
-                  <span>📩 {vehicle.inquiries} Inquiries</span>
+                  <span>
+                    <span aria-hidden="true">👁</span> {vehicle.viewCount ?? 0} Views
+                  </span>
+                  <span>
+                    <span aria-hidden="true">📩</span> {vehicle.inquiries} Inquiries
+                  </span>
                 </div>
               </div>
             </div>
