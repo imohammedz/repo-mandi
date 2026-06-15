@@ -1,10 +1,11 @@
 "use client";
 
-import { Eye, Heart, Calendar, Clock } from "lucide-react";
+import { Eye, Heart, Calendar, Clock, Share2 } from "lucide-react";
 
 interface ListingActivityCardProps {
   viewCount: number;
   saveCount: number;
+  shareCount: number;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
 }
@@ -42,41 +43,47 @@ function formatCount(n: number): string {
 export function ListingActivityCard({
   viewCount,
   saveCount,
+  shareCount,
   createdAt,
   updatedAt,
 }: ListingActivityCardProps) {
   const items = [
     {
       id: "views",
-      icon: <Eye className="h-3.5 w-3.5 shrink-0 text-blue-500" />,
+      icon: <Eye className="h-3 w-3 shrink-0 text-blue-500" />,
       label: formatCount(viewCount),
     },
     {
       id: "saves",
-      icon: <Heart className="h-3.5 w-3.5 shrink-0 text-rose-500" />,
+      icon: <Heart className="h-3 w-3 shrink-0 text-rose-500" />,
       label: formatCount(saveCount),
     },
     {
+      id: "shares",
+      icon: <Share2 className="h-3 w-3 shrink-0 text-violet-500" />,
+      label: formatCount(shareCount),
+    },
+    {
       id: "listed",
-      icon: <Calendar className="h-3.5 w-3.5 shrink-0 text-emerald-600" />,
+      icon: <Calendar className="h-3 w-3 shrink-0 text-emerald-600" />,
       label: `Listed ${formatListedDate(createdAt)}`,
     },
     {
       id: "updated",
-      icon: <Clock className="h-3.5 w-3.5 shrink-0 text-orange-500" />,
+      icon: <Clock className="h-3 w-3 shrink-0 text-orange-500" />,
       label: `Updated ${formatUpdatedAgo(updatedAt)}`,
     },
   ];
 
   return (
-    <div className="flex items-center gap-4 overflow-x-auto rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <div className="flex items-center gap-3 overflow-x-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
       {items.map((item) => (
         <div
           key={item.id}
-          className="flex shrink-0 items-center gap-1.5"
+          className="flex shrink-0 items-center gap-1"
         >
           {item.icon}
-          <span className="whitespace-nowrap text-xs font-medium text-slate-600">
+          <span className="whitespace-nowrap text-[11px] font-medium text-slate-600">
             {item.label}
           </span>
         </div>

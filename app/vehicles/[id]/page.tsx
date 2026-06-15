@@ -616,6 +616,7 @@ export default async function VehicleDetailPage({
       <ListingActivityCard
         viewCount={row.viewCount}
         saveCount={saveCount}
+        shareCount={row.shareCount}
         createdAt={row.createdAt.toISOString()}
         updatedAt={row.updatedAt.toISOString()}
       />
