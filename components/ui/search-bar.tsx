@@ -28,8 +28,8 @@ export function SearchBar({
     else next.delete("q");
     next.delete("page");
     const destinationPath = isMarketplacePage ? pathname : "/vehicles";
-    const query = next.toString();
-    router.push(query ? `${destinationPath}?${query}` : destinationPath);
+    const queryString = next.toString();
+    router.push(queryString ? `${destinationPath}?${queryString}` : destinationPath);
   };
 
   return (
