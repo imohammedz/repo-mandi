@@ -107,7 +107,9 @@ export function ShareListingButton({
   const trackShare = () => {
     onShareClick?.();
     if (normalizedListingId) {
-      fetch(`/api/vehicles/${normalizedListingId}/share`, { method: "POST" }).then(onShareComplete).catch(() => {});
+      fetch(`/api/vehicles/${normalizedListingId}/share`, { method: "POST" }).then(onShareComplete).catch((err) => {
+        console.error("Failed to track share:", err);
+      });
     }
   };
 
