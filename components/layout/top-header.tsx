@@ -23,14 +23,12 @@ export function TopHeader() {
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
             <Shield className="h-3 w-3" /> Trusted
           </span>
-          <button
-            type="button"
-            aria-label="Notifications (unread)"
-            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
+          <span
+            aria-hidden="true"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
           >
             <Bell className="h-4 w-4" aria-hidden="true" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
-          </button>
+          </span>
         </div>
       </div>
     </header>
