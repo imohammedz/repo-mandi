@@ -19,12 +19,17 @@ export function SearchBar({
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const next = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+    const isMarketplacePage = pathname === "/vehicles";
+    const next = new URLSearchParams(
+      typeof window === "undefined" || !isMarketplacePage ? "" : window.location.search
+    );
     const normalized = query.trim();
     if (normalized) next.set("q", normalized);
     else next.delete("q");
     next.delete("page");
-    router.push(`${pathname}?${next.toString()}`);
+    const destinationPath = isMarketplacePage ? pathname : "/vehicles";
+    const query = next.toString();
+    router.push(query ? `${destinationPath}?${query}` : destinationPath);
   };
 
   return (
