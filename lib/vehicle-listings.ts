@@ -8,8 +8,8 @@ export const DEFAULT_VEHICLE_LISTING_PAGE = 1;
 export const DEFAULT_VEHICLE_LISTING_LIMIT = 10;
 const MAX_VEHICLE_LISTING_LIMIT = 50;
 
-const TYRE_KEYWORD_PATTERN = /\b(tyre|tyres|tire|tires|wheel|wheels|wheeler|wheelers)\b/i;
-const TYRE_CONTEXT_PATTERN = /\b(TYRE|TYRES|TIRE|TIRES|WHEEL|WHEELS|WHEELER|WHEELERS|MOUNT|STATUS|CONDITION|INCLUDED|INSPECTION|REPORT)\b/g;
+const TYRE_COUNT_PATTERN =
+  /\b(?:(\d+)\s*(?:tyre|tyres|tire|tires|wheel|wheels)|(?:tyre|tyres|tire|tires|wheel|wheels)\s*(\d+))\b/i;
 
 const TYRE_MOUNT_STATUS_ALIASES = [
   { value: "ON_DISC", aliases: ["ON_DISC", "ON DISC", "ONDISC", "DISC", "DISC TYRE", "DISC TYRES"] },
@@ -57,17 +57,15 @@ const ASSET_STRUCTURE_ALIASES = [
   { value: "EQUIPMENT", aliases: ["EQUIPMENT"] },
 ] as const;
 
+const TYRE_MOUNT_CONTEXT_PHRASES = ["TYRE MOUNT STATUS", "TYRE MOUNT", "MOUNT STATUS", "MOUNT"] as const;
+const TYRE_CONDITION_CONTEXT_PHRASES = ["TYRE CONDITION", "CONDITION"] as const;
+const TYRES_INCLUDED_CONTEXT_PHRASES = ["TYRES INCLUDED", "TYRE INCLUDED", "INCLUDED", "TYRES", "TYRE"] as const;
+
 const normalizeSearchKeyword = (value: string) =>
   value
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const normalizeTyreSearchKeyword = (value: string) =>
-  normalizeSearchKeyword(value)
-    .replace(TYRE_CONTEXT_PATTERN, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -83,11 +81,26 @@ function getExactAliasMatches<T extends string>(
     .map(({ value }) => value);
 }
 
+function stripContextPhrase(value: string, phrases: readonly string[]) {
+  let next = value;
+
+  for (const phrase of phrases) {
+    const normalizedPhrase = normalizeSearchKeyword(phrase);
+    if (next.startsWith(`${normalizedPhrase} `)) next = next.slice(normalizedPhrase.length + 1).trim();
+    if (next.endsWith(` ${normalizedPhrase}`)) next = next.slice(0, -1 * (normalizedPhrase.length + 1)).trim();
+    if (next === normalizedPhrase) next = "";
+  }
+
+  return next;
+}
+
 function getTyreAliasMatches<T extends string>(
   query: string,
-  options: readonly { value: T; aliases: readonly string[] }[]
+  options: readonly { value: T; aliases: readonly string[] }[],
+  contextPhrases: readonly string[]
 ) {
-  const normalizedCandidates = [normalizeSearchKeyword(query), normalizeTyreSearchKeyword(query)].filter(Boolean);
+  const normalizedQuery = normalizeSearchKeyword(query);
+  const normalizedCandidates = [normalizedQuery, stripContextPhrase(normalizedQuery, contextPhrases)].filter(Boolean);
   if (!normalizedCandidates.length) return [] as T[];
 
   return options
@@ -101,11 +114,11 @@ function getTyreAliasMatches<T extends string>(
 }
 
 function getTyreCountSearchValue(query: string) {
-  if (!TYRE_KEYWORD_PATTERN.test(query)) return null;
-  const match = query.match(/\d+/);
-  if (!match) return null;
+  const match = query.match(TYRE_COUNT_PATTERN);
+  const countValue = match?.[1] ?? match?.[2];
+  if (!countValue) return null;
 
-  const parsed = Number.parseInt(match[0], 10);
+  const parsed = Number.parseInt(countValue, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
@@ -301,15 +314,15 @@ export function buildPublicVehicleConditions(params: VehicleListingSearchParams)
       keywordConditions.push(eq(vehicles.assetStructure, assetStructure as typeof vehicles.assetStructure._.data));
     }
 
-    for (const tyreMountStatus of getTyreAliasMatches(params.q, TYRE_MOUNT_STATUS_ALIASES)) {
+    for (const tyreMountStatus of getTyreAliasMatches(params.q, TYRE_MOUNT_STATUS_ALIASES, TYRE_MOUNT_CONTEXT_PHRASES)) {
       keywordConditions.push(eq(vehicles.tyreMountStatus, tyreMountStatus as typeof vehicles.tyreMountStatus._.data));
     }
 
-    for (const tyreCondition of getTyreAliasMatches(params.q, TYRE_CONDITION_ALIASES)) {
+    for (const tyreCondition of getTyreAliasMatches(params.q, TYRE_CONDITION_ALIASES, TYRE_CONDITION_CONTEXT_PHRASES)) {
       keywordConditions.push(eq(vehicles.tyreCondition, tyreCondition as typeof vehicles.tyreCondition._.data));
     }
 
-    for (const tyresIncluded of getTyreAliasMatches(params.q, TYRES_INCLUDED_ALIASES)) {
+    for (const tyresIncluded of getTyreAliasMatches(params.q, TYRES_INCLUDED_ALIASES, TYRES_INCLUDED_CONTEXT_PHRASES)) {
       keywordConditions.push(eq(vehicles.tyresIncluded, tyresIncluded as typeof vehicles.tyresIncluded._.data));
     }
 
