@@ -21,6 +21,7 @@ type Props = {
   variant?: "icon" | "button";
   label?: string;
   onShareClick?: () => void;
+  onShareComplete?: () => void;
 };
 
 const MOBILE_SHARE_MEDIA_QUERY = "(max-width: 768px)";
@@ -64,6 +65,7 @@ export function ShareListingButton({
   variant = "button",
   label = "Share",
   onShareClick,
+  onShareComplete,
 }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -102,9 +104,14 @@ export function ShareListingButton({
     []
   );
 
-  const openFallback = () => {
-    // TODO: Persist shareCount updates through onShareClick into backend analytics once shareCount is added to schema.
+  const trackShare = () => {
     onShareClick?.();
+    if (normalizedListingId) {
+      fetch(`/api/vehicles/${normalizedListingId}/share`, { method: "POST" }).then(onShareComplete).catch(() => {});
+    }
+  };
+
+  const openFallback = () => {
     setIsModalOpen(true);
   };
 
@@ -118,8 +125,8 @@ export function ShareListingButton({
     }
 
     try {
-      onShareClick?.();
       await navigator.share(sharePayload);
+      trackShare();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setIsModalOpen(true);
@@ -129,7 +136,7 @@ export function ShareListingButton({
   const handleCopyLink = async () => {
     try {
       await copyText(sharePayload.url);
-      onShareClick?.();
+      trackShare();
       showToast("Link copied successfully");
       setIsModalOpen(false);
     } catch {
@@ -138,7 +145,7 @@ export function ShareListingButton({
   };
 
   const openExternal = (target: "whatsapp" | "telegram" | "email") => {
-    onShareClick?.();
+    trackShare();
     const shareData = { listingId: safeListingId, title: safeTitle, location: safeLocation, price, url: sharePayload.url };
     if (target === "email") {
       window.location.href = buildEmailShareUrl(shareData);
