@@ -46,7 +46,7 @@ const categories: Category[] = [
   {
     id: "container",
     label: "Container",
-    href: "/vehicles?bodyApplicationType=Container+Truck",
+    href: "/vehicles?assetStructure=STANDALONE&bodyApplicationType=Container+Body",
   },
   {
     id: "buses",
