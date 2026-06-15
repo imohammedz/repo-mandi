@@ -22,7 +22,11 @@ export function CancelFeatureRequestButton({ listingId, className }: CancelFeatu
           method: "POST",
         });
         const body = (await response.json().catch((error: unknown) => {
-          console.error("Failed to parse cancel feature request response", error);
+          console.error("Failed to parse cancel feature request response", {
+            error,
+            listingId,
+            status: response.status,
+          });
           return null;
         })) as { message?: string } | null;
         if (!response.ok) {
