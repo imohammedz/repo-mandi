@@ -46,6 +46,7 @@ export function CancelFeatureRequestButton({ listingId }: CancelFeatureRequestBu
       {showConfirm ? (
         <div className="fixed inset-0 z-50">
           <button
+            type="button"
             aria-label="Close cancel confirmation"
             onClick={() => {
               if (isPending) return;

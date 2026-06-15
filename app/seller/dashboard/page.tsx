@@ -94,7 +94,7 @@ export default async function SellerDashboardPage() {
         </Link>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <section className="grid grid-cols-3 gap-3 sm:grid-cols-5">
         {stats.map((item) => (
           <StatsCard key={item.label} label={item.label} value={item.value} />
         ))}

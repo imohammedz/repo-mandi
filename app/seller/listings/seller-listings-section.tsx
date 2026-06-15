@@ -36,7 +36,10 @@ function SellerStatusBadge({ status }: { status: Vehicle["listingStatus"] }) {
   const entry = map[status];
   if (!entry) return null;
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${entry.className}`}>
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${entry.className}`}
+      aria-label={`Listing status: ${entry.label}`}
+    >
       {entry.label}
     </span>
   );
@@ -53,19 +56,25 @@ function FeatureStatusRow({
 }) {
   if (featureStatus === "FEATURED") {
     const label = featuredUntil
-      ? `⭐ Featured until ${new Date(featuredUntil).toLocaleDateString("en-GB")}`
-      : "⭐ Featured";
+      ? `Featured until ${new Date(featuredUntil).toLocaleDateString("en-GB")}`
+      : "Featured";
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-        {label}
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
+        aria-label={`Feature status: ${label}`}
+      >
+        <span aria-hidden="true">⭐</span> {label}
       </span>
     );
   }
   if (featureStatus === "PENDING") {
     return (
       <div className="flex items-center gap-3">
-        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700">
-          ⏳ Feature Request Pending
+        <span
+          className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700"
+          aria-label="Feature status: Feature Request Pending"
+        >
+          <span aria-hidden="true">⏳</span> Feature Request Pending
         </span>
         <CancelFeatureRequestButton listingId={vehicleId} />
       </div>
@@ -73,8 +82,11 @@ function FeatureStatusRow({
   }
   if (featureStatus === "REJECTED") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
-        ❌ Feature Request Rejected
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700"
+        aria-label="Feature status: Feature Request Rejected"
+      >
+        <span aria-hidden="true">❌</span> Feature Request Rejected
       </span>
     );
   }
