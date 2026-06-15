@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { formatDisplayLabel } from "@/lib/formatting";
+import ProfileCard from "./profile-card";
 
 export const dynamic = "force-dynamic";
 
@@ -13,26 +13,15 @@ export default async function ProfilePage() {
   return (
     <main className="space-y-4 px-4 pb-8 pt-4">
       <h1 className="text-2xl font-semibold text-slate-900">Profile</h1>
-      <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-        <p className="text-sm text-slate-500">Name</p>
-        <p className="text-base font-semibold text-slate-900">{user.fullName || "Guest User"}</p>
-        <p className="mt-3 text-sm text-slate-500">Mobile</p>
-        <p className="text-base font-semibold text-slate-900">+91 {user.phone}</p>
-        <p className="mt-3 text-sm text-slate-500">Account Type</p>
-        <p className="text-base font-semibold text-slate-900">{formatDisplayLabel(user.accountType)}</p>
-        {user.sellerRole ? (
-          <>
-            <p className="mt-3 text-sm text-slate-500">Seller Role</p>
-            <p className="text-base font-semibold text-slate-900">{formatDisplayLabel(user.sellerRole)}</p>
-          </>
-        ) : null}
-        {user.bankRole ? (
-          <>
-            <p className="mt-3 text-sm text-slate-500">Bank Role</p>
-            <p className="text-base font-semibold text-slate-900">{formatDisplayLabel(user.bankRole)}</p>
-          </>
-        ) : null}
-      </section>
+      <ProfileCard
+        user={{
+          fullName: user.fullName,
+          phone: user.phone,
+          accountType: user.accountType,
+          sellerRole: user.sellerRole ?? null,
+          bankRole: user.bankRole ?? null,
+        }}
+      />
       <div className={`grid gap-2 ${user.accountType === "ADMIN" ? "grid-cols-2" : "grid-cols-1"}`}>
         <Link href="/seller/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white">
           Seller Dashboard
