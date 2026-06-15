@@ -106,7 +106,12 @@ export default async function HomePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-slate-900">Recent Listings</h2>
+            <Link href="/vehicles" className="text-sm font-medium text-slate-700">
+              Load More Listings
+            </Link>
+          </div>
           <div className="w-full max-w-full space-y-2 overflow-x-clip">
             {recentVehicles.length > 0 ? (
               recentVehicles.map((vehicle) => (

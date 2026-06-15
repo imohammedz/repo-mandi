@@ -1,9 +1,14 @@
 import { db } from "@/lib/db";
 import { vehicleMedia, vehicles, platformSettings, sellerVerifiedPhones } from "@/lib/schema";
-import { eq, ilike, and, or, desc, gte, lte, isNull } from "drizzle-orm";
+import { eq, ilike, and, or, desc, gte, lte, isNull, count } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
+import {
+  getPaginatedPublicVehicleListings,
+  getVehicleListingLimit,
+  getVehicleListingPage,
+} from "@/lib/vehicle-listings";
 import {
   ASSET_STRUCTURE_VALUES,
   LEGACY_ASSET_CONFIGURATION_VALUES,
@@ -249,6 +254,8 @@ export async function GET(request: Request) {
   try {
     const currentUser = await getCurrentUser();
     const url = new URL(request.url);
+    const page = getVehicleListingPage(url.searchParams.get("page"));
+    const limit = getVehicleListingLimit(url.searchParams.get("limit"));
     const typeParam = url.searchParams.get("type");
     const state = url.searchParams.get("state") ?? url.searchParams.get("registrationState");
     const query = url.searchParams.get("q");
@@ -264,6 +271,16 @@ export async function GET(request: Request) {
     const verifiedOnly = url.searchParams.get("verifiedOnly") === "1";
     const minPrice = url.searchParams.get("minPrice");
     const maxPrice = url.searchParams.get("maxPrice");
+    const bodyType = url.searchParams.get("bodyType");
+    const bodyApplicationType = url.searchParams.get("bodyApplicationType");
+    const model = url.searchParams.get("model");
+    const location = url.searchParams.get("location");
+    const runningCondition = url.searchParams.get("runningCondition");
+    const repoStatus = url.searchParams.get("repoStatus");
+    const sellerRole = url.searchParams.get("sellerRole");
+    const detachableType = url.searchParams.get("detachableType");
+    const assetCategory = url.searchParams.get("assetCategory");
+    const sort = url.searchParams.get("sort") ?? "newest";
 
     if (typeParam && !VALID_TYPES.includes(typeParam as VehicleType)) {
       return Response.json(
@@ -301,20 +318,45 @@ export async function GET(request: Request) {
     }
 
     const type = typeParam as VehicleType | null;
-    const conditions = [];
-
     const isAdmin = currentUser?.accountType === "ADMIN";
     const shouldApplyPublicGate = !(isAdmin && includeAll) && !mine;
     if (shouldApplyPublicGate) {
-      conditions.push(eq(vehicles.isPublished, true));
-      conditions.push(eq(vehicles.listingStatus, "VERIFIED"));
+      const publicResult = await getPaginatedPublicVehicleListings(
+        {
+          q: query ?? undefined,
+          type: type ?? undefined,
+          listingType: listingType ?? undefined,
+          listingMode: listingMode ?? undefined,
+          assetStructure: assetStructure ?? undefined,
+          detachableType: detachableType ?? undefined,
+          assetCategory: assetCategory ?? undefined,
+          bodyType: bodyType ?? undefined,
+          bodyApplicationType: bodyApplicationType ?? undefined,
+          brand: brand ?? undefined,
+          model: model ?? undefined,
+          location: location ?? undefined,
+          city: city ?? undefined,
+          state: state ?? undefined,
+          runningCondition: runningCondition ?? undefined,
+          repoStatus: repoStatus ?? undefined,
+          sellerRole: sellerRole ?? undefined,
+          financeCompany: financeCompany ?? undefined,
+          minPrice: minPrice ?? undefined,
+          maxPrice: maxPrice ?? undefined,
+          verifiedOnly: verifiedOnly ? "1" : undefined,
+          sort,
+        },
+        { page, limit }
+      );
+      return Response.json(publicResult);
     }
-    conditions.push(isNull(vehicles.deletedAt));
 
+    if (!currentUser || !["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) {
+      return Response.json({ message: "Unauthorized." }, { status: 401 });
+    }
+
+    const conditions = [isNull(vehicles.deletedAt)];
     if (mine) {
-      if (!currentUser || !["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) {
-        return Response.json({ message: "Unauthorized." }, { status: 401 });
-      }
       conditions.push(eq(vehicles.sellerId, currentUser.id));
     }
 
@@ -326,8 +368,25 @@ export async function GET(request: Request) {
     if (state) conditions.push(eq(vehicles.state, state));
     if (city) conditions.push(ilike(vehicles.city, `%${city}%`));
     if (brand) conditions.push(ilike(vehicles.brand, `%${brand}%`));
+    if (model) conditions.push(ilike(vehicles.model, `%${model}%`));
+    if (location) {
+      conditions.push(
+        or(
+          ilike(vehicles.vehicleOrYardLocation, `%${location}%`),
+          ilike(vehicles.yardLocation, `%${location}%`),
+          ilike(vehicles.city, `%${location}%`),
+          ilike(vehicles.state, `%${location}%`)
+        )!
+      );
+    }
+    if (assetCategory) conditions.push(ilike(vehicles.assetCategory, `%${assetCategory}%`));
+    if (bodyType) conditions.push(ilike(vehicles.bodyType, `%${bodyType}%`));
+    if (bodyApplicationType) conditions.push(ilike(vehicles.bodyApplicationType, `%${bodyApplicationType}%`));
     if (financeCompany) conditions.push(ilike(vehicles.financeCompany, `%${financeCompany}%`));
+    if (repoStatus) conditions.push(ilike(vehicles.repoStatus, `%${repoStatus}%`));
+    if (sellerRole) conditions.push(ilike(vehicles.sellerRole, `%${sellerRole}%`));
     if (verifiedOnly) conditions.push(eq(vehicles.sellerVerified, true));
+    if (runningCondition) conditions.push(eq(vehicles.runningCondition, runningCondition as RunningCondition));
     if (minPrice) conditions.push(gte(vehicles.price, minPrice));
     if (maxPrice) conditions.push(lte(vehicles.price, maxPrice));
     if (query) {
@@ -338,16 +397,24 @@ export async function GET(request: Request) {
           ilike(vehicles.model, `%${query}%`),
           ilike(vehicles.city, `%${query}%`),
           ilike(vehicles.vehicleOrYardLocation, `%${query}%`)
-        )
+        )!
       );
     }
 
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    const rows = whereClause
-      ? await db.select().from(vehicles).where(whereClause).orderBy(desc(vehicles.createdAt))
-      : await db.select().from(vehicles).orderBy(desc(vehicles.createdAt));
+    const whereClause = and(...conditions);
+    const [totalResult] = await db.select({ count: count() }).from(vehicles).where(whereClause);
+    const total = totalResult?.count ?? 0;
+    const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
+    const safePage = totalPages > 0 ? Math.min(page, totalPages) : 1;
+    const rows = await db
+      .select()
+      .from(vehicles)
+      .where(whereClause)
+      .orderBy(desc(vehicles.isFeatured), desc(vehicles.createdAt))
+      .limit(limit)
+      .offset((safePage - 1) * limit);
 
-    const normalizedRows = rows.map((row) => ({
+    const items = rows.map((row) => ({
       ...row,
       image: sanitizeSupabaseMediaUrl(row.image),
       gallery: sanitizeSupabaseMediaArray(row.gallery),
@@ -361,7 +428,17 @@ export async function GET(request: Request) {
       engineStartUpVideo: sanitizeSupabaseMediaUrl(row.engineStartUpVideo) || null,
     }));
 
-    return Response.json(normalizedRows);
+    return Response.json({
+      items,
+      pagination: {
+        page: safePage,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: totalPages > 0 && safePage < totalPages,
+        hasPrevPage: safePage > 1,
+      },
+    });
   } catch (error) {
     console.error("GET /api/vehicles failed", error);
     return Response.json({ message: "Failed to fetch vehicles." }, { status: 500 });
