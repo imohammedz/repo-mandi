@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield } from "lucide-react";
+import { Bell, Shield } from "lucide-react";
 
 const HIDDEN_PREFIXES = ["/auth", "/onboarding", "/admin/login"];
 
@@ -19,9 +19,19 @@ export function TopHeader() {
         <Link href="/" className="text-lg font-bold tracking-tight text-slate-900">
           Repo<span className="text-amber-500">Mandi</span>
         </Link>
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-          <Shield className="h-3 w-3" /> Trusted
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+            <Shield className="h-3 w-3" /> Trusted
+          </span>
+          <span
+            role="img"
+            aria-label="Notifications"
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
+          >
+            <Bell className="h-4 w-4" aria-hidden="true" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+          </span>
+        </div>
       </div>
     </header>
   );
