@@ -23,9 +23,9 @@ export function TopHeader() {
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
             <Shield className="h-3 w-3" /> Trusted
           </span>
-          <span aria-hidden="true" className="text-slate-600">
-            <Bell className="h-4 w-4" />
-          </span>
+          <Link href="/notifications" aria-label="Notifications" className="text-slate-600 hover:text-slate-900">
+            <Bell className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </header>
