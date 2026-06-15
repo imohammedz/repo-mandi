@@ -23,10 +23,7 @@ export function TopHeader() {
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
             <Shield className="h-3 w-3" /> Trusted
           </span>
-          <span
-            aria-hidden="true"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
-          >
+          <span aria-hidden="true" className="text-slate-600">
             <Bell className="h-4 w-4" />
           </span>
         </div>
