@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { formatCurrency } from "@/data/vehicles";
+import { SafeImage } from "@/components/ui/safe-image";
+import { resolveImageSrcForRender, VEHICLE_IMAGE_PLACEHOLDER_SRC } from "@/lib/media";
 import type { Vehicle } from "@/types/vehicle";
 import { FeatureListingButton } from "./feature-listing-button";
 import { CancelFeatureRequestButton } from "./cancel-feature-request-button";
@@ -123,6 +125,18 @@ export function SellerListingsSection({ listings }: SellerListingsSectionProps) 
         const isFeatured = featureStatus === "FEATURED";
         const hasPendingRequest = featureStatus === "PENDING";
         const canMarkSold = vehicle.listingStatus === "VERIFIED" || vehicle.listingStatus === "PENDING";
+        const previewImage =
+          [
+            vehicle.image,
+            vehicle.frontPhoto,
+            vehicle.leftSidePhoto,
+            vehicle.rightSidePhoto,
+            vehicle.backPhoto,
+            vehicle.sidePhoto,
+            ...(vehicle.gallery ?? []),
+          ]
+            .map((src) => resolveImageSrcForRender(src))
+            .find((src) => src !== VEHICLE_IMAGE_PLACEHOLDER_SRC) ?? VEHICLE_IMAGE_PLACEHOLDER_SRC;
 
         return (
           <article
@@ -133,19 +147,13 @@ export function SellerListingsSection({ listings }: SellerListingsSectionProps) 
             <div className="flex items-start gap-3 p-4">
               {/* Thumbnail */}
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                {vehicle.image ? (
-                  <Image
-                    src={vehicle.image}
-                    alt={vehicle.title}
-                    fill
-                    sizes="80px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-2xl text-slate-300">
-                    🚛
-                  </div>
-                )}
+                <SafeImage
+                  src={previewImage}
+                  alt={vehicle.title}
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                />
               </div>
 
               {/* Info */}
@@ -210,10 +218,10 @@ export function SellerListingsSection({ listings }: SellerListingsSectionProps) 
                   className="w-full"
                 />
               ) : (
-                /* Pending: show a disabled placeholder so grid keeps 2-column */
-                <div className="inline-flex min-h-10 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-700">
-                  ⏳ Request Sent
-                </div>
+                <CancelFeatureRequestButton
+                  listingId={vehicle.id}
+                  className="inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                />
               )}
               <Link
                 href={`/seller/leads?listing=${vehicle.id}`}

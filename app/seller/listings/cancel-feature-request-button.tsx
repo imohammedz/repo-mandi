@@ -5,9 +5,10 @@ import { useState, useTransition } from "react";
 
 interface CancelFeatureRequestButtonProps {
   listingId: string;
+  className?: string;
 }
 
-export function CancelFeatureRequestButton({ listingId }: CancelFeatureRequestButtonProps) {
+export function CancelFeatureRequestButton({ listingId, className }: CancelFeatureRequestButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -38,7 +39,10 @@ export function CancelFeatureRequestButton({ listingId }: CancelFeatureRequestBu
       <button
         type="button"
         onClick={() => setShowConfirm(true)}
-        className="text-xs font-medium text-rose-600 hover:text-rose-700 underline-offset-2 hover:underline"
+        className={
+          className ??
+          "text-xs font-medium text-rose-600 hover:text-rose-700 underline-offset-2 hover:underline"
+        }
       >
         Cancel Request
       </button>
