@@ -35,13 +35,15 @@ export default async function ProfilePage() {
           </>
         ) : null}
       </section>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={`grid gap-2 ${user.accountType === "ADMIN" ? "grid-cols-2" : "grid-cols-1"}`}>
         <Link href="/seller/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white">
           Seller Dashboard
         </Link>
-        <Link href="/admin/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
-          Admin Dashboard
-        </Link>
+        {user.accountType === "ADMIN" && (
+          <Link href="/admin/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
+            Admin Dashboard
+          </Link>
+        )}
       </div>
       <SupportContactCard
         title="Need Help?"
