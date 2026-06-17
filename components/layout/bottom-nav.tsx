@@ -25,23 +25,14 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40" style={{ height: "64px" }}>
-      {/* SVG background with curved concave notch at top-center */}
+      {/* Responsive notch background using radial-gradient — always centered */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ filter: "drop-shadow(0 -2px 10px rgba(0,0,0,0.10))" }}
-      >
-        <svg
-          className="w-full h-full"
-          viewBox="0 0 375 64"
-          preserveAspectRatio="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M0,0 L147.5,0 A40,40 0 0,1 227.5,0 L375,0 L375,64 L0,64 Z"
-            fill="white"
-          />
-        </svg>
-      </div>
+        style={{
+          background: "radial-gradient(circle at 50% 0px, transparent 40px, white 41px)",
+          filter: "drop-shadow(0 -2px 10px rgba(0,0,0,0.10))",
+        }}
+      />
 
       {/* Floating Sell FAB — protrudes above the notch */}
       <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ bottom: "38px" }}>
@@ -70,7 +61,8 @@ export function BottomNav() {
             );
           }
 
-          const Icon = item.icon!;
+          const Icon = item.icon;
+          if (!Icon) return null;
           const active =
             item.href === "/"
               ? pathname === "/"
