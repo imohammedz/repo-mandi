@@ -12,7 +12,9 @@ export function getDb() {
   if (!url) {
     throw new Error("DATABASE_URL environment variable is not set.");
   }
-  const client = postgres(url);
+  const client = postgres(url, {
+    debug: false, // Disable query logging to prevent console pollution
+  });
   cachedDb = drizzle(client, { schema });
   return cachedDb;
 }
