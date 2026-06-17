@@ -42,7 +42,6 @@ export function BottomNav() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: "radial-gradient(circle at 50% 0px, transparent 40px, white 41px)",
-          borderRadius: "24px 24px 0 0",
           filter: "drop-shadow(0 -2px 10px rgba(0,0,0,0.10))",
         }}
       />
