@@ -90,17 +90,12 @@ const CHIP_LABELS: Record<string, string> = {
 
 export function FilterDrawer() {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
+    if (typeof document === "undefined") return;
 
     const { body } = document;
     const previousOverflow = body.style.overflow;
@@ -112,7 +107,7 @@ export function FilterDrawer() {
     return () => {
       body.style.overflow = previousOverflow;
     };
-  }, [mounted, open]);
+  }, [open]);
 
   const activeEntries = useMemo(
     () =>
@@ -238,6 +233,7 @@ export function FilterDrawer() {
       </aside>
     </div>
   ) : null;
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
 
   return (
     <>
@@ -269,7 +265,7 @@ export function FilterDrawer() {
         </div>
       ) : null}
 
-      {mounted && drawer ? createPortal(drawer, document.body) : null}
+      {portalTarget && drawer ? createPortal(drawer, portalTarget) : null}
     </>
   );
 }
