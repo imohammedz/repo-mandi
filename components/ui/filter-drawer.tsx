@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
@@ -88,25 +88,31 @@ const CHIP_LABELS: Record<string, string> = {
   sort: "Sort",
 };
 
+const FILTER_DRAWER_CONTENT_OFFSET = 100;
+
 export function FilterDrawer() {
   const [open, setOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     if (typeof document === "undefined") return;
+    if (!open) return;
 
     const { body } = document;
     const previousOverflow = body.style.overflow;
-
-    if (open) {
-      body.style.overflow = "hidden";
-    }
+    body.style.overflow = "hidden";
 
     return () => {
       body.style.overflow = previousOverflow;
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    drawerRef.current?.focus();
   }, [open]);
 
   const activeEntries = useMemo(
@@ -149,11 +155,18 @@ export function FilterDrawer() {
       onClick={() => setOpen(false)}
     >
       <aside
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="vehicle-filter-title"
+        tabIndex={-1}
         className="absolute inset-y-0 right-0 h-full w-[92%] max-w-md overflow-y-auto overscroll-contain bg-white p-5 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setOpen(false);
+          }
+        }}
       >
         <div className="mb-5 flex items-center justify-between">
           <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
@@ -169,7 +182,11 @@ export function FilterDrawer() {
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex h-[calc(100vh-100px)] flex-col">
+        <form
+          onSubmit={onSubmit}
+          className="flex flex-col"
+          style={{ height: `calc(100vh - ${FILTER_DRAWER_CONTENT_OFFSET}px)` }}
+        >
           <div className="flex-1 space-y-4 overflow-y-auto pb-4">
             <div className="grid grid-cols-1 gap-3">
               {FILTER_FIELDS.map((field) => (
