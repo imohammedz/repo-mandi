@@ -95,6 +95,7 @@ const FILTER_DRAWER_CONTENT_OFFSET = 100;
 export function FilterDrawer() {
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
+  const previousBodyOverflowRef = useRef("");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -103,11 +104,13 @@ export function FilterDrawer() {
     if (!open) return;
 
     const { body } = document;
-    const previousOverflow = body.style.overflow;
+    previousBodyOverflowRef.current = body.style.overflow;
     body.style.overflow = "hidden";
 
     return () => {
-      body.style.overflow = previousOverflow;
+      if (body.style.overflow === "hidden") {
+        body.style.overflow = previousBodyOverflowRef.current;
+      }
     };
   }, [open]);
 
@@ -166,6 +169,29 @@ export function FilterDrawer() {
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             setOpen(false);
+            return;
+          }
+
+          if (event.key !== "Tab") return;
+
+          const focusableElements = drawerRef.current?.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+
+          if (!focusableElements?.length) return;
+
+          const firstFocusableElement = focusableElements[0];
+          const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+          if (event.shiftKey && document.activeElement === firstFocusableElement) {
+            event.preventDefault();
+            lastFocusableElement.focus();
+            return;
+          }
+
+          if (!event.shiftKey && document.activeElement === lastFocusableElement) {
+            event.preventDefault();
+            firstFocusableElement.focus();
           }
         }}
       >
@@ -251,7 +277,7 @@ export function FilterDrawer() {
       </aside>
     </div>
   ) : null;
-  const portalTarget = typeof document !== "undefined" ? document.body : null;
+  const portalTarget = useMemo(() => (typeof document !== "undefined" ? document.body : null), []);
 
   return (
     <>
