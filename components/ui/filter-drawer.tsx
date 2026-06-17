@@ -155,7 +155,7 @@ export function FilterDrawer() {
 
   const drawer = open ? (
     <div
-      className="fixed inset-0 z-[1000] isolate bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[1000] isolate bg-slate-950"
       onClick={() => setOpen(false)}
     >
       <aside
