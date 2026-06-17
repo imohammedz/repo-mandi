@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
@@ -89,9 +90,29 @@ const CHIP_LABELS: Record<string, string> = {
 
 export function FilterDrawer() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+
+    if (open) {
+      body.style.overflow = "hidden";
+    }
+
+    return () => {
+      body.style.overflow = previousOverflow;
+    };
+  }, [mounted, open]);
 
   const activeEntries = useMemo(
     () =>
@@ -127,6 +148,97 @@ export function FilterDrawer() {
     submitFilters(next);
   };
 
+  const drawer = open ? (
+    <div
+      className="fixed inset-0 z-[1000] isolate bg-black/40"
+      onClick={() => setOpen(false)}
+    >
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vehicle-filter-title"
+        className="absolute inset-y-0 right-0 h-full w-[92%] max-w-md overflow-y-auto overscroll-contain bg-white p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
+            Filter vehicles
+          </h3>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded-lg border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
+            aria-label="Close filter drawer"
+          >
+            <X className="h-5 w-5 text-slate-700" />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="flex h-[calc(100vh-100px)] flex-col">
+          <div className="flex-1 space-y-4 overflow-y-auto pb-4">
+            <div className="grid grid-cols-1 gap-3">
+              {FILTER_FIELDS.map((field) => (
+                <label key={field.key} className="space-y-1">
+                  <span className="text-xs font-semibold text-slate-600">{field.label}</span>
+                  {field.options ? (
+                    <select
+                      name={field.key}
+                      defaultValue={searchParams.get(field.key) ?? ""}
+                      className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                    >
+                      <option value="">All</option>
+                      {field.options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      name={field.key}
+                      type={field.type ?? "text"}
+                      defaultValue={searchParams.get(field.key) ?? ""}
+                      className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                    />
+                  )}
+                </label>
+              ))}
+            </div>
+
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                name="verifiedOnly"
+                defaultChecked={searchParams.get("verifiedOnly") === "1"}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Verified sellers only
+            </label>
+          </div>
+
+          <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 bg-white pt-4 pb-2">
+            <button
+              type="button"
+              onClick={() => {
+                router.push(pathname);
+                setOpen(false);
+              }}
+              className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Clear filters
+            </button>
+            <button
+              type="submit"
+              className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800"
+            >
+              Apply
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  ) : null;
+
   return (
     <>
       <button
@@ -157,95 +269,7 @@ export function FilterDrawer() {
         </div>
       ) : null}
 
-      {open ? (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/40"
-          onClick={() => setOpen(false)}
-        >
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="vehicle-filter-title"
-            className="absolute right-0 top-0 h-full w-[92%] max-w-md overflow-y-auto bg-white p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
-                Filter vehicles
-              </h3>
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50 transition-colors"
-                aria-label="Close filter drawer"
-              >
-                <X className="h-5 w-5 text-slate-700" />
-              </button>
-            </div>
-
-            <form onSubmit={onSubmit} className="flex flex-col h-[calc(100vh-100px)]">
-              <div className="flex-1 overflow-y-auto space-y-4 pb-4">
-                <div className="grid grid-cols-1 gap-3">
-                  {FILTER_FIELDS.map((field) => (
-                    <label key={field.key} className="space-y-1">
-                      <span className="text-xs font-semibold text-slate-600">{field.label}</span>
-                      {field.options ? (
-                        <select
-                          name={field.key}
-                          defaultValue={searchParams.get(field.key) ?? ""}
-                          className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
-                        >
-                          <option value="">All</option>
-                          {field.options.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          name={field.key}
-                          type={field.type ?? "text"}
-                          defaultValue={searchParams.get(field.key) ?? ""}
-                          className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
-                        />
-                      )}
-                    </label>
-                  ))}
-                </div>
-
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    name="verifiedOnly"
-                    defaultChecked={searchParams.get("verifiedOnly") === "1"}
-                    className="h-4 w-4 rounded border-slate-300"
-                  />
-                  Verified sellers only
-                </label>
-              </div>
-
-              <div className="sticky bottom-0 grid grid-cols-2 gap-2 bg-white border-t border-slate-100 pt-4 pb-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    router.push(pathname);
-                    setOpen(false);
-                  }}
-                  className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Clear filters
-                </button>
-                <button
-                  type="submit"
-                  className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800"
-                >
-                  Apply
-                </button>
-              </div>
-            </form>
-          </aside>
-        </div>
-      ) : null}
+      {mounted && drawer ? createPortal(drawer, document.body) : null}
     </>
   );
 }
