@@ -22,7 +22,8 @@ export default function SellTruckCard() {
           alt="Sell your truck on RepoMandi"
           fill
           sizes="90px"
-          className="object-cover object-left"
+          className="object-cover"
+          style={{ objectPosition: "left center" }}
         />
       </div>
       <div className="sell-card-content">

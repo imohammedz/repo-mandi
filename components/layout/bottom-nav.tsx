@@ -39,8 +39,11 @@ export function BottomNav() {
         <Link
           href="/sell"
           aria-label="Sell"
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8651A] shadow-lg"
-          style={{ boxShadow: "0 4px 16px rgba(232,101,26,0.45)" }}
+          className="flex h-14 w-14 items-center justify-center rounded-full shadow-lg"
+          style={{
+            backgroundColor: "#E8651A",
+            boxShadow: "0 4px 16px rgba(232,101,26,0.45)",
+          }}
         >
           <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
         </Link>
@@ -53,7 +56,8 @@ export function BottomNav() {
             return (
               <li key={item.href} className="flex flex-col items-center justify-end pb-0.5">
                 <span
-                  className={`text-[11px] font-medium ${isSellActive ? "text-[#E8651A]" : "text-slate-500"}`}
+                  className="text-[11px] font-medium"
+                  style={{ color: isSellActive ? "#E8651A" : "#64748b" }}
                 >
                   Sell
                 </span>
