@@ -36,7 +36,7 @@ section {
 }
 .sell-card-img {
   width: 90px;
-  height: 100%;
+  height: 68px;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
