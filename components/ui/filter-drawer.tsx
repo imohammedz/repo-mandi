@@ -158,12 +158,16 @@ export function FilterDrawer() {
       ) : null}
 
       {open ? (
-        <div className="fixed inset-0 z-50 bg-black/40">
+        <div 
+          className="fixed inset-0 z-[100] bg-black/40"
+          onClick={() => setOpen(false)}
+        >
           <aside
             role="dialog"
             aria-modal="true"
             aria-labelledby="vehicle-filter-title"
-            className="absolute right-0 top-0 h-full w-[92%] max-w-md overflow-y-auto bg-white p-5"
+            className="absolute right-0 top-0 h-full w-[92%] max-w-md overflow-y-auto bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
               <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
@@ -171,67 +175,69 @@ export function FilterDrawer() {
               </h3>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg border border-slate-200 p-2"
+                className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50 transition-colors"
                 aria-label="Close filter drawer"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5 text-slate-700" />
               </button>
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 gap-3">
-                {FILTER_FIELDS.map((field) => (
-                  <label key={field.key} className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-600">{field.label}</span>
-                    {field.options ? (
-                      <select
-                        name={field.key}
-                        defaultValue={searchParams.get(field.key) ?? ""}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
-                      >
-                        <option value="">All</option>
-                        {field.options.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        name={field.key}
-                        type={field.type ?? "text"}
-                        defaultValue={searchParams.get(field.key) ?? ""}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
-                      />
-                    )}
-                  </label>
-                ))}
+            <form onSubmit={onSubmit} className="flex flex-col h-[calc(100vh-100px)]">
+              <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+                <div className="grid grid-cols-1 gap-3">
+                  {FILTER_FIELDS.map((field) => (
+                    <label key={field.key} className="space-y-1">
+                      <span className="text-xs font-semibold text-slate-600">{field.label}</span>
+                      {field.options ? (
+                        <select
+                          name={field.key}
+                          defaultValue={searchParams.get(field.key) ?? ""}
+                          className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                        >
+                          <option value="">All</option>
+                          {field.options.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          name={field.key}
+                          type={field.type ?? "text"}
+                          defaultValue={searchParams.get(field.key) ?? ""}
+                          className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                        />
+                      )}
+                    </label>
+                  ))}
+                </div>
+
+                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    name="verifiedOnly"
+                    defaultChecked={searchParams.get("verifiedOnly") === "1"}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  Verified sellers only
+                </label>
               </div>
 
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="verifiedOnly"
-                  defaultChecked={searchParams.get("verifiedOnly") === "1"}
-                  className="h-4 w-4 rounded border-slate-300"
-                />
-                Verified sellers only
-              </label>
-
-              <div className="sticky bottom-0 mt-6 grid grid-cols-2 gap-2 bg-white pt-4">
+              <div className="sticky bottom-0 grid grid-cols-2 gap-2 bg-white border-t border-slate-100 pt-4 pb-2">
                 <button
                   type="button"
                   onClick={() => {
                     router.push(pathname);
                     setOpen(false);
                   }}
-                  className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700"
+                  className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Clear filters
                 </button>
                 <button
                   type="submit"
-                  className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white"
+                  className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   Apply
                 </button>
