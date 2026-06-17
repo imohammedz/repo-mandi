@@ -145,7 +145,7 @@ export function SellerListingsSection({ listings }: SellerListingsSectionProps) 
         return (
           <article
             key={vehicle.id}
-            className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+            className="rounded-2xl border border-slate-100 bg-white shadow-sm"
           >
             {/* Card top: thumbnail + details + actions */}
             <div className="flex items-start gap-3 p-4">
