@@ -109,7 +109,7 @@ export function FilterDrawer() {
 
     return () => {
       delete body.dataset.filtersOpen;
-      if (bodyOverflowRef.current) body.style.overflow = bodyOverflowRef.current;
+      if (bodyOverflowRef.current !== null) body.style.overflow = bodyOverflowRef.current;
       else body.style.removeProperty("overflow");
       bodyOverflowRef.current = null;
     };
@@ -181,7 +181,7 @@ export function FilterDrawer() {
 
       {open
         ? createPortal(
-            <div className="fixed inset-0 z-[1000] isolate" aria-hidden={false}>
+            <div className="fixed inset-0 z-[1000] isolate">
               <button
                 type="button"
                 aria-label="Close filter drawer"
