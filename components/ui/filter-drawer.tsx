@@ -88,6 +88,8 @@ const CHIP_LABELS: Record<string, string> = {
   sort: "Sort",
 };
 
+// Keeps the scrollable filter form within the viewport after accounting for the
+// drawer header block and the bottom actions row spacing.
 const FILTER_DRAWER_CONTENT_OFFSET = 100;
 
 export function FilterDrawer() {
@@ -107,6 +109,22 @@ export function FilterDrawer() {
 
     return () => {
       body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
@@ -152,16 +170,7 @@ export function FilterDrawer() {
   const drawer = open ? (
     <div
       className="fixed inset-0 z-[1000] isolate bg-black/40"
-      role="button"
-      tabIndex={0}
-      aria-label="Close filter drawer"
       onClick={() => setOpen(false)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " " || event.key === "Escape") {
-          event.preventDefault();
-          setOpen(false);
-        }
-      }}
     >
       <aside
         ref={drawerRef}
@@ -237,7 +246,7 @@ export function FilterDrawer() {
             </label>
           </div>
 
-          <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 pb-2">
+          <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 pb-2">
             <button
               type="button"
               onClick={() => {
