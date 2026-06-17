@@ -20,6 +20,10 @@ section {
   scroll-margin-top: 88px;
 }
 
+body[data-filters-open="true"] .vehicle-listings-content {
+  visibility: hidden;
+}
+
 /* ── SellTruckCard banner ─────────────────────────────────── */
 .sell-card {
   height: 68px;

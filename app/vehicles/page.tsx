@@ -32,7 +32,9 @@ export default async function VehicleListingPage({
         </div>
       </header>
 
-      <VehicleListingsResults key={listingStateKey} initialItems={items} initialPagination={pagination} />
+      <div className="vehicle-listings-content">
+        <VehicleListingsResults key={listingStateKey} initialItems={items} initialPagination={pagination} />
+      </div>
     </main>
   );
 }

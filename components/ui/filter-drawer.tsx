@@ -101,16 +101,22 @@ export function FilterDrawer() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!open) return;
-
     const { body } = document;
+
+    if (!open) {
+      delete body.dataset.filtersOpen;
+      return;
+    }
+
     previousBodyOverflowRef.current = body.style.overflow;
     body.style.overflow = "hidden";
+    body.dataset.filtersOpen = "true";
 
     return () => {
       if (body.style.overflow === "hidden") {
         body.style.overflow = previousBodyOverflowRef.current;
       }
+      delete body.dataset.filtersOpen;
     };
   }, [open]);
 
