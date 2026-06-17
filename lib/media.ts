@@ -1,10 +1,13 @@
 const SUPABASE_PUBLIC_STORAGE_PATH = "/storage/v1/object/public/";
 
+// Keep in sync with the default in next.config.ts so that images resolve
+// correctly even when NEXT_PUBLIC_SUPABASE_URL is not explicitly configured.
+const DEFAULT_SUPABASE_URL = "https://qssywsfjbkqzatwbzvvw.supabase.co";
+
 export const VEHICLE_IMAGE_PLACEHOLDER_SRC = "/file.svg";
 
 function getConfiguredSupabaseStorageHost() {
-  const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  if (!configuredUrl) return "";
+  const configuredUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) || DEFAULT_SUPABASE_URL;
   try {
     return new URL(configuredUrl).hostname;
   } catch {

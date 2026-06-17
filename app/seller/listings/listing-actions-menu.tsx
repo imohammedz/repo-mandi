@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { CheckCircle2, Edit, Eye, Loader2, MoreVertical, Share2, Trash2 } from "lucide-react";
+
+const MENU_VERTICAL_OFFSET_PX = 8;
 
 interface ListingActionsMenuProps {
   vehicleId: string;
@@ -19,8 +21,63 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
   const [isDeleting, startDeleteTransition] = useTransition();
   const [isSharing, setIsSharing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPlacement, setMenuPlacement] = useState<"down" | "up">("down");
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const frameIdRef = useRef<number | null>(null);
   const listingPath = `/vehicles/${vehicleId}`;
   const listingUrl = typeof window === "undefined" ? listingPath : `${window.location.origin}${listingPath}`;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleDocumentKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleDocumentKeyDown);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const updatePlacement = () => {
+      const buttonRect = buttonRef.current?.getBoundingClientRect();
+      const menuRect = menuRef.current?.getBoundingClientRect();
+      if (!buttonRect || !menuRect) return;
+      const hasBottomSpace = buttonRect.bottom + MENU_VERTICAL_OFFSET_PX + menuRect.height <= window.innerHeight;
+      const hasTopSpace = buttonRect.top - MENU_VERTICAL_OFFSET_PX - menuRect.height >= 0;
+      const nextPlacement: "down" | "up" = !hasBottomSpace && hasTopSpace ? "up" : "down";
+      setMenuPlacement((current) => (current === nextPlacement ? current : nextPlacement));
+    };
+    const schedulePlacementUpdate = () => {
+      if (frameIdRef.current !== null) {
+        window.cancelAnimationFrame(frameIdRef.current);
+      }
+      frameIdRef.current = window.requestAnimationFrame(updatePlacement);
+    };
+    schedulePlacementUpdate();
+    window.addEventListener("resize", schedulePlacementUpdate);
+    window.addEventListener("scroll", schedulePlacementUpdate, true);
+    return () => {
+      if (frameIdRef.current !== null) {
+        window.cancelAnimationFrame(frameIdRef.current);
+        frameIdRef.current = null;
+      }
+      window.removeEventListener("resize", schedulePlacementUpdate);
+      window.removeEventListener("scroll", schedulePlacementUpdate, true);
+    };
+  }, [menuOpen]);
 
   const handleShare = async () => {
     const text = `${title} • ₹${price.toLocaleString("en-IN")}${location ? ` • ${location}` : ""}\n${listingUrl}`;
@@ -96,9 +153,12 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
     });
   };
 
+  const markSoldLabel = isMarkingSold ? "Marking..." : "Mark Sold";
+
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
         aria-haspopup="menu"
@@ -114,9 +174,12 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
 
       {menuOpen ? (
         <div
+          ref={menuRef}
           role="menu"
           aria-label="Manage listing"
-          className="absolute right-0 z-20 mt-2 w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+          className={`absolute right-0 z-30 w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-lg ${
+            menuPlacement === "up" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
           onKeyDown={(event) => {
             if (event.key === "Escape") setMenuOpen(false);
           }}
@@ -154,18 +217,18 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
             <Share2 className="size-4" />
             {isSharing ? "Sharing..." : "Share Listing"}
           </button>
-          {canMarkSold ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleMarkSold}
-              disabled={isMarkingSold}
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-            >
-              {isMarkingSold ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-              {isMarkingSold ? "Marking..." : "Mark Sold"}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleMarkSold}
+            disabled={isMarkingSold || !canMarkSold}
+            title={!canMarkSold ? "This listing cannot be marked sold in its current status." : undefined}
+            aria-label={!canMarkSold ? "Mark Sold unavailable for this listing status" : "Mark Sold"}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isMarkingSold ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+            {markSoldLabel}
+          </button>
           <button
             type="button"
             role="menuitem"
