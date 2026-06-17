@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { CheckCircle2, Edit, Eye, Loader2, MoreVertical, Share2, Trash2 } from "lucide-react";
 
+const MENU_VERTICAL_OFFSET_PX = 8;
+
 interface ListingActionsMenuProps {
   vehicleId: string;
   title: string;
@@ -23,6 +25,7 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
   const rootRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const frameIdRef = useRef<number | null>(null);
   const listingPath = `/vehicles/${vehicleId}`;
   const listingUrl = typeof window === "undefined" ? listingPath : `${window.location.origin}${listingPath}`;
 
@@ -33,9 +36,16 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
         setMenuOpen(false);
       }
     };
+    const handleDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
     document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleDocumentKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleDocumentKeyDown);
     };
   }, [menuOpen]);
 
@@ -45,20 +55,27 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
       const buttonRect = buttonRef.current?.getBoundingClientRect();
       const menuRect = menuRef.current?.getBoundingClientRect();
       if (!buttonRect || !menuRect) return;
-      const hasBottomSpace = buttonRect.bottom + 8 + menuRect.height <= window.innerHeight;
-      const hasTopSpace = buttonRect.top - 8 - menuRect.height >= 0;
-      if (!hasBottomSpace && hasTopSpace) {
-        setMenuPlacement("up");
-      } else {
-        setMenuPlacement("down");
-      }
+      const hasBottomSpace = buttonRect.bottom + MENU_VERTICAL_OFFSET_PX + menuRect.height <= window.innerHeight;
+      const hasTopSpace = buttonRect.top - MENU_VERTICAL_OFFSET_PX - menuRect.height >= 0;
+      const nextPlacement: "down" | "up" = !hasBottomSpace && hasTopSpace ? "up" : "down";
+      setMenuPlacement((current) => (current === nextPlacement ? current : nextPlacement));
     };
-    updatePlacement();
-    window.addEventListener("resize", updatePlacement);
-    window.addEventListener("scroll", updatePlacement, true);
+    const schedulePlacementUpdate = () => {
+      if (frameIdRef.current !== null) {
+        window.cancelAnimationFrame(frameIdRef.current);
+      }
+      frameIdRef.current = window.requestAnimationFrame(updatePlacement);
+    };
+    schedulePlacementUpdate();
+    window.addEventListener("resize", schedulePlacementUpdate);
+    window.addEventListener("scroll", schedulePlacementUpdate, true);
     return () => {
-      window.removeEventListener("resize", updatePlacement);
-      window.removeEventListener("scroll", updatePlacement, true);
+      if (frameIdRef.current !== null) {
+        window.cancelAnimationFrame(frameIdRef.current);
+        frameIdRef.current = null;
+      }
+      window.removeEventListener("resize", schedulePlacementUpdate);
+      window.removeEventListener("scroll", schedulePlacementUpdate, true);
     };
   }, [menuOpen]);
 
@@ -93,7 +110,6 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
   };
 
   const handleMarkSold = () => {
-    if (!canMarkSold) return;
     if (!window.confirm("Mark this listing as sold?")) return;
     setMenuOpen(false);
     startMarkSoldTransition(async () => {
@@ -136,6 +152,8 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
       }
     });
   };
+
+  const markSoldLabel = isMarkingSold ? "Marking..." : "Mark Sold";
 
   return (
     <div ref={rootRef} className="relative">
@@ -204,10 +222,12 @@ export function ListingActionsMenu({ vehicleId, title, price, location, canMarkS
             role="menuitem"
             onClick={handleMarkSold}
             disabled={isMarkingSold || !canMarkSold}
+            title={!canMarkSold ? "This listing cannot be marked sold in its current status." : undefined}
+            aria-label={!canMarkSold ? "Mark Sold unavailable for this listing status" : "Mark Sold"}
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isMarkingSold ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-            {isMarkingSold ? "Marking..." : "Mark Sold"}
+            {markSoldLabel}
           </button>
           <button
             type="button"
