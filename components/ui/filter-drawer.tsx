@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -93,24 +93,25 @@ export function FilterDrawer() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const bodyOverflowRef = useRef<string | null>(null);
 
   useEffect(() => {
     const { body } = document;
 
     if (!open) {
       delete body.dataset.filtersOpen;
-      body.style.removeProperty("overflow");
       return;
     }
 
-    const previousOverflow = body.style.overflow;
+    bodyOverflowRef.current = body.style.overflow;
     body.dataset.filtersOpen = "true";
     body.style.overflow = "hidden";
 
     return () => {
       delete body.dataset.filtersOpen;
-      if (previousOverflow) body.style.overflow = previousOverflow;
+      if (bodyOverflowRef.current) body.style.overflow = bodyOverflowRef.current;
       else body.style.removeProperty("overflow");
+      bodyOverflowRef.current = null;
     };
   }, [open]);
 
