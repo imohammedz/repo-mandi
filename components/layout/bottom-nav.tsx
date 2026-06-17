@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleUserRound, House, PlusCircle, Search, Heart } from "lucide-react";
+import { CircleUserRound, House, Plus, Search, Heart } from "lucide-react";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
 const items = [
   { label: "Home", href: "/", icon: House },
   { label: "Search", href: "/vehicles", icon: Search },
-  { label: "Sell", href: "/sell", icon: PlusCircle },
+  { label: "Sell", href: "/sell", icon: null },
   { label: "Saved", href: "/saved", icon: Heart },
   { label: "Profile", href: "/profile", icon: CircleUserRound },
 ];
@@ -21,17 +21,60 @@ export function BottomNav() {
     return null;
   }
 
+  const isSellActive = pathname === "/sell" || pathname.startsWith("/seller/");
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur">
-      <ul className="mx-auto grid max-w-xl grid-cols-5 gap-1">
+    <nav className="fixed inset-x-0 bottom-0 z-40" style={{ height: "64px" }}>
+      {/* SVG background with curved concave notch at top-center */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ filter: "drop-shadow(0 -2px 10px rgba(0,0,0,0.10))" }}
+      >
+        <svg
+          className="w-full h-full"
+          viewBox="0 0 375 64"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M0,0 L147.5,0 A40,40 0 0,1 227.5,0 L375,0 L375,64 L0,64 Z"
+            fill="white"
+          />
+        </svg>
+      </div>
+
+      {/* Floating Sell FAB — protrudes above the notch */}
+      <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ bottom: "38px" }}>
+        <Link
+          href="/sell"
+          aria-label="Sell"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8651A] shadow-lg"
+          style={{ boxShadow: "0 4px 16px rgba(232,101,26,0.45)" }}
+        >
+          <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
+        </Link>
+      </div>
+
+      {/* Nav items */}
+      <ul className="relative z-[1] mx-auto grid h-full max-w-xl grid-cols-5 items-end px-2 pb-2">
         {items.map((item) => {
-          const Icon = item.icon;
+          if (item.label === "Sell") {
+            return (
+              <li key={item.href} className="flex flex-col items-center justify-end pb-0.5">
+                <span
+                  className={`text-[11px] font-medium ${isSellActive ? "text-[#E8651A]" : "text-slate-500"}`}
+                >
+                  Sell
+                </span>
+              </li>
+            );
+          }
+
+          const Icon = item.icon!;
           const active =
             item.href === "/"
               ? pathname === "/"
-              : item.href === "/sell"
-                ? pathname === "/sell" || pathname.startsWith("/seller/")
-                : pathname.startsWith(item.href);
+              : pathname.startsWith(item.href);
 
           return (
             <li key={item.href}>
