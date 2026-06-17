@@ -87,7 +87,7 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
         </div>
       </section>
 
-      <section className="space-y-2">
+      <section className="vehicle-results-layer space-y-2" aria-live="polite">
         {items.map((vehicle) => (
           <VehicleCard key={vehicle.id} vehicle={vehicle} compact />
         ))}

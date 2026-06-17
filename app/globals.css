@@ -90,3 +90,7 @@ section {
   font-size: 14px;
   line-height: 1;
 }
+
+body[data-filters-open="true"] .vehicle-results-layer {
+  pointer-events: none;
+}
