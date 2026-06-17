@@ -115,6 +115,17 @@ export function FilterDrawer() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   const activeEntries = useMemo(
     () =>
       Array.from(searchParams.entries()).filter(([key, value]) => {
