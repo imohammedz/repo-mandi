@@ -113,9 +113,7 @@ export function FilterDrawer() {
     body.dataset.filtersOpen = "true";
 
     return () => {
-      if (body.style.overflow === "hidden") {
-        body.style.overflow = previousBodyOverflowRef.current;
-      }
+      body.style.overflow = previousBodyOverflowRef.current;
       delete body.dataset.filtersOpen;
     };
   }, [open]);
