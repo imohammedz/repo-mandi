@@ -100,7 +100,6 @@ export function FilterDrawer() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
     if (!open) return;
 
     const { body } = document;
@@ -109,22 +108,6 @@ export function FilterDrawer() {
 
     return () => {
       body.style.overflow = previousOverflow;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
