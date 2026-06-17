@@ -152,7 +152,16 @@ export function FilterDrawer() {
   const drawer = open ? (
     <div
       className="fixed inset-0 z-[1000] isolate bg-black/40"
+      role="button"
+      tabIndex={0}
+      aria-label="Close filter drawer"
       onClick={() => setOpen(false)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " " || event.key === "Escape") {
+          event.preventDefault();
+          setOpen(false);
+        }
+      }}
     >
       <aside
         ref={drawerRef}
@@ -175,7 +184,7 @@ export function FilterDrawer() {
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-lg border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 p-2 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
             aria-label="Close filter drawer"
           >
             <X className="h-5 w-5 text-slate-700" />
@@ -228,20 +237,20 @@ export function FilterDrawer() {
             </label>
           </div>
 
-          <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 bg-white pt-4 pb-2">
+          <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 pb-2">
             <button
               type="button"
               onClick={() => {
                 router.push(pathname);
                 setOpen(false);
               }}
-              className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
             >
               Clear filters
             </button>
             <button
               type="submit"
-              className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800"
+              className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
             >
               Apply
             </button>
