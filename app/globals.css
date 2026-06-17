@@ -40,7 +40,6 @@ section {
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  border-radius: 14px 0 0 14px;
 }
 .sell-card-content {
   flex: 1;
