@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { CircleUserRound, House, Plus, Search, Heart } from "lucide-react";
+import { motion, useAnimation } from "framer-motion";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
 
 const items = [
@@ -15,13 +16,24 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { savedCount, isAuthenticated } = useSavedListings();
+  const sellControls = useAnimation();
 
   if (pathname.startsWith("/auth") || pathname.startsWith("/onboarding")) {
     return null;
   }
 
   const isSellActive = pathname === "/sell" || pathname.startsWith("/seller/");
+
+  async function handleSellTap(e: React.MouseEvent) {
+    e.preventDefault();
+    await sellControls.start({
+      scale: [1, 0.85, 1.1, 1],
+      transition: { duration: 0.27, ease: "easeOut", times: [0, 0.2, 0.65, 1] },
+    });
+    router.push("/sell");
+  }
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40" style={{ height: "64px" }}>
@@ -37,7 +49,7 @@ export function BottomNav() {
 
       {/* Floating Sell FAB — protrudes above the notch */}
       <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ bottom: "38px" }}>
-        <Link
+        <motion.a
           href="/sell"
           aria-label="Sell"
           className="flex h-14 w-14 items-center justify-center rounded-full shadow-lg"
@@ -45,9 +57,11 @@ export function BottomNav() {
             backgroundColor: "#E8651A",
             boxShadow: "0 4px 16px rgba(232,101,26,0.45)",
           }}
+          animate={sellControls}
+          onClick={handleSellTap}
         >
           <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
-        </Link>
+        </motion.a>
       </div>
 
       {/* Nav items */}
