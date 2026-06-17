@@ -200,9 +200,9 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
+      className={`relative isolate flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
     >
-      <div className="relative h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
+      <div className="relative z-0 h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
         {selectedImage ? (
           <>
             <SafeImage
@@ -220,28 +220,28 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               alt={vehicle.title}
               fill
               sizes="(max-width: 768px) 45vw, 240px"
-              className="z-10 object-contain object-center p-0.5"
+              className="z-[1] object-contain object-center p-0.5"
               loading="lazy"
               logContext={{ component: "VehicleCard", vehicleId: vehicle.id }}
             />
           </>
         ) : (
           <div
-            className="absolute inset-0 z-10 flex items-center justify-center p-3 text-center text-xs font-medium text-white/90"
+            className="absolute inset-0 z-[1] flex items-center justify-center p-3 text-center text-xs font-medium text-white/90"
             role="status"
             aria-label="No vehicle photo available"
           >
             Photo not uploaded
           </div>
         )}
-        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-2 top-2 z-20" />
+        <SaveHeartButton vehicleId={vehicle.id} vehicle={vehicle} className="absolute right-2 top-2 z-10" />
         {imageCount > 1 ? (
           <>
             <button
               type="button"
               onClick={onPrevImage}
               aria-label="Previous image"
-              className="absolute left-2 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+              className="absolute left-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -249,12 +249,12 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               type="button"
               onClick={onNextImage}
               aria-label="Next image"
-              className="absolute right-2 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+              className="absolute right-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <span
-              className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white"
+              className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white"
               aria-label={`${safeImageIndex + 1} of ${imageCount} photos`}
             >
               {safeImageIndex + 1} / {imageCount}

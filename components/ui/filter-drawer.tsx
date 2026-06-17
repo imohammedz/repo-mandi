@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 type FilterField = {
   key: string;
@@ -93,6 +94,26 @@ export function FilterDrawer() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  useEffect(() => {
+    const { body } = document;
+
+    if (!open) {
+      delete body.dataset.filtersOpen;
+      body.style.removeProperty("overflow");
+      return;
+    }
+
+    const previousOverflow = body.style.overflow;
+    body.dataset.filtersOpen = "true";
+    body.style.overflow = "hidden";
+
+    return () => {
+      delete body.dataset.filtersOpen;
+      if (previousOverflow) body.style.overflow = previousOverflow;
+      else body.style.removeProperty("overflow");
+    };
+  }, [open]);
+
   const activeEntries = useMemo(
     () =>
       Array.from(searchParams.entries()).filter(([key, value]) => {
@@ -157,89 +178,100 @@ export function FilterDrawer() {
         </div>
       ) : null}
 
-      {open ? (
-        <div className="fixed inset-0 z-50 bg-black/40">
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="vehicle-filter-title"
-            className="absolute right-0 top-0 h-full w-[92%] max-w-md overflow-y-auto bg-white p-5"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
-                Filter vehicles
-              </h3>
+      {open
+        ? createPortal(
+            <div className="fixed inset-0 z-[1000] isolate" aria-hidden={false}>
               <button
-                onClick={() => setOpen(false)}
-                className="rounded-lg border border-slate-200 p-2"
+                type="button"
                 aria-label="Close filter drawer"
+                className="absolute inset-0 bg-black/50"
+                onClick={() => setOpen(false)}
+              />
+              <aside
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="vehicle-filter-title"
+                className="absolute right-0 top-0 z-[1001] flex h-full w-[92%] max-w-md flex-col overflow-hidden bg-white shadow-2xl"
               >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                  <h3 id="vehicle-filter-title" className="text-lg font-semibold text-slate-900">
+                    Filter vehicles
+                  </h3>
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="rounded-lg border border-slate-200 p-2"
+                    aria-label="Close filter drawer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 gap-3">
-                {FILTER_FIELDS.map((field) => (
-                  <label key={field.key} className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-600">{field.label}</span>
-                    {field.options ? (
-                      <select
-                        name={field.key}
-                        defaultValue={searchParams.get(field.key) ?? ""}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
-                      >
-                        <option value="">All</option>
-                        {field.options.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
+                <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      {FILTER_FIELDS.map((field) => (
+                        <label key={field.key} className="space-y-1">
+                          <span className="text-xs font-semibold text-slate-600">{field.label}</span>
+                          {field.options ? (
+                            <select
+                              name={field.key}
+                              defaultValue={searchParams.get(field.key) ?? ""}
+                              className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                            >
+                              <option value="">All</option>
+                              {field.options.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              name={field.key}
+                              type={field.type ?? "text"}
+                              defaultValue={searchParams.get(field.key) ?? ""}
+                              className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                            />
+                          )}
+                        </label>
+                      ))}
+                    </div>
+
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                       <input
-                        name={field.key}
-                        type={field.type ?? "text"}
-                        defaultValue={searchParams.get(field.key) ?? ""}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none"
+                        type="checkbox"
+                        name="verifiedOnly"
+                        defaultChecked={searchParams.get("verifiedOnly") === "1"}
+                        className="h-4 w-4 rounded border-slate-300"
                       />
-                    )}
-                  </label>
-                ))}
-              </div>
+                      Verified sellers only
+                    </label>
+                  </div>
 
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="verifiedOnly"
-                  defaultChecked={searchParams.get("verifiedOnly") === "1"}
-                  className="h-4 w-4 rounded border-slate-300"
-                />
-                Verified sellers only
-              </label>
-
-              <div className="sticky bottom-0 mt-6 grid grid-cols-2 gap-2 bg-white pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    router.push(pathname);
-                    setOpen(false);
-                  }}
-                  className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700"
-                >
-                  Clear filters
-                </button>
-                <button
-                  type="submit"
-                  className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white"
-                >
-                  Apply
-                </button>
-              </div>
-            </form>
-          </aside>
-        </div>
-      ) : null}
+                  <div className="sticky bottom-0 z-[1002] grid grid-cols-2 gap-2 border-t border-slate-200 bg-white px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        router.push(pathname);
+                        setOpen(false);
+                      }}
+                      className="min-h-11 rounded-xl border border-slate-200 text-sm font-medium text-slate-700"
+                    >
+                      Clear filters
+                    </button>
+                    <button
+                      type="submit"
+                      className="min-h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </form>
+              </aside>
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }
