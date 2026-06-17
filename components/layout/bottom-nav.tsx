@@ -25,11 +25,12 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40" style={{ height: "64px" }}>
-      {/* Responsive notch background using radial-gradient — always centered */}
+      {/* Nav bar background with rounded top corners and notch cutout */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: "radial-gradient(circle at 50% 0px, transparent 40px, white 41px)",
+          borderRadius: "24px 24px 0 0",
           filter: "drop-shadow(0 -2px 10px rgba(0,0,0,0.10))",
         }}
       />
@@ -76,9 +77,8 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex min-h-12 flex-col items-center justify-center rounded-xl text-[11px] font-medium ${
-                  active ? "bg-slate-900 text-white" : "text-slate-600"
-                }`}
+                className="flex min-h-12 flex-col items-center justify-center rounded-xl text-[11px] font-medium"
+                style={{ color: active ? "#E8651A" : "#94a3b8" }}
               >
                 <span className="relative">
                   <Icon className="h-4 w-4" />
