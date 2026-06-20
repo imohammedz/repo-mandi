@@ -134,15 +134,16 @@ const getSellerRoleChip = (vehicle: Vehicle) => {
 };
 
 const FEATURED_TOOLTIP_TEXT = "Featured Listing";
+const FEATURED_TOOLTIP_DURATION_MS = 1500;
 
-const isFeaturedListingActive = (vehicle: Vehicle) => {
+const isFeaturedListingActive = (vehicle: Vehicle, now: Date) => {
   if (!vehicle.isFeatured) return false;
   if (!vehicle.featuredExpiresAt) return true;
 
   const featuredExpiry = new Date(vehicle.featuredExpiresAt);
   if (Number.isNaN(featuredExpiry.getTime())) return false;
 
-  return featuredExpiry > new Date();
+  return featuredExpiry > now;
 };
 
 export function VehicleCard({ vehicle, compact = false }: Props) {
@@ -157,7 +158,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
-  const isFeaturedActive = isFeaturedListingActive(vehicle);
+  const featuredReferenceTime = useMemo(() => new Date(), [vehicle.featuredExpiresAt, vehicle.isFeatured]);
+  const isFeaturedActive = isFeaturedListingActive(vehicle, featuredReferenceTime);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
       ? "border border-amber-200 bg-amber-50 text-[9px] font-semibold text-amber-800"
@@ -209,15 +211,29 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     []
   );
 
-  const showFeaturedTooltipTemporarily = () => {
-    setShowFeaturedTooltip(true);
+  const clearFeaturedTooltipTimeout = () => {
     if (featuredTooltipTimeoutRef.current) {
       window.clearTimeout(featuredTooltipTimeoutRef.current);
+      featuredTooltipTimeoutRef.current = null;
     }
+  };
+
+  const hideFeaturedTooltip = () => {
+    clearFeaturedTooltipTimeout();
+    setShowFeaturedTooltip(false);
+  };
+
+  const showFeaturedTooltipNow = () => {
+    clearFeaturedTooltipTimeout();
+    setShowFeaturedTooltip(true);
+  };
+
+  const showFeaturedTooltipTemporarily = () => {
+    showFeaturedTooltipNow();
     featuredTooltipTimeoutRef.current = setTimeout(() => {
       setShowFeaturedTooltip(false);
       featuredTooltipTimeoutRef.current = null;
-    }, 1500);
+    }, FEATURED_TOOLTIP_DURATION_MS);
   };
 
   const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -305,37 +321,45 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 h-[180px] overflow-hidden">
-        <div className="flex min-w-0 flex-nowrap items-center gap-1">
-          <span
-            className={`inline-flex w-fit shrink-0 rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
-            role="status"
-            aria-label={`Listing type: ${listingTypeTag}`}
-          >
-            {listingTypeTag}
-          </span>
-          {sellerRoleChip ? (
-            <span className={`inline-flex min-w-0 max-w-full flex-1 items-center overflow-hidden rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-              <span className="truncate">{sellerRoleChip}</span>
+        <div className="relative min-w-0">
+          <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
+            <span
+              className={`inline-flex w-fit shrink-0 rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
+              role="status"
+              aria-label={`Listing type: ${listingTypeTag}`}
+            >
+              {listingTypeTag}
             </span>
-          ) : null}
-          {isFeaturedActive ? (
-            <span className="group relative inline-flex shrink-0">
-              <button
-                type="button"
-                aria-label={FEATURED_TOOLTIP_TEXT}
-                onClick={showFeaturedTooltipTemporarily}
-                className={featuredChipClass}
-              >
-                <span aria-hidden>⭐</span>
-              </button>
-              <span
-                role="tooltip"
-                className={`pointer-events-none absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white shadow-sm transition-opacity duration-150 ${
-                  showFeaturedTooltip ? "opacity-100" : "opacity-0"
-                } group-hover:opacity-100 group-focus-within:opacity-100`}
-              >
-                {FEATURED_TOOLTIP_TEXT}
+            {sellerRoleChip ? (
+              <span className={`inline-flex min-w-0 max-w-full flex-1 items-center overflow-hidden rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+                <span className="truncate">{sellerRoleChip}</span>
               </span>
+            ) : null}
+            {isFeaturedActive ? (
+              <span className="inline-flex shrink-0">
+                <button
+                  type="button"
+                  aria-label={FEATURED_TOOLTIP_TEXT}
+                  onBlur={hideFeaturedTooltip}
+                  onClick={showFeaturedTooltipTemporarily}
+                  onFocus={showFeaturedTooltipNow}
+                  onMouseEnter={showFeaturedTooltipNow}
+                  onMouseLeave={hideFeaturedTooltip}
+                  className={featuredChipClass}
+                >
+                  <span aria-hidden>⭐</span>
+                </button>
+              </span>
+            ) : null}
+          </div>
+          {isFeaturedActive ? (
+            <span
+              role="tooltip"
+              className={`pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white shadow-sm transition-opacity duration-150 ${
+                showFeaturedTooltip ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {FEATURED_TOOLTIP_TEXT}
             </span>
           ) : null}
         </div>
