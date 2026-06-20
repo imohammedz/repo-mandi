@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { SupportContactInline } from "@/components/ui/support-contact-inline";
@@ -23,6 +23,13 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const isCategoryFilterActive = Boolean(searchParams.get("category"));
+
+  useEffect(() => {
+    setItems(initialItems);
+    setPagination(initialPagination);
+    setLoading(false);
+    setError("");
+  }, [initialItems, initialPagination]);
 
   const handleLoadMore = async () => {
     if (loading || !pagination.hasNextPage) return;

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 import { vehicles } from "@/lib/schema";
@@ -347,16 +347,26 @@ function mapVehicleCardRow(row: VehicleCardRow) {
   } as Vehicle;
 }
 
-function getVehicleListingOrderBy(sort?: string) {
+export function getVehicleListingOrderBy(sort?: string) {
+  const activeFeaturedFirst = sql`
+    case
+      when ${vehicles.isFeatured} = true
+        and (${vehicles.featuredExpiresAt} is null or ${vehicles.featuredExpiresAt} > now())
+      then 1
+      else 0
+    end desc
+  `;
+  const featuredAtDescNullsLast = sql`${vehicles.featuredAt} desc nulls last`;
+
   if (sort === "price-low") {
-    return [desc(vehicles.isFeatured), asc(vehicles.price), desc(vehicles.createdAt)] as const;
+    return [activeFeaturedFirst, featuredAtDescNullsLast, sql`${vehicles.price} asc nulls last`, desc(vehicles.createdAt)] as const;
   }
 
   if (sort === "price-high") {
-    return [desc(vehicles.isFeatured), desc(vehicles.price), desc(vehicles.createdAt)] as const;
+    return [activeFeaturedFirst, featuredAtDescNullsLast, sql`${vehicles.price} desc nulls last`, desc(vehicles.createdAt)] as const;
   }
 
-  return [desc(vehicles.isFeatured), desc(vehicles.createdAt)] as const;
+  return [activeFeaturedFirst, featuredAtDescNullsLast, desc(vehicles.createdAt)] as const;
 }
 
 export async function getPaginatedPublicVehicleListings(

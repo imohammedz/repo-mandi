@@ -7,6 +7,7 @@ import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDeb
 import {
   getPaginatedPublicVehicleListings,
   getVehicleListingLimit,
+  getVehicleListingOrderBy,
   getVehicleListingPage,
   isHomepageCategory,
 } from "@/lib/vehicle-listings";
@@ -413,7 +414,7 @@ export async function GET(request: Request) {
       .select()
       .from(vehicles)
       .where(whereClause)
-      .orderBy(desc(vehicles.isFeatured), desc(vehicles.createdAt))
+      .orderBy(...getVehicleListingOrderBy(sort))
       .limit(limit)
       .offset((safePage - 1) * limit);
 
