@@ -158,7 +158,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
-  const featuredReferenceTime = useMemo(() => new Date(), [vehicle.featuredExpiresAt, vehicle.isFeatured]);
+  const featuredReferenceTime = new Date();
   const isFeaturedActive = isFeaturedListingActive(vehicle, featuredReferenceTime);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
