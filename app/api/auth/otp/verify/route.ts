@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     if (intent === "admin" && (!ADMIN_PHONE_NUMBERS || ADMIN_PHONE_NUMBERS.size === 0)) {
       return Response.json(
         {
-          message: "Admin authentication requires ADMIN_PHONE_NUMBERS with at least one E.164 phone number.",
+          message: "Admin authentication is not configured. Contact support.",
         },
         { status: 500 }
       );
@@ -71,8 +71,8 @@ export async function POST(request: Request) {
       return Response.json({ message: result.message }, { status: 400 });
     }
 
-    const normalizedPhone = `+91${phone}`;
-    const isAuthorizedAdmin = ADMIN_PHONE_NUMBERS ? ADMIN_PHONE_NUMBERS.has(normalizedPhone) : false;
+    const normalizedPhone = normalizeToE164(phone);
+    const isAuthorizedAdmin = Boolean(normalizedPhone && ADMIN_PHONE_NUMBERS?.has(normalizedPhone));
 
     if (intent === "admin" && !isAuthorizedAdmin) {
       return Response.json({ message: "This phone number is not authorized for admin access." }, { status: 403 });
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const [existing] = await db.select().from(users).where(eq(users.phone, phone));
     let currentUser = existing;
 
-    if (isAuthorizedAdmin) {
+    if (intent === "admin" && isAuthorizedAdmin) {
       const adminPayload = {
         accountType: "ADMIN" as const,
         isProfileComplete: true,
@@ -91,15 +91,17 @@ export async function POST(request: Request) {
         updatedAt: new Date(),
       };
 
-      [currentUser] = existing
-        ? await db.update(users).set(adminPayload).where(eq(users.id, existing.id)).returning()
-        : await db
-            .insert(users)
-            .values({
-              phone,
-              ...adminPayload,
-            })
-            .returning();
+      if (existing) {
+        [currentUser] = await db.update(users).set(adminPayload).where(eq(users.id, existing.id)).returning();
+      } else {
+        [currentUser] = await db
+          .insert(users)
+          .values({
+            phone,
+            ...adminPayload,
+          })
+          .returning();
+      }
     } else if (!existing) {
       [currentUser] = await db
         .insert(users)
