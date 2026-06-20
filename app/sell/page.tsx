@@ -23,7 +23,7 @@ export default function SellPage() {
         if (!response.ok) return;
         const data = (await response.json()) as { user?: { accountType?: string; isProfileComplete?: boolean } };
         if (isSellerAccountType(data.user?.accountType)) {
-          router.replace(data.user!.isProfileComplete ? "/seller/add-vehicle" : "/onboarding");
+          router.replace(data.user?.isProfileComplete ? "/seller/add-vehicle" : "/onboarding");
         }
       } catch {
         // If session is unavailable, keep users on this screen.
