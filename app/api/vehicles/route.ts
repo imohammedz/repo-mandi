@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { vehicleMedia, vehicles, platformSettings, sellerVerifiedPhones } from "@/lib/schema";
-import { eq, ilike, and, or, desc, gte, lte, isNull, count } from "drizzle-orm";
+import { eq, ilike, and, or, gte, lte, isNull, count } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";

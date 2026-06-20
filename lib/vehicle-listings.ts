@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 import { vehicles } from "@/lib/schema";
@@ -348,15 +348,21 @@ function mapVehicleCardRow(row: VehicleCardRow) {
 }
 
 export function getVehicleListingOrderBy(sort?: string) {
-  const activeFeaturedFirst = sql`
+  const activeFeaturedCase = sql`
     case
       when ${vehicles.isFeatured} = true
         and (${vehicles.featuredExpiresAt} is null or ${vehicles.featuredExpiresAt} > now())
       then 1
       else 0
-    end desc
+    end
   `;
-  const featuredAtDescNullsLast = sql`${vehicles.featuredAt} desc nulls last`;
+  const activeFeaturedFirst = sql`${activeFeaturedCase} desc`;
+  const featuredAtDescNullsLast = sql`
+    case
+      when ${activeFeaturedCase} = 1 then ${vehicles.featuredAt}
+      else null
+    end desc nulls last
+  `;
 
   if (sort === "price-low") {
     return [activeFeaturedFirst, featuredAtDescNullsLast, sql`${vehicles.price} asc nulls last`, desc(vehicles.createdAt)] as const;
