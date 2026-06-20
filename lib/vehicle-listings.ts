@@ -359,6 +359,7 @@ function getActiveFeaturedCaseSql() {
 }
 
 export function getVehicleListingOrderBy(sort?: string) {
+  const normalizedSort = sort ?? "newest";
   const activeFeaturedCase = getActiveFeaturedCaseSql();
   const activeFeaturedFirst = sql`${activeFeaturedCase} desc`;
   const featuredAtDescNullsLast = sql`
@@ -369,9 +370,9 @@ export function getVehicleListingOrderBy(sort?: string) {
   `;
   let priceOrder: SQL | null = null;
 
-  if (sort === "price-low") {
+  if (normalizedSort === "price-low") {
     priceOrder = sql`${vehicles.price} asc nulls last`;
-  } else if (sort === "price-high") {
+  } else if (normalizedSort === "price-high") {
     priceOrder = sql`${vehicles.price} desc nulls last`;
   }
 
