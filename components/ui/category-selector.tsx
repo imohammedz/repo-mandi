@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
+export type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
 
 type Category = {
   id: CategoryId;
