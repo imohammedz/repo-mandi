@@ -8,6 +8,7 @@ import {
   getPaginatedPublicVehicleListings,
   getVehicleListingLimit,
   getVehicleListingPage,
+  isHomepageCategory,
 } from "@/lib/vehicle-listings";
 import {
   ASSET_STRUCTURE_VALUES,
@@ -280,6 +281,7 @@ export async function GET(request: Request) {
     const sellerRole = url.searchParams.get("sellerRole");
     const detachableType = url.searchParams.get("detachableType");
     const assetCategory = url.searchParams.get("assetCategory");
+    const category = url.searchParams.get("category");
     const sort = url.searchParams.get("sort") ?? "newest";
 
     if (typeParam && !VALID_TYPES.includes(typeParam as VehicleType)) {
@@ -324,6 +326,7 @@ export async function GET(request: Request) {
       const publicResult = await getPaginatedPublicVehicleListings(
         {
           q: query ?? undefined,
+          category: isHomepageCategory(category) ? category : undefined,
           type: type ?? undefined,
           listingType: listingType ?? undefined,
           listingMode: listingMode ?? undefined,

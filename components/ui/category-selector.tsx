@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
 
@@ -31,32 +31,32 @@ const categories: Category[] = [
   {
     id: "prime-mover",
     label: "Prime Mover",
-    href: "/vehicles?assetStructure=DETACHABLE&detachableType=PRIME_MOVER",
+    href: "/vehicles?category=prime-mover",
   },
   {
     id: "trailers",
     label: "Trailers",
-    href: "/vehicles?assetStructure=DETACHABLE&detachableType=TRAILER",
+    href: "/vehicles?category=trailers",
   },
   {
     id: "tippers",
     label: "Tippers",
-    href: "/vehicles?assetStructure=STANDALONE&bodyApplicationType=Tipper",
+    href: "/vehicles?category=tippers",
   },
   {
     id: "container",
     label: "Container",
-    href: "/vehicles?bodyApplicationType=Container+Truck",
+    href: "/vehicles?category=container",
   },
   {
     id: "buses",
     label: "Buses",
-    href: "/vehicles?assetStructure=STANDALONE&assetCategory=Bus+%2F+Passenger+Commercial",
+    href: "/vehicles?category=buses",
   },
   {
     id: "equipment",
     label: "Equipment",
-    href: "/vehicles?assetStructure=EQUIPMENT",
+    href: "/vehicles?category=equipment",
   },
 ];
 
@@ -155,9 +155,13 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
   equipment: EquipmentIcon,
 };
 
-export function CategorySelector() {
-  const [selected, setSelected] = useState<CategoryId | null>(null);
+export function CategorySelector({ activeCategory = null }: { activeCategory?: CategoryId | null }) {
+  const [selected, setSelected] = useState<CategoryId | null>(activeCategory);
   const router = useRouter();
+
+  useEffect(() => {
+    setSelected(activeCategory);
+  }, [activeCategory]);
 
   return (
     <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">
