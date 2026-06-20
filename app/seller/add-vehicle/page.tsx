@@ -433,7 +433,7 @@ const STEP_LABELS: Record<number, string> = {
 const emptyForm: FormData = {
   listingType: "",
   listingMode: "NORMAL",
-  assetStructure: "",
+  assetStructure: "STANDALONE",
   detachableType: "",
   assetCategory: "",
   bodyApplicationType: "",
