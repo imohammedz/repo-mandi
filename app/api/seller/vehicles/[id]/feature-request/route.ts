@@ -106,11 +106,11 @@ export async function POST(
         return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
-      if (coupon.expiresAt && coupon.expiresAt < now) {
+      if (coupon.expiresAt && coupon.expiresAt.getTime() < now.getTime()) {
         return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
-      if (coupon.startsAt && coupon.startsAt > now) {
+      if (coupon.startsAt && coupon.startsAt.getTime() > now.getTime()) {
         return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 

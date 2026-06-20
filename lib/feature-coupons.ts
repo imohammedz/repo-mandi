@@ -12,7 +12,7 @@ export function normalizeFeatureCouponCode(value: string) {
 }
 
 export function isValidFeatureCouponCode(value: string) {
-  return FEATURE_COUPON_CODE_REGEX.test(value) && !/\s/.test(value);
+  return FEATURE_COUPON_CODE_REGEX.test(value);
 }
 
 export function sanitizeOptionalText(value: string | null | undefined) {

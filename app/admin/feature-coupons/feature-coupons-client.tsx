@@ -502,7 +502,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-400">Used Count</p>
                     <p className="font-medium text-slate-800">
-                      {coupon.usedCount} / {coupon.maxUses ?? "∞"}
+                      {coupon.usedCount} / {coupon.maxUses ?? "Unlimited"}
                     </p>
                   </div>
                   <div>

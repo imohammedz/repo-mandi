@@ -105,7 +105,9 @@ export async function PATCH(
 
   if (maxUsesResult.value !== null && maxUsesResult.value < existing.usedCount) {
     return Response.json(
-      { message: `Max uses cannot be less than the current used count (${existing.usedCount}).` },
+      {
+        message: `Max uses (${maxUsesResult.value}) cannot be less than the current used count (${existing.usedCount}).`,
+      },
       { status: 400 },
     );
   }
