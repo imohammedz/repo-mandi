@@ -363,13 +363,15 @@ export function getVehicleListingOrderBy(sort?: string) {
       else null
     end desc nulls last
   `;
+  const priceOrder =
+    sort === "price-low"
+      ? sql`${vehicles.price} asc nulls last`
+      : sort === "price-high"
+        ? sql`${vehicles.price} desc nulls last`
+        : null;
 
-  if (sort === "price-low") {
-    return [activeFeaturedFirst, featuredAtDescNullsLast, sql`${vehicles.price} asc nulls last`, desc(vehicles.createdAt)] as const;
-  }
-
-  if (sort === "price-high") {
-    return [activeFeaturedFirst, featuredAtDescNullsLast, sql`${vehicles.price} desc nulls last`, desc(vehicles.createdAt)] as const;
+  if (priceOrder) {
+    return [activeFeaturedFirst, featuredAtDescNullsLast, priceOrder, desc(vehicles.createdAt)] as const;
   }
 
   return [activeFeaturedFirst, featuredAtDescNullsLast, desc(vehicles.createdAt)] as const;
