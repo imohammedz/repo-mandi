@@ -49,6 +49,10 @@ function isExpired(value: Date | string | null | undefined) {
   return Boolean(value && new Date(value).getTime() < Date.now());
 }
 
+function formatSellerDisplay(usage: FeatureCouponUsageRow) {
+  return usage.sellerName || usage.sellerPhone || `Seller #${usage.sellerId}`;
+}
+
 const EMPTY_FORM = {
   code: "",
   description: "",
@@ -494,7 +498,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3 lg:grid-cols-6">
+                <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3 lg:grid-cols-5">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-400">Used Count</p>
                     <p className="font-medium text-slate-800">
@@ -516,10 +520,6 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-400">Created</p>
                     <p className="font-medium text-slate-800">{formatDate(coupon.createdAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Actions</p>
-                    <p className="font-medium text-slate-800">{canDelete ? "Edit / Enable / Delete" : "Edit / Enable"}</p>
                   </div>
                 </div>
 
@@ -645,7 +645,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
                           >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="font-medium text-slate-900">
-                                {usage.couponCode ?? coupon.code} • {usage.sellerName || usage.sellerPhone || `Seller #${usage.sellerId}`}
+                                {usage.couponCode ?? coupon.code} • {formatSellerDisplay(usage)}
                               </p>
                               <span className="text-xs text-slate-500">{formatDateTime(usage.usedAt)}</span>
                             </div>

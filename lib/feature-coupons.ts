@@ -1,6 +1,11 @@
 export const DEFAULT_FEATURE_DURATION_DAYS = 30;
+export const FEATURE_COUPON_CODE_MIN_LENGTH = 2;
+export const FEATURE_COUPON_CODE_MAX_LENGTH = 50;
+export const FEATURE_COUPON_CODE_ERROR_MESSAGE = `Coupon code must be ${FEATURE_COUPON_CODE_MIN_LENGTH}–${FEATURE_COUPON_CODE_MAX_LENGTH} uppercase letters, numbers, hyphens, or underscores with no spaces.`;
 
-const FEATURE_COUPON_CODE_REGEX = /^[A-Z0-9_-]{2,50}$/;
+const FEATURE_COUPON_CODE_REGEX = new RegExp(
+  `^[A-Z0-9_-]{${FEATURE_COUPON_CODE_MIN_LENGTH},${FEATURE_COUPON_CODE_MAX_LENGTH}}$`,
+);
 
 export function normalizeFeatureCouponCode(value: string) {
   return value.trim().toUpperCase();

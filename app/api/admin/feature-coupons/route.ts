@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   DEFAULT_FEATURE_DURATION_DAYS,
+  FEATURE_COUPON_CODE_ERROR_MESSAGE,
   isValidFeatureCouponCode,
   normalizeFeatureCouponCode,
   parseOptionalDate,
@@ -56,10 +57,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "Coupon code is required." }, { status: 400 });
   }
   if (!isValidFeatureCouponCode(rawCode)) {
-    return Response.json(
-      { message: "Coupon code must be 2–50 uppercase letters, numbers, hyphens, or underscores with no spaces." },
-      { status: 400 },
-    );
+    return Response.json({ message: FEATURE_COUPON_CODE_ERROR_MESSAGE }, { status: 400 });
   }
 
   const durationDaysResult = parsePositiveInteger(

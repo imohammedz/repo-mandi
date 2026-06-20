@@ -136,6 +136,10 @@ export async function POST(
       const featuredExpiresAt = new Date(
         now.getTime() + coupon.durationDays * MILLISECONDS_PER_DAY,
       );
+      const couponCountUpdate = {
+        usedCount: sql`${featureCoupons.usedCount} + 1`,
+        updatedAt: now,
+      };
 
       try {
         await db.transaction(async (tx) => {
@@ -170,12 +174,12 @@ export async function POST(
             coupon.maxUses === null
               ? await tx
                   .update(featureCoupons)
-                  .set({ usedCount: sql`${featureCoupons.usedCount} + 1`, updatedAt: now })
+                  .set(couponCountUpdate)
                   .where(eq(featureCoupons.id, coupon.id))
                   .returning({ id: featureCoupons.id })
               : await tx
                   .update(featureCoupons)
-                  .set({ usedCount: sql`${featureCoupons.usedCount} + 1`, updatedAt: now })
+                  .set(couponCountUpdate)
                   .where(and(eq(featureCoupons.id, coupon.id), lt(featureCoupons.usedCount, coupon.maxUses)))
                   .returning({ id: featureCoupons.id });
 
