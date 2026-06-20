@@ -12,6 +12,19 @@ type FilterField = {
   type?: "text" | "number";
 };
 
+const BRAND_OPTIONS = [
+  { label: "Tata", value: "Tata" },
+  { label: "Ashok Leyland", value: "Ashok Leyland" },
+  { label: "Eicher", value: "Eicher" },
+  { label: "Mahindra", value: "Mahindra" },
+  { label: "BharatBenz", value: "BharatBenz" },
+  { label: "Volvo", value: "Volvo" },
+  { label: "MAN", value: "MAN" },
+  { label: "Scania", value: "Scania" },
+  { label: "AMW", value: "AMW" },
+  { label: "Force", value: "Force" },
+];
+
 const FILTER_FIELDS: FilterField[] = [
   {
     key: "listingType",
@@ -46,21 +59,14 @@ const FILTER_FIELDS: FilterField[] = [
       { label: "Trailer", value: "TRAILER" },
     ],
   },
-  { key: "assetCategory", label: "Vehicle Class / Category", type: "text" },
   { key: "bodyType", label: "Body Type", type: "text" },
-  { key: "bodyApplicationType", label: "Body Application", type: "text" },
-  { key: "brand", label: "Brand / Make", type: "text" },
+  {
+    key: "brand",
+    label: "Brand / Make",
+    options: BRAND_OPTIONS,
+  },
   { key: "model", label: "Model", type: "text" },
   { key: "location", label: "Location / Yard", type: "text" },
-  {
-    key: "runningCondition",
-    label: "Running Condition",
-    options: [
-      { label: "Running", value: "RUNNING" },
-      { label: "Not Running", value: "NOT_RUNNING" },
-      { label: "Unknown", value: "UNKNOWN" },
-    ],
-  },
   { key: "repoStatus", label: "Repo Status", type: "text" },
   { key: "sellerRole", label: "Seller Role", type: "text" },
   { key: "minPrice", label: "Min Price", type: "number" },

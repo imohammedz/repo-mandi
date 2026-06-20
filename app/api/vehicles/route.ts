@@ -277,7 +277,6 @@ export async function GET(request: Request) {
     const bodyApplicationType = url.searchParams.get("bodyApplicationType");
     const model = url.searchParams.get("model");
     const location = url.searchParams.get("location");
-    const runningCondition = url.searchParams.get("runningCondition");
     const repoStatus = url.searchParams.get("repoStatus");
     const sellerRole = url.searchParams.get("sellerRole");
     const detachableType = url.searchParams.get("detachableType");
@@ -341,7 +340,6 @@ export async function GET(request: Request) {
           location: location ?? undefined,
           city: city ?? undefined,
           state: state ?? undefined,
-          runningCondition: runningCondition ?? undefined,
           repoStatus: repoStatus ?? undefined,
           sellerRole: sellerRole ?? undefined,
           financeCompany: financeCompany ?? undefined,
@@ -390,7 +388,6 @@ export async function GET(request: Request) {
     if (repoStatus) conditions.push(ilike(vehicles.repoStatus, `%${repoStatus}%`));
     if (sellerRole) conditions.push(ilike(vehicles.sellerRole, `%${sellerRole}%`));
     if (verifiedOnly) conditions.push(eq(vehicles.sellerVerified, true));
-    if (runningCondition) conditions.push(eq(vehicles.runningCondition, runningCondition as RunningCondition));
     if (minPrice) conditions.push(gte(vehicles.price, minPrice));
     if (maxPrice) conditions.push(lte(vehicles.price, maxPrice));
     if (query) {

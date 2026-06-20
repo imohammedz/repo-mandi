@@ -40,7 +40,6 @@ export type VehicleListingSearchParams = {
   location?: string;
   city?: string;
   state?: string;
-  runningCondition?: string;
   repoStatus?: string;
   sellerRole?: string;
   financeCompany?: string;
@@ -252,7 +251,6 @@ export function buildPublicVehicleConditions(params: VehicleListingSearchParams)
   }
   if (params.city) conditions.push(ilike(vehicles.city, `%${params.city}%`));
   if (params.state) conditions.push(ilike(vehicles.state, `%${params.state}%`));
-  if (params.runningCondition) conditions.push(eq(vehicles.runningCondition, params.runningCondition as typeof vehicles.runningCondition._.data));
   if (params.repoStatus) conditions.push(ilike(vehicles.repoStatus, `%${params.repoStatus}%`));
   if (params.sellerRole) conditions.push(ilike(vehicles.sellerRole, `%${params.sellerRole}%`));
   if (params.financeCompany) conditions.push(ilike(vehicles.financeCompany, `%${params.financeCompany}%`));
