@@ -135,6 +135,7 @@ const getSellerRoleChip = (vehicle: Vehicle) => {
 
 const FEATURED_TOOLTIP_TEXT = "Featured Listing";
 const FEATURED_TOOLTIP_DURATION_MS = 1500;
+const FEATURED_STATUS_REFRESH_MS = 60_000;
 
 export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
@@ -148,14 +149,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
-  const [featuredReferenceTime] = useState(() => Date.now());
+  const [featuredReferenceTime, setFeaturedReferenceTime] = useState(() => Date.now());
   const featuredExpiryTime = useMemo(() => {
     if (!vehicle.featuredExpiresAt) return null;
     const parsedFeaturedExpiry = Date.parse(vehicle.featuredExpiresAt);
-    return Number.isNaN(parsedFeaturedExpiry) ? Number.NEGATIVE_INFINITY : parsedFeaturedExpiry;
+    return Number.isNaN(parsedFeaturedExpiry) ? null : parsedFeaturedExpiry;
   }, [vehicle.featuredExpiresAt]);
   const isFeaturedActive =
-    Boolean(vehicle.isFeatured) && (featuredExpiryTime === null || featuredExpiryTime > featuredReferenceTime);
+    Boolean(vehicle.isFeatured) &&
+    (!vehicle.featuredExpiresAt || (featuredExpiryTime !== null && featuredExpiryTime > featuredReferenceTime));
   const listingTypeTagClass =
     listingTypeTag === "REPO"
       ? "border border-amber-200 bg-amber-50 text-[9px] font-semibold text-amber-800"
@@ -206,6 +208,16 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     },
     []
   );
+
+  useEffect(() => {
+    if (!vehicle.isFeatured || !vehicle.featuredExpiresAt) return;
+
+    const refreshFeaturedState = () => setFeaturedReferenceTime(Date.now());
+    refreshFeaturedState();
+
+    const intervalId = window.setInterval(refreshFeaturedState, FEATURED_STATUS_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [vehicle.featuredExpiresAt, vehicle.isFeatured]);
 
   const clearFeaturedTooltipTimeout = () => {
     if (featuredTooltipTimeoutRef.current) {
@@ -326,8 +338,10 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               {listingTypeTag}
             </span>
             {sellerRoleChip ? (
-              <span className={`inline-flex min-w-0 max-w-full flex-1 items-center overflow-hidden rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-                <span className="truncate">{sellerRoleChip}</span>
+              <span
+                className={`inline-flex min-w-0 max-w-full flex-1 items-center overflow-hidden truncate rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+              >
+                {sellerRoleChip}
               </span>
             ) : null}
             {isFeaturedActive ? (
