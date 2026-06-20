@@ -14,7 +14,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   const { id } = await context.params;
   const parsedId = Number(id);
-  if (!Number.isInteger(parsedId) || parsedId <= 0) {
+  if (!Number.isInteger(parsedId) || parsedId <= 0 || parsedId > Number.MAX_SAFE_INTEGER) {
     return Response.json({ message: "Invalid inquiry id." }, { status: 400 });
   }
 

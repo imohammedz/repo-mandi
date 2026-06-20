@@ -1,6 +1,13 @@
 import { BellOff } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function NotificationsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NotificationsPage() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) redirect("/auth/login");
+
   return (
     <main className="space-y-4 px-4 pb-8 pt-4">
       <div>

@@ -14,6 +14,10 @@ const normalizeIndianPhone = (rawPhone: string) => {
   return null;
 };
 
+function hasUnsafeText(value: string) {
+  return /<\s*script|javascript:|onerror\s*=|onload\s*=|onclick\s*=/i.test(value);
+}
+
 export async function GET() {
   const currentUser = await getCurrentUser();
   if (!currentUser) return Response.json({ message: "Unauthorized." }, { status: 401 });
@@ -89,7 +93,16 @@ export async function POST(request: Request) {
     }
 
     const location = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ") || null;
-    const requirementText = body.requirementText?.trim() || "Need insurance support for this vehicle.";
+    const requirementText = body.requirementText?.trim();
+    if (!requirementText) {
+      return Response.json({ message: "Requirement text is required." }, { status: 400 });
+    }
+    if (requirementText.length > 1000) {
+      return Response.json({ message: "Requirement text must be 1000 characters or less." }, { status: 400 });
+    }
+    if (hasUnsafeText(requirementText)) {
+      return Response.json({ message: "Requirement text contains invalid content." }, { status: 400 });
+    }
 
     const [inserted] = await db
       .insert(insuranceInquiries)

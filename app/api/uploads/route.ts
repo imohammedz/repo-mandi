@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { and, eq, isNull } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { vehicles } from "@/lib/schema";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { isSupabasePublicStorageUrl, shouldLogMediaDebug } from "@/lib/media";
+import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -8,6 +13,7 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const MAX_FILES_PER_REQUEST = 10;
+const ALLOWED_VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
 
 function detectImageExtension(buffer: Buffer): string | null {
   // PNG
@@ -28,19 +34,6 @@ function detectImageExtension(buffer: Buffer): string | null {
   // JPEG
   if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return "jpg";
-  }
-
-  // GIF
-  if (
-    buffer.length >= 6 &&
-    buffer[0] === 0x47 &&
-    buffer[1] === 0x49 &&
-    buffer[2] === 0x46 &&
-    buffer[3] === 0x38 &&
-    (buffer[4] === 0x39 || buffer[4] === 0x37) &&
-    buffer[5] === 0x61
-  ) {
-    return "gif";
   }
 
   // WEBP: RIFF....WEBP
@@ -74,8 +67,57 @@ function isPdfFile(buffer: Buffer): boolean {
 
 export async function POST(request: Request) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return Response.json({ message: "Unauthorized." }, { status: 401 });
+    }
+    if (!["SELLER", "BANK_PARTNER", "ADMIN"].includes(currentUser.accountType)) {
+      return Response.json({ message: "Forbidden." }, { status: 403 });
+    }
+
+    const ip = getClientIp(request);
+    const uploadRateLimitByUser = enforceRateLimit({
+      key: `uploads:user:${currentUser.id}`,
+      limit: 40,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!uploadRateLimitByUser.ok) {
+      return Response.json(
+        { message: "Too many upload requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(uploadRateLimitByUser.retryAfterSeconds) } },
+      );
+    }
+    const uploadRateLimitByIp = enforceRateLimit({
+      key: `uploads:ip:${ip}`,
+      limit: 80,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!uploadRateLimitByIp.ok) {
+      return Response.json(
+        { message: "Upload rate limit exceeded for this network." },
+        { status: 429, headers: { "Retry-After": String(uploadRateLimitByIp.retryAfterSeconds) } },
+      );
+    }
+
     const formData = await request.formData();
-    const mediaType = String(formData.get("mediaType") ?? "image").toLowerCase();
+    const mediaTypeRaw = String(formData.get("mediaType") ?? "").toLowerCase();
+    if (!["image", "video", "document"].includes(mediaTypeRaw)) {
+      return Response.json({ message: "Invalid media type." }, { status: 400 });
+    }
+    const mediaType = mediaTypeRaw as "image" | "video" | "document";
+    const listingId = String(formData.get("listingId") ?? "").trim();
+    if (listingId) {
+      const [listing] = await db
+        .select({ id: vehicles.id, sellerId: vehicles.sellerId })
+        .from(vehicles)
+        .where(and(eq(vehicles.id, listingId), isNull(vehicles.deletedAt)));
+      if (!listing) {
+        return Response.json({ message: "Listing not found." }, { status: 404 });
+      }
+      if (currentUser.accountType !== "ADMIN" && listing.sellerId !== currentUser.id) {
+        return Response.json({ message: "Forbidden." }, { status: 403 });
+      }
+    }
     const files = formData
       .getAll("files")
       .filter((value): value is File => value instanceof File);
@@ -98,9 +140,6 @@ export async function POST(request: Request) {
     for (const file of files) {
       const isVideo = mediaType === "video";
       const isDocument = mediaType === "document";
-      if (!isVideo && !isDocument && mediaType !== "image") {
-        return Response.json({ message: "Invalid media type." }, { status: 400 });
-      }
 
       if (isVideo && !file.type.startsWith("video/")) {
         return Response.json(
@@ -162,13 +201,20 @@ export async function POST(request: Request) {
         );
       }
 
-      const filePath = `vehicles/${isVideo ? "videos" : isDocument ? "documents" : "images"}/${randomUUID()}.${extension}`;
+      if (isVideo && !ALLOWED_VIDEO_EXTENSIONS.has(extension)) {
+        return Response.json(
+          { message: "Only MP4, MOV, and WEBM videos are allowed." },
+          { status: 400 },
+        );
+      }
+
+      const filePath = `users/${currentUser.id}/vehicles/${listingId || "draft"}/${isVideo ? "videos" : isDocument ? "documents" : "images"}/${randomUUID()}.${extension}`;
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)
         .upload(filePath, fileBuffer, {
           contentType: file.type,
-          upsert: true,
+          upsert: false,
         });
 
       if (error) {

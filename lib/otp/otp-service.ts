@@ -21,6 +21,8 @@ export type OtpProvider = "MSG91_SMS" | "WHATSAPP" | "TWILIO_SMS";
 
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
+const OTP_SEND_COOLDOWN_SECONDS = 60;
+const OTP_SEND_MAX_PER_HOUR = 5;
 
 // ─── Provider setting ─────────────────────────────────────────────────────────
 
@@ -120,6 +122,34 @@ export async function sendOtp(phone: string, purpose = "login"): Promise<SendOtp
 
   // Derive the 10-digit local key stored in users.phone
   const localPhone = e164.startsWith("+91") ? e164.slice(3) : e164.slice(1);
+  const now = new Date();
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentOtps = await db
+    .select({ id: otpCodes.id, createdAt: otpCodes.createdAt })
+    .from(otpCodes)
+    .where(
+      and(
+        eq(otpCodes.phone, localPhone),
+        eq(otpCodes.purpose, purpose),
+        gt(otpCodes.createdAt, oneHourAgo),
+      ),
+    )
+    .orderBy(desc(otpCodes.createdAt));
+
+  if (recentOtps.length >= OTP_SEND_MAX_PER_HOUR) {
+    return { ok: false, message: "Too many OTP requests. Please try again later." };
+  }
+
+  const lastOtpCreatedAt = recentOtps[0]?.createdAt?.getTime();
+  if (
+    lastOtpCreatedAt &&
+    Date.now() - lastOtpCreatedAt < OTP_SEND_COOLDOWN_SECONDS * 1000
+  ) {
+    return {
+      ok: false,
+      message: "Please wait before requesting another OTP.",
+    };
+  }
 
   const code = generateOtpCode();
   const codeHash = hashOtpCode(code);
