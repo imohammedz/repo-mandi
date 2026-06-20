@@ -73,10 +73,11 @@ export function isSameOriginRequest(request: Request) {
   if (!host) return false;
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
-  if (!origin && !referer) return false;
+  const source = origin ?? referer;
+  if (!source) return false;
 
   try {
-    const originUrl = new URL(origin ?? referer ?? "");
+    const originUrl = new URL(source);
     return originUrl.host === host;
   } catch {
     return false;

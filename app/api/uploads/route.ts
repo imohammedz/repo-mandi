@@ -212,7 +212,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const safeUserId = String(currentUser.id).replace(/[^\d]/g, "");
+      const safeUserId = encodeURIComponent(String(currentUser.id));
       const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
       const scopedListingPath = listingId || `draft-${safeUserId}`;
       const filePath = `users/${safeUserId}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
