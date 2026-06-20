@@ -1,6 +1,6 @@
 {
-  "id": "17d7d344-6988-469f-84d5-e714adfa9b69",
-  "prevId": "ef3a8952-f2c6-4134-ad7e-0365d8b812b0",
+  "id": "1147b822-6d80-4c5c-943c-4ae420f83ad6",
+  "prevId": "17d7d344-6988-469f-84d5-e714adfa9b69",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1817,6 +1817,20 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'"
+        },
+        "view_count": {
+          "name": "view_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "share_count": {
+          "name": "share_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "inquiries": {
           "name": "inquiries",
