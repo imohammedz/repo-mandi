@@ -93,7 +93,12 @@ export default function WhatsappOtpForm({
       const response = await fetch("/api/auth/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code: trimmedCode, purpose: "login" }),
+        body: JSON.stringify({
+          phone,
+          code: trimmedCode,
+          purpose: "login",
+          intent: intent === "admin" ? "admin" : undefined,
+        }),
       });
 
       const data = (await response.json()) as AuthVerifyResponse;
