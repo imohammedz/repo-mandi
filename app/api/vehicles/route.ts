@@ -348,7 +348,7 @@ export async function GET(request: Request) {
           minPrice: minPrice ?? undefined,
           maxPrice: maxPrice ?? undefined,
           verifiedOnly: verifiedOnly ? "1" : undefined,
-          sort,
+          sort: sort ?? undefined,
         },
         { page, limit }
       );
