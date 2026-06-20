@@ -1,14 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
 
 type Category = {
   id: CategoryId;
   label: string;
-  href: string;
 };
 
 const PRIME_MOVER_IMAGE_URL =
@@ -28,36 +26,12 @@ const SELECTED_IMAGE_STYLE = {
 } as const;
 
 const categories: Category[] = [
-  {
-    id: "prime-mover",
-    label: "Prime Mover",
-    href: "/vehicles?category=prime-mover",
-  },
-  {
-    id: "trailers",
-    label: "Trailers",
-    href: "/vehicles?category=trailers",
-  },
-  {
-    id: "tippers",
-    label: "Tippers",
-    href: "/vehicles?category=tippers",
-  },
-  {
-    id: "container",
-    label: "Container",
-    href: "/vehicles?category=container",
-  },
-  {
-    id: "buses",
-    label: "Buses",
-    href: "/vehicles?category=buses",
-  },
-  {
-    id: "equipment",
-    label: "Equipment",
-    href: "/vehicles?category=equipment",
-  },
+  { id: "prime-mover", label: "Prime Mover" },
+  { id: "trailers", label: "Trailers" },
+  { id: "tippers", label: "Tippers" },
+  { id: "container", label: "Container" },
+  { id: "buses", label: "Buses" },
+  { id: "equipment", label: "Equipment" },
 ];
 
 /* ───────── SVG vehicle illustrations (facing right) ───────── */
@@ -156,9 +130,22 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
 };
 
 export function CategorySelector({ activeCategory }: { activeCategory?: CategoryId }) {
-  const [localSelected, setLocalSelected] = useState<CategoryId | null>(null);
   const router = useRouter();
-  const selected = activeCategory ?? localSelected ?? null;
+  const searchParams = useSearchParams();
+  const selected = activeCategory ?? null;
+
+  function buildUrl(categoryId: CategoryId | null): string {
+    const params = new URLSearchParams(searchParams.toString());
+    // Always reset pagination on category change
+    params.delete("page");
+    if (categoryId === null) {
+      params.delete("category");
+    } else {
+      params.set("category", categoryId);
+    }
+    const qs = params.toString();
+    return qs ? `/vehicles?${qs}` : "/vehicles";
+  }
 
   return (
     <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">
@@ -170,8 +157,8 @@ export function CategorySelector({ activeCategory }: { activeCategory?: Category
             key={cat.id}
             type="button"
             onClick={() => {
-              setLocalSelected(cat.id);
-              router.push(cat.href);
+              // Toggle: clicking selected category deselects it
+              router.push(buildUrl(isSelected ? null : cat.id));
             }}
             className={[
               "flex h-[68px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] border px-1 py-1 transition-all",

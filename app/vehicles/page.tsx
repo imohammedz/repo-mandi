@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { CategorySelector } from "@/components/ui/category-selector";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { SearchBar } from "@/components/ui/search-bar";
@@ -35,7 +36,9 @@ export default async function VehicleListingPage({
       <header className="sticky top-0 z-20 -mx-4 border-b border-slate-100 bg-slate-50 px-4 pb-3 pt-2">
         <SearchBar compact />
         <div className="mt-3">
-          <CategorySelector activeCategory={activeCategory} />
+          <Suspense>
+            <CategorySelector activeCategory={activeCategory} />
+          </Suspense>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <FilterDrawer />

@@ -65,14 +65,22 @@ function buildHomepageCategoryCondition(category: HomepageCategoryId) {
     case "tippers":
       return or(
         ilike(vehicles.bodyType, "%Tipper%"),
+        ilike(vehicles.bodyType, "%Tip Trailer%"),
         ilike(vehicles.bodyApplicationType, "%Tipper%"),
-        ilike(vehicles.vehicleSubType, "%Tipper%")
+        ilike(vehicles.bodyApplicationType, "%Tip Trailer%"),
+        ilike(vehicles.vehicleSubType, "%Tipper%"),
+        ilike(vehicles.vehicleSubType, "%Tip Trailer%"),
+        ilike(vehicles.assetCategory, "%Tipper%"),
+        ilike(vehicles.trailerType, "%Tipper%"),
+        ilike(vehicles.trailerType, "%Tip Trailer%")
       )!;
     case "container":
       return or(
         ilike(vehicles.bodyType, "%Container%"),
         ilike(vehicles.bodyApplicationType, "%Container%"),
-        ilike(vehicles.vehicleSubType, "%Container%")
+        ilike(vehicles.vehicleSubType, "%Container%"),
+        ilike(vehicles.assetCategory, "%Container%"),
+        ilike(vehicles.trailerType, "%Container%")
       )!;
     case "buses":
       return or(

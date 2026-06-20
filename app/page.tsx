@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   BadgeCheck,
   Building2,
@@ -84,7 +85,9 @@ export default async function HomePage() {
             Discover verified repossessed trucks, tippers and pickups across India with transparent pricing and direct contact.
           </p>
           <SearchBar />
-          <CategorySelector />
+          <Suspense>
+            <CategorySelector />
+          </Suspense>
         </section>
 
         <section className="space-y-3">
