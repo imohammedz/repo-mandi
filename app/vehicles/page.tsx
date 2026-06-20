@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CategoryChip } from "@/components/ui/category-chip";
+import { ActiveFilterChips } from "@/components/ui/active-filter-chips";
 import { CategorySelector } from "@/components/ui/category-selector";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { SearchBar } from "@/components/ui/search-bar";
@@ -46,7 +46,7 @@ export default async function VehicleListingPage({
           <VehicleSort value={sort} />
         </div>
         <Suspense>
-          <CategoryChip />
+          <ActiveFilterChips />
         </Suspense>
       </header>
 

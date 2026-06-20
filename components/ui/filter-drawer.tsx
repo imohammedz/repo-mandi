@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -67,27 +67,6 @@ const FILTER_FIELDS: FilterField[] = [
   { key: "maxPrice", label: "Max Price", type: "number" },
 ];
 
-const CHIP_LABELS: Record<string, string> = {
-  q: "Search",
-  listingType: "Type",
-  listingMode: "Mode",
-  assetStructure: "Structure",
-  detachableType: "Detachable",
-  assetCategory: "Category",
-  bodyType: "Body Type",
-  bodyApplicationType: "Body App",
-  brand: "Brand",
-  model: "Model",
-  location: "Location",
-  runningCondition: "Running",
-  repoStatus: "Repo",
-  sellerRole: "Seller Role",
-  verifiedOnly: "Verified",
-  minPrice: "Min ₹",
-  maxPrice: "Max ₹",
-  sort: "Sort",
-};
-
 export function FilterDrawer() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -126,15 +105,6 @@ export function FilterDrawer() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  const activeEntries = useMemo(
-    () =>
-      Array.from(searchParams.entries()).filter(([key, value]) => {
-        if (!value || key === "page") return false;
-        return Boolean(CHIP_LABELS[key]);
-      }),
-    [searchParams]
-  );
-
   const submitFilters = (next: URLSearchParams) => {
     next.delete("page");
     const query = next.toString();
@@ -169,26 +139,6 @@ export function FilterDrawer() {
         <SlidersHorizontal className="h-4 w-4" />
         Filters
       </button>
-
-      {activeEntries.length ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {activeEntries.map(([key, value]) => (
-            <button
-              key={`${key}-${value}`}
-              type="button"
-              onClick={() => {
-                const next = new URLSearchParams(searchParams.toString());
-                next.delete(key);
-                submitFilters(next);
-              }}
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 text-xs text-slate-700"
-            >
-              <span className="font-medium">{CHIP_LABELS[key] || key}:</span> {value}
-              <X className="h-3.5 w-3.5" />
-            </button>
-          ))}
-        </div>
-      ) : null}
 
       {open
         ? createPortal(
