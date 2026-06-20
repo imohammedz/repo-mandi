@@ -339,7 +339,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             </span>
             {sellerRoleChip ? (
               <span
-                className={`inline-flex min-w-0 max-w-full flex-1 items-center overflow-hidden truncate rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+                className={`inline-flex w-fit shrink-0 items-center whitespace-nowrap rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
               >
                 {sellerRoleChip}
               </span>
