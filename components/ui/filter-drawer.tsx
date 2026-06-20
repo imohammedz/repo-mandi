@@ -23,7 +23,7 @@ const BRAND_OPTIONS = [
   { label: "Scania", value: "Scania" },
   { label: "AMW", value: "AMW" },
   { label: "Force", value: "Force" },
-] as const;
+];
 
 const FILTER_FIELDS: FilterField[] = [
   {
