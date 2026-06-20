@@ -170,7 +170,7 @@ export function CategorySelector({ activeCategory = null }: { activeCategory?: C
             key={cat.id}
             type="button"
             onClick={() => {
-              setSelected(cat.id);
+              setPendingSelected(cat.id);
               router.push(cat.href);
             }}
             className={[
