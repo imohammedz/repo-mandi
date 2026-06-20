@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
@@ -148,8 +148,8 @@ export async function POST(
 
       // Check per-seller limit if set
       if (coupon.perSellerLimit !== null) {
-        const sellerUsages = await db
-          .select({ id: featureCouponUsages.id })
+        const [{ sellerUsageCount }] = await db
+          .select({ sellerUsageCount: count() })
           .from(featureCouponUsages)
           .where(
             and(
@@ -158,7 +158,7 @@ export async function POST(
             )
           );
 
-        if (sellerUsages.length >= coupon.perSellerLimit) {
+        if (sellerUsageCount >= coupon.perSellerLimit) {
           return Response.json(
             { message: "Invalid or expired coupon code." },
             { status: 400 }

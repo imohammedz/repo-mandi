@@ -130,12 +130,19 @@ export function FeatureListingButton({
                 onChange={(e) => setCouponCode(e.target.value)}
                 placeholder="NEWRMFREE"
                 disabled={isPending}
+                aria-describedby={errorMessage ? "coupon-error" : "coupon-hint"}
+                aria-invalid={!!errorMessage}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm uppercase placeholder:normal-case placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:opacity-50"
               />
+              {!errorMessage ? (
+                <p id="coupon-hint" className="mt-1 text-xs text-slate-400">
+                  Enter a promo code to feature your listing instantly.
+                </p>
+              ) : null}
             </div>
 
             {errorMessage ? (
-              <p className="mb-3 text-sm text-rose-600">{errorMessage}</p>
+              <p id="coupon-error" role="alert" className="mb-3 text-sm text-rose-600">{errorMessage}</p>
             ) : null}
             <div className="grid grid-cols-2 gap-2">
               <button
