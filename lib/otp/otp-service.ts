@@ -122,7 +122,6 @@ export async function sendOtp(phone: string, purpose = "login"): Promise<SendOtp
 
   // Derive the 10-digit local key stored in users.phone
   const localPhone = e164.startsWith("+91") ? e164.slice(3) : e164.slice(1);
-  const now = new Date();
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const recentOtps = await db
     .select({ id: otpCodes.id, createdAt: otpCodes.createdAt })
