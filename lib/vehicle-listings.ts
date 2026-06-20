@@ -348,11 +348,11 @@ function mapVehicleCardRow(row: VehicleCardRow) {
 }
 
 function getVehicleListingOrderBy(sort?: string) {
-  if (sort === "priceAsc") {
+  if (sort === "price-low") {
     return [desc(vehicles.isFeatured), asc(vehicles.price), desc(vehicles.createdAt)] as const;
   }
 
-  if (sort === "priceDesc") {
+  if (sort === "price-high") {
     return [desc(vehicles.isFeatured), desc(vehicles.price), desc(vehicles.createdAt)] as const;
   }
 

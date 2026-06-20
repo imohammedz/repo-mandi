@@ -30,8 +30,8 @@ export function VehicleSort({ value }: Props) {
         }}
       >
         <option value="newest">Newest first</option>
-        <option value="priceAsc">Price low to high</option>
-        <option value="priceDesc">Price high to low</option>
+        <option value="price-low">Price low to high</option>
+        <option value="price-high">Price high to low</option>
       </select>
     </label>
   );
