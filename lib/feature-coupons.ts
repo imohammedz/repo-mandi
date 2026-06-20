@@ -31,6 +31,16 @@ export function parseOptionalDate(value: string | null | undefined) {
 export function parsePositiveInteger(
   value: unknown,
   fieldLabel: string,
+  options: { minimum?: number; optional: false },
+): { value: number } | { error: string };
+export function parsePositiveInteger(
+  value: unknown,
+  fieldLabel: string,
+  options?: { minimum?: number; optional?: boolean },
+): { value: number | null } | { error: string };
+export function parsePositiveInteger(
+  value: unknown,
+  fieldLabel: string,
   options?: { minimum?: number; optional?: boolean },
 ) {
   const minimum = options?.minimum ?? 1;

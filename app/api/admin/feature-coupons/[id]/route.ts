@@ -143,7 +143,7 @@ export async function PATCH(
           : existing.isActive,
       maxUses: maxUsesResult.value,
       expiresAt: expiresAtResult.value,
-      durationDays: durationDaysResult.value ?? existing.durationDays,
+      durationDays: durationDaysResult.value,
       updatedAt: now,
     })
     .where(eq(featureCoupons.id, couponId))
