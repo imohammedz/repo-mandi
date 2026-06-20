@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 import { vehicles } from "@/lib/schema";
@@ -184,7 +184,7 @@ async function fetchVehicleCardRows(whereClause: SQL, sort?: string, limit?: num
     .select(vehicleCardSelect)
     .from(vehicles)
     .where(whereClause)
-    .orderBy(...getVehicleListingOrderBy(sort))
+    .orderBy(...getVehicleListingOrderBy(sort ?? undefined))
     .limit(limit ?? DEFAULT_VEHICLE_LISTING_LIMIT)
     .offset(offset ?? 0);
 }
@@ -347,16 +347,40 @@ function mapVehicleCardRow(row: VehicleCardRow) {
   } as Vehicle;
 }
 
-function getVehicleListingOrderBy(sort?: string) {
-  if (sort === "priceAsc") {
-    return [desc(vehicles.isFeatured), asc(vehicles.price), desc(vehicles.createdAt)] as const;
+function getActiveFeaturedCaseSql() {
+  return sql`
+    case
+      when ${vehicles.isFeatured} = true
+        and (${vehicles.featuredExpiresAt} is null or ${vehicles.featuredExpiresAt} > now())
+      then 1
+      else 0
+    end
+  `;
+}
+
+export function getVehicleListingOrderBy(sort?: string) {
+  const normalizedSort = sort ?? "newest";
+  const activeFeaturedCase = getActiveFeaturedCaseSql();
+  const activeFeaturedFirst = sql`${activeFeaturedCase} desc`;
+  const featuredAtDescNullsLast = sql`
+    case
+      when ${activeFeaturedCase} = 1 then ${vehicles.featuredAt}
+      else null
+    end desc nulls last
+  `;
+  let priceOrder: SQL | undefined;
+
+  if (normalizedSort === "price-low") {
+    priceOrder = sql`${vehicles.price} asc nulls last`;
+  } else if (normalizedSort === "price-high") {
+    priceOrder = sql`${vehicles.price} desc nulls last`;
   }
 
-  if (sort === "priceDesc") {
-    return [desc(vehicles.isFeatured), desc(vehicles.price), desc(vehicles.createdAt)] as const;
+  if (priceOrder) {
+    return [activeFeaturedFirst, featuredAtDescNullsLast, priceOrder, desc(vehicles.createdAt)] as const;
   }
 
-  return [desc(vehicles.isFeatured), desc(vehicles.createdAt)] as const;
+  return [activeFeaturedFirst, featuredAtDescNullsLast, desc(vehicles.createdAt)] as const;
 }
 
 export async function getPaginatedPublicVehicleListings(

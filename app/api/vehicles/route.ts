@@ -1,12 +1,13 @@
 import { db } from "@/lib/db";
 import { vehicleMedia, vehicles, platformSettings, sellerVerifiedPhones } from "@/lib/schema";
-import { eq, ilike, and, or, desc, gte, lte, isNull, count } from "drizzle-orm";
+import { eq, ilike, and, or, gte, lte, isNull, count } from "drizzle-orm";
 import { nanoid } from "./nanoid";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl, shouldLogMediaDebug } from "@/lib/media";
 import {
   getPaginatedPublicVehicleListings,
   getVehicleListingLimit,
+  getVehicleListingOrderBy,
   getVehicleListingPage,
   isHomepageCategory,
 } from "@/lib/vehicle-listings";
@@ -282,7 +283,7 @@ export async function GET(request: Request) {
     const detachableType = url.searchParams.get("detachableType");
     const assetCategory = url.searchParams.get("assetCategory");
     const category = url.searchParams.get("category");
-    const sort = url.searchParams.get("sort") ?? "newest";
+    const sort = url.searchParams.get("sort");
 
     if (typeParam && !VALID_TYPES.includes(typeParam as VehicleType)) {
       return Response.json(
@@ -347,7 +348,7 @@ export async function GET(request: Request) {
           minPrice: minPrice ?? undefined,
           maxPrice: maxPrice ?? undefined,
           verifiedOnly: verifiedOnly ? "1" : undefined,
-          sort,
+          sort: sort ?? undefined,
         },
         { page, limit }
       );
@@ -413,7 +414,7 @@ export async function GET(request: Request) {
       .select()
       .from(vehicles)
       .where(whereClause)
-      .orderBy(desc(vehicles.isFeatured), desc(vehicles.createdAt))
+      .orderBy(...getVehicleListingOrderBy(sort ?? undefined))
       .limit(limit)
       .offset((safePage - 1) * limit);
 

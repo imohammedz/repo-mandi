@@ -22,16 +22,15 @@ export function VehicleSort({ value }: Props) {
         onChange={(event) => {
           const next = new URLSearchParams(searchParams.toString());
           const selected = event.target.value;
-          if (selected === "newest") next.delete("sort");
-          else next.set("sort", selected);
+          next.set("sort", selected);
           next.delete("page");
           const query = next.toString();
           router.push(query ? `${pathname}?${query}` : pathname);
         }}
       >
         <option value="newest">Newest first</option>
-        <option value="priceAsc">Price low to high</option>
-        <option value="priceDesc">Price high to low</option>
+        <option value="price-low">Price low to high</option>
+        <option value="price-high">Price high to low</option>
       </select>
     </label>
   );
