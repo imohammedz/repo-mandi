@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Disc3, Gauge, MapPin, ShipWheel } from "lucide-react";
+import { ChevronLeft, ChevronRight, Disc3, Gauge, MapPin, ShipWheel, Star } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SaveHeartButton } from "@/components/ui/save-heart-button";
@@ -133,6 +133,10 @@ const getSellerRoleChip = (vehicle: Vehicle) => {
   return "";
 };
 
+const FEATURED_TOOLTIP_TEXT = "Featured Listing";
+const FEATURED_TOOLTIP_DURATION_MS = 1500;
+const FEATURED_STATUS_REFRESH_MS = 60_000;
+
 export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
@@ -145,6 +149,15 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
+  const [featuredReferenceTime, setFeaturedReferenceTime] = useState(() => Date.now());
+  const featuredExpiryTime = useMemo(() => {
+    if (!vehicle.featuredExpiresAt) return null;
+    const parsedFeaturedExpiry = Date.parse(vehicle.featuredExpiresAt);
+    return Number.isNaN(parsedFeaturedExpiry) ? null : parsedFeaturedExpiry;
+  }, [vehicle.featuredExpiresAt]);
+  const isFeaturedActive =
+    Boolean(vehicle.isFeatured) &&
+    (!vehicle.featuredExpiresAt || (featuredExpiryTime !== null && featuredExpiryTime > featuredReferenceTime));
   const listingTypeTagClass =
     listingTypeTag === "REPO"
       ? "border border-amber-200 bg-amber-50 text-[9px] font-semibold text-amber-800"
@@ -159,6 +172,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           : sellerRoleChip === "BANK PARTNER"
             ? "border border-purple-200 bg-purple-100 text-purple-800"
             : "border border-red-200 bg-red-100 text-red-800";
+  const featuredChipClass =
+    "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-400 px-1 text-[9px] font-semibold leading-none text-white";
   const images = useMemo(
     () => {
       const resolvedImages = [
@@ -179,9 +194,55 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     [vehicle.backPhoto, vehicle.frontPhoto, vehicle.gallery, vehicle.image, vehicle.leftSidePhoto, vehicle.rightSidePhoto, vehicle.sidePhoto]
   );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showFeaturedTooltip, setShowFeaturedTooltip] = useState(false);
+  const featuredTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const safeImageIndex = images.length ? Math.min(selectedImageIndex, images.length - 1) : 0;
   const selectedImage = images[safeImageIndex] ?? null;
   const imageCount = images.length;
+
+  useEffect(
+    () => () => {
+      if (featuredTooltipTimeoutRef.current) {
+        window.clearTimeout(featuredTooltipTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!vehicle.isFeatured || !vehicle.featuredExpiresAt) return;
+
+    const refreshFeaturedState = () => setFeaturedReferenceTime(Date.now());
+    refreshFeaturedState();
+
+    const intervalId = window.setInterval(refreshFeaturedState, FEATURED_STATUS_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [vehicle.featuredExpiresAt, vehicle.isFeatured]);
+
+  const clearFeaturedTooltipTimeout = () => {
+    if (featuredTooltipTimeoutRef.current) {
+      window.clearTimeout(featuredTooltipTimeoutRef.current);
+      featuredTooltipTimeoutRef.current = null;
+    }
+  };
+
+  const hideFeaturedTooltip = () => {
+    clearFeaturedTooltipTimeout();
+    setShowFeaturedTooltip(false);
+  };
+
+  const showFeaturedTooltipNow = () => {
+    clearFeaturedTooltipTimeout();
+    setShowFeaturedTooltip(true);
+  };
+
+  const showFeaturedTooltipTemporarily = () => {
+    showFeaturedTooltipNow();
+    featuredTooltipTimeoutRef.current = setTimeout(() => {
+      hideFeaturedTooltip();
+    }, FEATURED_TOOLTIP_DURATION_MS);
+  };
+
   const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -200,7 +261,10 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`relative isolate flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
+      className={`relative isolate flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-sm box-border ${
+        isFeaturedActive ? "border-2 border-amber-300" : "border border-slate-200"
+      }`}
+      style={isFeaturedActive ? { boxShadow: "0 0 0 1px rgba(251,191,36,.15)" } : undefined}
     >
       <div className="relative z-0 h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
         {selectedImage ? (
@@ -264,17 +328,47 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 h-[180px] overflow-hidden">
-        <div className="flex min-w-0 flex-wrap items-center gap-1">
-          <span
-            className={`inline-flex w-fit rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
-            role="status"
-            aria-label={`Listing type: ${listingTypeTag}`}
-          >
-            {listingTypeTag}
-          </span>
-          {sellerRoleChip ? (
-            <span className={`inline-flex w-fit items-center rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-              {sellerRoleChip}
+        <div className="relative min-w-0">
+          <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
+            <span
+              className={`inline-flex w-fit shrink-0 rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
+              role="status"
+              aria-label={`Listing type: ${listingTypeTag}`}
+            >
+              {listingTypeTag}
+            </span>
+            {sellerRoleChip ? (
+              <span
+                className={`inline-flex w-fit shrink-0 items-center whitespace-nowrap rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}
+              >
+                {sellerRoleChip}
+              </span>
+            ) : null}
+            {isFeaturedActive ? (
+              <span className="inline-flex shrink-0">
+                <button
+                  type="button"
+                  aria-label={FEATURED_TOOLTIP_TEXT}
+                  onBlur={hideFeaturedTooltip}
+                  onClick={showFeaturedTooltipTemporarily}
+                  onFocus={showFeaturedTooltipNow}
+                  onMouseEnter={showFeaturedTooltipNow}
+                  onMouseLeave={hideFeaturedTooltip}
+                  className={featuredChipClass}
+                >
+                  <Star aria-hidden className="h-2.5 w-2.5 fill-current" strokeWidth={1.75} />
+                </button>
+              </span>
+            ) : null}
+          </div>
+          {isFeaturedActive ? (
+            <span
+              role="tooltip"
+              className={`pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white shadow-sm transition-opacity duration-150 ${
+                showFeaturedTooltip ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {FEATURED_TOOLTIP_TEXT}
             </span>
           ) : null}
         </div>
