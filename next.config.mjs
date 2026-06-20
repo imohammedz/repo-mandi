@@ -1,5 +1,3 @@
-import type { NextConfig } from "next";
-
 // Default host for this repository's configured Supabase Storage project.
 // Override with NEXT_PUBLIC_SUPABASE_URL per environment when needed.
 const defaultSupabaseUrl = "https://qssywsfjbkqzatwbzvvw.supabase.co";
@@ -12,7 +10,8 @@ const supabaseHostname = (() => {
   }
 })();
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     remotePatterns: [
       {
