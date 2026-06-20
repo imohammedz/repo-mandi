@@ -2,15 +2,7 @@
 
 import { X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "prime-mover": "Prime Mover",
-  trailers: "Trailers",
-  tippers: "Tippers",
-  container: "Container",
-  buses: "Buses",
-  equipment: "Equipment",
-};
+import { categories } from "@/components/ui/category-selector";
 
 export function CategoryChip() {
   const searchParams = useSearchParams();
@@ -18,7 +10,7 @@ export function CategoryChip() {
   const pathname = usePathname();
 
   const category = searchParams.get("category");
-  const label = category ? CATEGORY_LABELS[category] : null;
+  const label = category ? categories.find((c) => c.id === category)?.label : null;
 
   if (!label) return null;
 
