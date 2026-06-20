@@ -195,7 +195,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showFeaturedTooltip, setShowFeaturedTooltip] = useState(false);
-  const featuredTooltipTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const featuredTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const safeImageIndex = images.length ? Math.min(selectedImageIndex, images.length - 1) : 0;
   const selectedImage = images[safeImageIndex] ?? null;
   const imageCount = images.length;
