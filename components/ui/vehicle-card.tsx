@@ -214,7 +214,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     if (featuredTooltipTimeoutRef.current) {
       window.clearTimeout(featuredTooltipTimeoutRef.current);
     }
-    featuredTooltipTimeoutRef.current = window.setTimeout(() => {
+    featuredTooltipTimeoutRef.current = setTimeout(() => {
       setShowFeaturedTooltip(false);
       featuredTooltipTimeoutRef.current = null;
     }, 1500);
