@@ -368,7 +368,7 @@ export function getVehicleListingOrderBy(sort?: string) {
       else null
     end desc nulls last
   `;
-  let priceOrder: SQL | null = null;
+  let priceOrder: SQL | undefined;
 
   if (normalizedSort === "price-low") {
     priceOrder = sql`${vehicles.price} asc nulls last`;

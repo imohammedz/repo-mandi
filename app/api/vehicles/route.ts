@@ -283,7 +283,7 @@ export async function GET(request: Request) {
     const detachableType = url.searchParams.get("detachableType");
     const assetCategory = url.searchParams.get("assetCategory");
     const category = url.searchParams.get("category");
-    const sort = url.searchParams.get("sort") ?? undefined;
+    const sort = url.searchParams.get("sort");
 
     if (typeParam && !VALID_TYPES.includes(typeParam as VehicleType)) {
       return Response.json(
