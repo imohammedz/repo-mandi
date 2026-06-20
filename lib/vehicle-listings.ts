@@ -347,8 +347,8 @@ function mapVehicleCardRow(row: VehicleCardRow) {
   } as Vehicle;
 }
 
-export function getVehicleListingOrderBy(sort?: string) {
-  const activeFeaturedCase = sql`
+function getActiveFeaturedCaseSql() {
+  return sql`
     case
       when ${vehicles.isFeatured} = true
         and (${vehicles.featuredExpiresAt} is null or ${vehicles.featuredExpiresAt} > now())
@@ -356,6 +356,10 @@ export function getVehicleListingOrderBy(sort?: string) {
       else 0
     end
   `;
+}
+
+export function getVehicleListingOrderBy(sort?: string) {
+  const activeFeaturedCase = getActiveFeaturedCaseSql();
   const activeFeaturedFirst = sql`${activeFeaturedCase} desc`;
   const featuredAtDescNullsLast = sql`
     case
@@ -363,12 +367,13 @@ export function getVehicleListingOrderBy(sort?: string) {
       else null
     end desc nulls last
   `;
-  const priceOrder =
-    sort === "price-low"
-      ? sql`${vehicles.price} asc nulls last`
-      : sort === "price-high"
-        ? sql`${vehicles.price} desc nulls last`
-        : null;
+  let priceOrder: SQL | null = null;
+
+  if (sort === "price-low") {
+    priceOrder = sql`${vehicles.price} asc nulls last`;
+  } else if (sort === "price-high") {
+    priceOrder = sql`${vehicles.price} desc nulls last`;
+  }
 
   if (priceOrder) {
     return [activeFeaturedFirst, featuredAtDescNullsLast, priceOrder, desc(vehicles.createdAt)] as const;
