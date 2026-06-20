@@ -305,7 +305,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 h-[180px] overflow-hidden">
-        <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
+        <div className="flex min-w-0 flex-nowrap items-center gap-1">
           <span
             className={`inline-flex w-fit shrink-0 rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
@@ -314,7 +314,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
             {listingTypeTag}
           </span>
           {sellerRoleChip ? (
-            <span className={`inline-flex min-w-0 max-w-full items-center overflow-hidden rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+            <span className={`inline-flex min-w-0 max-w-full shrink items-center overflow-hidden rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
               <span className="truncate">{sellerRoleChip}</span>
             </span>
           ) : null}
@@ -330,7 +330,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
               </button>
               <span
                 role="tooltip"
-                className={`pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white shadow-sm transition-opacity duration-150 ${
+                className={`pointer-events-none absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white shadow-sm transition-opacity duration-150 ${
                   showFeaturedTooltip ? "opacity-100" : "opacity-0"
                 } group-hover:opacity-100 group-focus-within:opacity-100`}
               >
