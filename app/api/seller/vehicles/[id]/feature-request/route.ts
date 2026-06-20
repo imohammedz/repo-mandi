@@ -114,10 +114,6 @@ export async function POST(
         return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
-      if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
-      }
-
       const [existingListingUsage] = await db
         .select({ id: featureCouponUsages.id })
         .from(featureCouponUsages)

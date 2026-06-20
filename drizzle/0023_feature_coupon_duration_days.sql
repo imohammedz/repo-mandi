@@ -11,7 +11,6 @@ INSERT INTO "feature_coupons" (
   "description",
   "is_active",
   "max_uses",
-  "used_count",
   "expires_at",
   "duration_days"
 )
@@ -20,7 +19,6 @@ VALUES (
   'New RepoMandi free featured listing coupon',
   true,
   100,
-  0,
   NULL,
   30
 )
