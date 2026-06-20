@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   FEATURE_COUPON_CODE_ERROR_MESSAGE,
+  MAX_FEATURE_COUPON_USES,
+  MAX_FEATURE_DURATION_DAYS,
   isValidFeatureCouponCode,
   normalizeFeatureCouponCode,
   parseOptionalDate,
@@ -97,7 +99,9 @@ export async function PATCH(
 
   const maxUsesResult =
     body && "maxUses" in body
-      ? parsePositiveInteger(body.maxUses, "Max uses")
+      ? parsePositiveInteger(body.maxUses, "Max uses", {
+          maximum: MAX_FEATURE_COUPON_USES,
+        })
       : { value: existing.maxUses };
   if ("error" in maxUsesResult) {
     return Response.json({ message: maxUsesResult.error }, { status: 400 });
@@ -114,7 +118,11 @@ export async function PATCH(
 
   const durationDaysResult =
     body && "durationDays" in body
-      ? parsePositiveInteger(body.durationDays, "Duration days", { minimum: 1, optional: false })
+      ? parsePositiveInteger(body.durationDays, "Duration days", {
+          minimum: 1,
+          maximum: MAX_FEATURE_DURATION_DAYS,
+          optional: false,
+        })
       : { value: existing.durationDays };
   if ("error" in durationDaysResult) {
     return Response.json({ message: durationDaysResult.error }, { status: 400 });

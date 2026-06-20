@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import {
   DEFAULT_FEATURE_DURATION_DAYS,
   FEATURE_COUPON_CODE_ERROR_MESSAGE,
+  MAX_FEATURE_COUPON_USES,
+  MAX_FEATURE_DURATION_DAYS,
   isValidFeatureCouponCode,
   normalizeFeatureCouponCode,
   parseOptionalDate,
@@ -63,13 +65,15 @@ export async function POST(request: Request) {
   const durationDaysResult = parsePositiveInteger(
     body?.durationDays ?? DEFAULT_FEATURE_DURATION_DAYS,
     "Duration days",
-    { minimum: 1, optional: false },
+    { minimum: 1, maximum: MAX_FEATURE_DURATION_DAYS, optional: false },
   );
   if ("error" in durationDaysResult) {
     return Response.json({ message: durationDaysResult.error }, { status: 400 });
   }
 
-  const maxUsesResult = parsePositiveInteger(body?.maxUses, "Max uses");
+  const maxUsesResult = parsePositiveInteger(body?.maxUses, "Max uses", {
+    maximum: MAX_FEATURE_COUPON_USES,
+  });
   if ("error" in maxUsesResult) {
     return Response.json({ message: maxUsesResult.error }, { status: 400 });
   }

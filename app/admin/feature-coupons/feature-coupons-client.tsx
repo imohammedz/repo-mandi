@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { MAX_FEATURE_COUPON_USES, MAX_FEATURE_DURATION_DAYS } from "@/lib/feature-coupons";
 import type { DbFeatureCoupon } from "@/lib/schema";
 
 interface FeatureCouponsClientProps {
@@ -330,6 +331,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
               <input
                 type="number"
                 min={1}
+                max={MAX_FEATURE_DURATION_DAYS}
                 value={form.durationDays}
                 onChange={(event) => setForm((prev) => ({ ...prev, durationDays: event.target.value }))}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
@@ -340,6 +342,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
               <input
                 type="number"
                 min={1}
+                max={MAX_FEATURE_COUPON_USES}
                 value={form.maxUses}
                 onChange={(event) => setForm((prev) => ({ ...prev, maxUses: event.target.value }))}
                 placeholder="100"
@@ -564,6 +567,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
                         <input
                           type="number"
                           min={1}
+                          max={MAX_FEATURE_DURATION_DAYS}
                           value={editForm.durationDays}
                           onChange={(event) => setEditForm((prev) => ({ ...prev, durationDays: event.target.value }))}
                           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
@@ -574,6 +578,7 @@ export default function FeatureCouponsClient({ initialCoupons }: FeatureCouponsC
                         <input
                           type="number"
                           min={1}
+                          max={MAX_FEATURE_COUPON_USES}
                           value={editForm.maxUses}
                           onChange={(event) => setEditForm((prev) => ({ ...prev, maxUses: event.target.value }))}
                           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"

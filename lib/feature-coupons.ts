@@ -1,4 +1,6 @@
 export const DEFAULT_FEATURE_DURATION_DAYS = 30;
+export const MAX_FEATURE_DURATION_DAYS = 3650;
+export const MAX_FEATURE_COUPON_USES = 1000000;
 export const FEATURE_COUPON_CODE_MIN_LENGTH = 2;
 export const FEATURE_COUPON_CODE_MAX_LENGTH = 50;
 export const FEATURE_COUPON_CODE_ERROR_MESSAGE = `Coupon code must be ${FEATURE_COUPON_CODE_MIN_LENGTH}–${FEATURE_COUPON_CODE_MAX_LENGTH} uppercase letters, numbers, hyphens, or underscores with no spaces.`;
@@ -36,19 +38,20 @@ export function parseOptionalDate(value: string | null | undefined) {
 export function parsePositiveInteger(
   value: unknown,
   fieldLabel: string,
-  options: { minimum?: number; optional: false },
+  options: { minimum?: number; maximum?: number; optional: false },
 ): { value: number } | { error: string };
 export function parsePositiveInteger(
   value: unknown,
   fieldLabel: string,
-  options?: { minimum?: number; optional?: boolean },
+  options?: { minimum?: number; maximum?: number; optional?: boolean },
 ): { value: number | null } | { error: string };
 export function parsePositiveInteger(
   value: unknown,
   fieldLabel: string,
-  options?: { minimum?: number; optional?: boolean },
+  options?: { minimum?: number; maximum?: number; optional?: boolean },
 ) {
   const minimum = options?.minimum ?? 1;
+  const maximum = options?.maximum;
   const optional = options?.optional ?? true;
 
   if (value === null || value === undefined || value === "") {
@@ -61,6 +64,9 @@ export function parsePositiveInteger(
   const parsed = typeof value === "number" ? value : Number(value);
   if (!Number.isInteger(parsed) || parsed < minimum) {
     return { error: `${fieldLabel} must be at least ${minimum}.` };
+  }
+  if (maximum !== undefined && parsed > maximum) {
+    return { error: `${fieldLabel} must be at most ${maximum}.` };
   }
 
   return { value: parsed };

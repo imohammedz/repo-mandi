@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   DEFAULT_FEATURE_DURATION_DAYS,
+  MAX_FEATURE_DURATION_DAYS,
   normalizeFeatureCouponCode,
 } from "@/lib/feature-coupons";
 import {
@@ -129,6 +130,9 @@ export async function POST(
         return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
+      if (coupon.durationDays > MAX_FEATURE_DURATION_DAYS) {
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+      }
       const featuredExpiresAt = new Date(
         now.getTime() + coupon.durationDays * MILLISECONDS_PER_DAY,
       );
@@ -187,7 +191,9 @@ export async function POST(
           (typeof error === "object" &&
             error !== null &&
             "code" in error &&
-            error.code === "23505")
+            error.code === "23505" &&
+            "constraint" in error &&
+            error.constraint === "feature_coupon_usages_coupon_vehicle_unique")
         ) {
           return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
         }
