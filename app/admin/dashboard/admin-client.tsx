@@ -118,10 +118,10 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
             Finance Inquiries
           </a>
           <a
-            href="/admin/coupons"
+            href="/admin/feature-coupons"
             className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
           >
-            Coupons
+            Feature Coupons
           </a>
         </div>
       </div>

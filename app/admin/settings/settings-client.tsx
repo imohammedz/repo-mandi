@@ -122,12 +122,20 @@ export default function AdminSettingsClient({
     <main className="space-y-6 px-4 pb-8 pt-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">Admin Settings</h1>
-        <a
-          href="/admin/dashboard"
-          className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-        >
-          ← Dashboard
-        </a>
+        <div className="flex gap-2">
+          <a
+            href="/admin/feature-coupons"
+            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
+          >
+            Feature Coupons
+          </a>
+          <a
+            href="/admin/dashboard"
+            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
+          >
+            ← Dashboard
+          </a>
+        </div>
       </div>
 
       {/* Auto-approve listings */}

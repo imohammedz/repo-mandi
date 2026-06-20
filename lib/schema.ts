@@ -615,6 +615,7 @@ export const featureCoupons = pgTable("feature_coupons", {
   maxUses: integer("max_uses"),
   usedCount: integer("used_count").notNull().default(0),
   expiresAt: timestamp("expires_at"),
+  durationDays: integer("duration_days").notNull().default(30),
   startsAt: timestamp("starts_at"),
   perSellerLimit: integer("per_seller_limit"),
   perListingLimit: integer("per_listing_limit"),
@@ -623,19 +624,28 @@ export const featureCoupons = pgTable("feature_coupons", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const featureCouponUsages = pgTable("feature_coupon_usages", {
-  id: serial("id").primaryKey(),
-  couponId: integer("coupon_id")
-    .notNull()
-    .references(() => featureCoupons.id, { onDelete: "cascade" }),
-  vehicleId: varchar("vehicle_id", { length: 100 })
-    .notNull()
-    .references(() => vehicles.id, { onDelete: "cascade" }),
-  sellerId: integer("seller_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  usedAt: timestamp("used_at").defaultNow().notNull(),
-});
+export const featureCouponUsages = pgTable(
+  "feature_coupon_usages",
+  {
+    id: serial("id").primaryKey(),
+    couponId: integer("coupon_id")
+      .notNull()
+      .references(() => featureCoupons.id, { onDelete: "cascade" }),
+    vehicleId: varchar("vehicle_id", { length: 100 })
+      .notNull()
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    sellerId: integer("seller_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    usedAt: timestamp("used_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    couponVehicleUnique: uniqueIndex("feature_coupon_usages_coupon_vehicle_unique").on(
+      table.couponId,
+      table.vehicleId,
+    ),
+  }),
+);
 
 // ─── Inferred types ───────────────────────────────────────────────────────────
 

@@ -1,6 +1,10 @@
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  DEFAULT_FEATURE_DURATION_DAYS,
+  normalizeFeatureCouponCode,
+} from "@/lib/feature-coupons";
 import {
   featureCouponUsages,
   featureCoupons,
@@ -10,8 +14,8 @@ import {
 } from "@/lib/schema";
 
 export const runtime = "nodejs";
-const FEATURE_DURATION_DAYS = 30;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const INVALID_COUPON_MESSAGE = "Invalid or expired coupon code.";
 
 export async function POST(
   request: Request,
@@ -89,10 +93,9 @@ export async function POST(
       // no body is fine
     }
 
-    const couponCode = rawCouponCode ? rawCouponCode.trim().toUpperCase() : undefined;
+    const couponCode = rawCouponCode ? normalizeFeatureCouponCode(rawCouponCode) : undefined;
 
     if (couponCode) {
-      // Validate coupon server-side
       const [coupon] = await db
         .select()
         .from(featureCoupons)
@@ -100,34 +103,21 @@ export async function POST(
         .limit(1);
 
       if (!coupon || !coupon.isActive) {
-        return Response.json(
-          { message: "Invalid or expired coupon code." },
-          { status: 400 }
-        );
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
       if (coupon.expiresAt && coupon.expiresAt < now) {
-        return Response.json(
-          { message: "Invalid or expired coupon code." },
-          { status: 400 }
-        );
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
       if (coupon.startsAt && coupon.startsAt > now) {
-        return Response.json(
-          { message: "Invalid or expired coupon code." },
-          { status: 400 }
-        );
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
       if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-        return Response.json(
-          { message: "Invalid or expired coupon code." },
-          { status: 400 }
-        );
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
-      // Check per-listing usage (prevent duplicate use on same listing)
       const [existingListingUsage] = await db
         .select({ id: featureCouponUsages.id })
         .from(featureCouponUsages)
@@ -140,69 +130,71 @@ export async function POST(
         .limit(1);
 
       if (existingListingUsage) {
-        return Response.json(
-          { message: "This coupon has already been used for this listing." },
-          { status: 400 }
-        );
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
       }
 
-      // Check per-seller limit if set
-      if (coupon.perSellerLimit !== null) {
-        const [{ sellerUsageCount }] = await db
-          .select({ sellerUsageCount: count() })
-          .from(featureCouponUsages)
-          .where(
-            and(
-              eq(featureCouponUsages.couponId, coupon.id),
-              eq(featureCouponUsages.sellerId, currentUser.id),
-            )
-          );
-
-        if (sellerUsageCount >= coupon.perSellerLimit) {
-          return Response.json(
-            { message: "Invalid or expired coupon code." },
-            { status: 400 }
-          );
-        }
-      }
-
-      // Coupon is valid — auto-approve immediately
       const featuredExpiresAt = new Date(
-        now.getTime() + FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
+        now.getTime() + coupon.durationDays * MILLISECONDS_PER_DAY,
       );
 
-      await db
-        .update(vehicles)
-        .set({
-          isFeatured: true,
-          featuredAt: now,
-          featuredExpiresAt,
-          featuredBy: currentUser.id,
-          updatedAt: now,
-        })
-        .where(eq(vehicles.id, id));
+      try {
+        await db.transaction(async (tx) => {
+          await tx
+            .update(vehicles)
+            .set({
+              isFeatured: true,
+              featuredAt: now,
+              featuredExpiresAt,
+              featuredBy: currentUser.id,
+              updatedAt: now,
+            })
+            .where(eq(vehicles.id, id));
 
-      await db
-        .insert(featureRequests)
-        .values({
-          vehicleId: id,
-          sellerId: currentUser.id,
-          status: "APPROVED",
-          requestedAt: now,
-          updatedAt: now,
+          await tx
+            .insert(featureRequests)
+            .values({
+              vehicleId: id,
+              sellerId: currentUser.id,
+              status: "APPROVED",
+              requestedAt: now,
+              updatedAt: now,
+            });
+
+          await tx.insert(featureCouponUsages).values({
+            couponId: coupon.id,
+            vehicleId: id,
+            sellerId: currentUser.id,
+          });
+
+          const incremented =
+            coupon.maxUses === null
+              ? await tx
+                  .update(featureCoupons)
+                  .set({ usedCount: sql`${featureCoupons.usedCount} + 1`, updatedAt: now })
+                  .where(eq(featureCoupons.id, coupon.id))
+                  .returning({ id: featureCoupons.id })
+              : await tx
+                  .update(featureCoupons)
+                  .set({ usedCount: sql`${featureCoupons.usedCount} + 1`, updatedAt: now })
+                  .where(and(eq(featureCoupons.id, coupon.id), lt(featureCoupons.usedCount, coupon.maxUses)))
+                  .returning({ id: featureCoupons.id });
+
+          if (!incremented[0]) {
+            throw new Error("COUPON_EXHAUSTED");
+          }
         });
-
-      // Record coupon usage and increment usedCount
-      await db.insert(featureCouponUsages).values({
-        couponId: coupon.id,
-        vehicleId: id,
-        sellerId: currentUser.id,
-      });
-
-      await db
-        .update(featureCoupons)
-        .set({ usedCount: coupon.usedCount + 1, updatedAt: now })
-        .where(eq(featureCoupons.id, coupon.id));
+      } catch (error) {
+        if (
+          (error instanceof Error && error.message === "COUPON_EXHAUSTED") ||
+          (typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            error.code === "23505")
+        ) {
+          return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+        }
+        throw error;
+      }
 
       return Response.json(
         {
@@ -223,7 +215,7 @@ export async function POST(
 
     if (autoFeatureApprovalEnabled) {
       const featuredExpiresAt = new Date(
-        now.getTime() + FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
+        now.getTime() + DEFAULT_FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
       );
 
       await db
