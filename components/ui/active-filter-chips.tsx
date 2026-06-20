@@ -24,7 +24,6 @@ const CHIP_LABELS: Record<string, string> = {
   repoStatus: "Repo",
   sellerRole: "Seller",
   financeCompany: "Finance",
-  verifiedOnly: "Verified",
   sort: "Sort",
 };
 
@@ -73,8 +72,6 @@ function buildChips(searchParams: URLSearchParams): ActiveChip[] {
     let displayValue = value;
     if (key === "category") {
       displayValue = categories.find((c) => c.id === value)?.label ?? value;
-    } else if (key === "verifiedOnly") {
-      displayValue = "Yes";
     }
 
     chips.push({ id: `${key}-${value}`, label: `${chipLabel}: ${displayValue}`, removeKeys: [key] });
