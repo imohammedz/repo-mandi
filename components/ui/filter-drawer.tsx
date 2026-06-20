@@ -123,9 +123,7 @@ export function FilterDrawer() {
       else next.delete(field.key);
     }
 
-    const verifiedOnly = data.get("verifiedOnly") === "on";
-    if (verifiedOnly) next.set("verifiedOnly", "1");
-    else next.delete("verifiedOnly");
+    next.delete("verifiedOnly");
 
     submitFilters(next);
   };
@@ -199,15 +197,6 @@ export function FilterDrawer() {
                       ))}
                     </div>
 
-                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        name="verifiedOnly"
-                        defaultChecked={searchParams.get("verifiedOnly") === "1"}
-                        className="h-4 w-4 rounded border-slate-300"
-                      />
-                      Verified sellers only
-                    </label>
                   </div>
 
                   <div className="sticky bottom-0 z-[1002] grid grid-cols-2 gap-2 border-t border-slate-200 bg-white px-5 py-4">
