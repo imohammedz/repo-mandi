@@ -59,9 +59,9 @@ export function isHomepageCategory(value?: string | null): value is HomepageCate
 function buildHomepageCategoryCondition(category: HomepageCategoryId) {
   switch (category) {
     case "prime-mover":
-      return and(inArray(vehicles.assetConfiguration, [...PRIME_MOVER_ONLY_VALUES]), ne(vehicles.assetConfiguration, "Prime Mover + Trailer"))!;
+      return and(inArray(vehicles.assetConfiguration, PRIME_MOVER_ONLY_VALUES), ne(vehicles.assetConfiguration, "Prime Mover + Trailer"))!;
     case "trailers":
-      return inArray(vehicles.assetConfiguration, [...TRAILER_ONLY_VALUES]);
+      return inArray(vehicles.assetConfiguration, TRAILER_ONLY_VALUES);
     case "tippers":
       return or(
         ilike(vehicles.bodyType, "%Tipper%"),

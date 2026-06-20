@@ -28,7 +28,7 @@ export default async function VehicleListingPage({
   });
   const sort = params.sort ?? "newest";
   const listingStateKey = JSON.stringify(params);
-  const activeCategory = isHomepageCategory(params.category) ? params.category : null;
+  const activeCategory = isHomepageCategory(params.category) ? params.category : undefined;
 
   return (
     <main className="w-full max-w-full space-y-4 overflow-x-hidden px-4 pb-8 pt-4">
