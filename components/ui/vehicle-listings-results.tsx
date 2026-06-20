@@ -22,6 +22,7 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
   const [pagination, setPagination] = useState(initialPagination);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isCategoryFilterActive = Boolean(searchParams.get("category"));
 
   const handleLoadMore = async () => {
     if (loading || !pagination.hasNextPage) return;
@@ -63,14 +64,22 @@ export function VehicleListingsResults({ initialItems, initialPagination }: Prop
     return (
       <section className="space-y-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-          <p className="text-base font-semibold text-slate-900">No Listings Available</p>
-          <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or check back soon for new inventory.</p>
-          <SupportContactInline className="mt-2 text-xs text-slate-500" subject={SUPPORT_SUBJECTS.general} />
+          <p className="text-base font-semibold text-slate-900">
+            {isCategoryFilterActive ? "No listings available in this category." : "No Listings Available"}
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            {isCategoryFilterActive
+              ? "Browse all listings to explore other available vehicles."
+              : "Try adjusting your filters or check back soon for new inventory."}
+          </p>
+          {isCategoryFilterActive ? null : (
+            <SupportContactInline className="mt-2 text-xs text-slate-500" subject={SUPPORT_SUBJECTS.general} />
+          )}
           <Link
             href="/vehicles"
             className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700"
           >
-            Clear filters
+            {isCategoryFilterActive ? "Browse All Listings" : "Clear filters"}
           </Link>
         </div>
       </section>

@@ -1,14 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
+export type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
 
 type Category = {
   id: CategoryId;
   label: string;
-  href: string;
 };
 
 const PRIME_MOVER_IMAGE_URL =
@@ -28,36 +26,12 @@ const SELECTED_IMAGE_STYLE = {
 } as const;
 
 const categories: Category[] = [
-  {
-    id: "prime-mover",
-    label: "Prime Mover",
-    href: "/vehicles?assetStructure=DETACHABLE&detachableType=PRIME_MOVER",
-  },
-  {
-    id: "trailers",
-    label: "Trailers",
-    href: "/vehicles?assetStructure=DETACHABLE&detachableType=TRAILER",
-  },
-  {
-    id: "tippers",
-    label: "Tippers",
-    href: "/vehicles?assetStructure=STANDALONE&bodyApplicationType=Tipper",
-  },
-  {
-    id: "container",
-    label: "Container",
-    href: "/vehicles?bodyApplicationType=Container+Truck",
-  },
-  {
-    id: "buses",
-    label: "Buses",
-    href: "/vehicles?assetStructure=STANDALONE&assetCategory=Bus+%2F+Passenger+Commercial",
-  },
-  {
-    id: "equipment",
-    label: "Equipment",
-    href: "/vehicles?assetStructure=EQUIPMENT",
-  },
+  { id: "prime-mover", label: "Prime Mover" },
+  { id: "trailers", label: "Trailers" },
+  { id: "tippers", label: "Tippers" },
+  { id: "container", label: "Container" },
+  { id: "buses", label: "Buses" },
+  { id: "equipment", label: "Equipment" },
 ];
 
 /* ───────── SVG vehicle illustrations (facing right) ───────── */
@@ -155,9 +129,23 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
   equipment: EquipmentIcon,
 };
 
-export function CategorySelector() {
-  const [selected, setSelected] = useState<CategoryId | null>(null);
+export function CategorySelector({ activeCategory }: { activeCategory?: CategoryId }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selected = activeCategory ?? null;
+
+  function buildUrl(categoryId: CategoryId | null): string {
+    const params = new URLSearchParams(searchParams.toString());
+    // Always reset pagination on category change
+    params.delete("page");
+    if (categoryId === null) {
+      params.delete("category");
+    } else {
+      params.set("category", categoryId);
+    }
+    const qs = params.toString();
+    return qs ? `/vehicles?${qs}` : "/vehicles";
+  }
 
   return (
     <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">
@@ -169,8 +157,8 @@ export function CategorySelector() {
             key={cat.id}
             type="button"
             onClick={() => {
-              setSelected(cat.id);
-              router.push(cat.href);
+              // Toggle: clicking selected category deselects it
+              router.push(buildUrl(isSelected ? null : cat.id));
             }}
             className={[
               "flex h-[68px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] border px-1 py-1 transition-all",

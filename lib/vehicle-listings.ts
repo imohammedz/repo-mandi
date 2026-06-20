@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, isNull, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 import { vehicles } from "@/lib/schema";
@@ -7,8 +7,25 @@ import type { Vehicle } from "@/types/vehicle";
 export const DEFAULT_VEHICLE_LISTING_PAGE = 1;
 export const DEFAULT_VEHICLE_LISTING_LIMIT = 10;
 const MAX_VEHICLE_LISTING_LIMIT = 50;
+export const HOMEPAGE_CATEGORY_IDS = [
+  "prime-mover",
+  "trailers",
+  "tippers",
+  "container",
+  "buses",
+  "equipment",
+] as const;
+export type HomepageCategoryId = (typeof HOMEPAGE_CATEGORY_IDS)[number];
+
+const PRIME_MOVER_ONLY_VALUES = [
+  "PRIME_MOVER_ONLY",
+  "Prime Mover Only",
+  "Power / Horse / Tractor / Prime Mover Only",
+] as const;
+const TRAILER_ONLY_VALUES = ["TRAILER_ONLY", "Trailer Only"] as const;
 
 export type VehicleListingSearchParams = {
+  category?: HomepageCategoryId;
   q?: string;
   type?: string;
   listingType?: string;
@@ -34,6 +51,47 @@ export type VehicleListingSearchParams = {
   page?: string;
   limit?: string;
 };
+
+export function isHomepageCategory(value?: string | null): value is HomepageCategoryId {
+  return HOMEPAGE_CATEGORY_IDS.includes(value as HomepageCategoryId);
+}
+
+function buildHomepageCategoryCondition(category: HomepageCategoryId) {
+  switch (category) {
+    case "prime-mover":
+      return inArray(vehicles.assetConfiguration, PRIME_MOVER_ONLY_VALUES);
+    case "trailers":
+      return inArray(vehicles.assetConfiguration, TRAILER_ONLY_VALUES);
+    case "tippers":
+      return or(
+        ilike(vehicles.bodyType, "%Tipper%"),
+        ilike(vehicles.bodyType, "%Tip Trailer%"),
+        ilike(vehicles.bodyApplicationType, "%Tipper%"),
+        ilike(vehicles.bodyApplicationType, "%Tip Trailer%"),
+        ilike(vehicles.vehicleSubType, "%Tipper%"),
+        ilike(vehicles.vehicleSubType, "%Tip Trailer%"),
+        ilike(vehicles.assetCategory, "%Tipper%"),
+        ilike(vehicles.trailerType, "%Tipper%"),
+        ilike(vehicles.trailerType, "%Tip Trailer%")
+      )!;
+    case "container":
+      return or(
+        ilike(vehicles.bodyType, "%Container%"),
+        ilike(vehicles.bodyApplicationType, "%Container%"),
+        ilike(vehicles.vehicleSubType, "%Container%"),
+        ilike(vehicles.assetCategory, "%Container%"),
+        ilike(vehicles.trailerType, "%Container%")
+      )!;
+    case "buses":
+      return or(
+        eq(vehicles.type, "Bus"),
+        ilike(vehicles.assetCategory, "%Bus%"),
+        ilike(vehicles.vehicleSubType, "%Bus%")
+      )!;
+    case "equipment":
+      return or(eq(vehicles.assetCategory, "Equipment"), eq(vehicles.type, "Equipment"))!;
+  }
+}
 
 export type ListingPagination = {
   page: number;
@@ -150,6 +208,10 @@ export function buildPublicVehicleConditions(params: VehicleListingSearchParams)
     isNull(vehicles.deletedAt),
     ne(vehicles.status, "SOLD"),
   ];
+
+  if (params.category && isHomepageCategory(params.category)) {
+    conditions.push(buildHomepageCategoryCondition(params.category));
+  }
 
   if (params.q) {
     conditions.push(
