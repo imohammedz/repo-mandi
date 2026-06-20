@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type CategoryId = "prime-mover" | "trailers" | "tippers" | "container" | "buses" | "equipment";
 
@@ -156,12 +156,9 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
 };
 
 export function CategorySelector({ activeCategory = null }: { activeCategory?: CategoryId | null }) {
-  const [selected, setSelected] = useState<CategoryId | null>(activeCategory);
+  const [pendingSelected, setPendingSelected] = useState<CategoryId | null>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    setSelected(activeCategory);
-  }, [activeCategory]);
+  const selected = activeCategory ?? pendingSelected;
 
   return (
     <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">
