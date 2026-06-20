@@ -12,9 +12,10 @@ type RateLimitResult = {
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 let lastCleanupAt = 0;
+const CLEANUP_INTERVAL_MS = 60 * 1000;
 
 function cleanupExpiredEntries(now: number) {
-  if (now - lastCleanupAt < 60 * 1000) return;
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
   for (const [entryKey, entry] of rateLimitStore.entries()) {
     if (entry.resetAt <= now) {
       rateLimitStore.delete(entryKey);
@@ -68,13 +69,14 @@ export function enforceRateLimit({ key, limit, windowMs }: RateLimitOptions): Ra
 }
 
 export function isSameOriginRequest(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
   const host = request.headers.get("host");
   if (!host) return false;
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  if (!origin && !referer) return false;
 
   try {
-    const originUrl = new URL(origin);
+    const originUrl = new URL(origin ?? referer ?? "");
     return originUrl.host === host;
   } catch {
     return false;

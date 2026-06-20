@@ -213,7 +213,8 @@ export async function POST(request: Request) {
       }
 
       const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
-      const filePath = `users/${currentUser.id}/vehicles/${listingId || "draft"}/${mediaFolder}/${randomUUID()}.${extension}`;
+      const scopedListingPath = listingId || `draft-${currentUser.id}`;
+      const filePath = `users/${currentUser.id}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)
