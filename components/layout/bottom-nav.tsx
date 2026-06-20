@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { CircleUserRound, House, Plus, Search, Heart } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
 import { useSavedListings } from "@/components/providers/saved-listings-provider";
+import { useSellDestination } from "@/lib/hooks/use-sell-destination";
 
 const items = [
   { label: "Home", href: "/", icon: House },
@@ -19,6 +20,7 @@ export function BottomNav() {
   const router = useRouter();
   const { savedCount, isAuthenticated } = useSavedListings();
   const sellControls = useAnimation();
+  const sellDestination = useSellDestination();
 
   if (pathname.startsWith("/auth") || pathname.startsWith("/onboarding")) {
     return null;
@@ -32,7 +34,7 @@ export function BottomNav() {
       scale: [1, 0.85, 1.1, 1],
       transition: { duration: 0.27, ease: "easeOut", times: [0, 0.2, 0.65, 1] },
     });
-    router.push("/sell");
+    router.push(sellDestination);
   }
 
   return (

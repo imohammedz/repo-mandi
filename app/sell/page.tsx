@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import { isSellerAccountType } from "@/lib/hooks/use-sell-destination";
 
 const benefits = [
   "Reach transport buyers",
@@ -21,8 +22,8 @@ export default function SellPage() {
         const response = await fetch("/api/auth/session");
         if (!response.ok) return;
         const data = (await response.json()) as { user?: { accountType?: string; isProfileComplete?: boolean } };
-        if (data.user?.accountType === "SELLER") {
-          router.replace(data.user.isProfileComplete ? "/seller/dashboard" : "/onboarding");
+        if (isSellerAccountType(data.user?.accountType)) {
+          router.replace(data.user?.isProfileComplete ? "/seller/add-vehicle" : "/onboarding");
         }
       } catch {
         // If session is unavailable, keep users on this screen.
