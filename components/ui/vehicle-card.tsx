@@ -148,13 +148,14 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
+  const [featuredReferenceTime] = useState(() => Date.now());
   const featuredExpiryTime = useMemo(() => {
     if (!vehicle.featuredExpiresAt) return null;
     const parsedFeaturedExpiry = Date.parse(vehicle.featuredExpiresAt);
     return Number.isNaN(parsedFeaturedExpiry) ? Number.NEGATIVE_INFINITY : parsedFeaturedExpiry;
   }, [vehicle.featuredExpiresAt]);
   const isFeaturedActive =
-    Boolean(vehicle.isFeatured) && (featuredExpiryTime === null || featuredExpiryTime > Date.now());
+    Boolean(vehicle.isFeatured) && (featuredExpiryTime === null || featuredExpiryTime > featuredReferenceTime);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
       ? "border border-amber-200 bg-amber-50 text-[9px] font-semibold text-amber-800"
