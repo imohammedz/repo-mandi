@@ -170,7 +170,7 @@ export async function DELETE(
     return Response.json({ message: "Coupon not found." }, { status: 404 });
   }
 
-  if (hasUsage || existing.usedCount > 0) {
+  if (hasUsage) {
     return Response.json({ message: "Used coupons cannot be deleted." }, { status: 400 });
   }
 

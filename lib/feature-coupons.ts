@@ -17,7 +17,7 @@ export function isValidFeatureCouponCode(value: string) {
 
 export function sanitizeOptionalText(value: string | null | undefined) {
   const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
+  return trimmed?.length ? trimmed : null;
 }
 
 export function parseOptionalDate(value: string | null | undefined) {

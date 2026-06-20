@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
@@ -170,18 +170,16 @@ export async function POST(
             sellerId: currentUser.id,
           });
 
-          const incremented =
-            coupon.maxUses === null
-              ? await tx
-                  .update(featureCoupons)
-                  .set(couponCountUpdate)
-                  .where(eq(featureCoupons.id, coupon.id))
-                  .returning({ id: featureCoupons.id })
-              : await tx
-                  .update(featureCoupons)
-                  .set(couponCountUpdate)
-                  .where(and(eq(featureCoupons.id, coupon.id), lt(featureCoupons.usedCount, coupon.maxUses)))
-                  .returning({ id: featureCoupons.id });
+          const incremented = await tx
+            .update(featureCoupons)
+            .set(couponCountUpdate)
+            .where(
+              and(
+                eq(featureCoupons.id, coupon.id),
+                sql`${featureCoupons.maxUses} IS NULL OR ${featureCoupons.usedCount} < ${featureCoupons.maxUses}`,
+              ),
+            )
+            .returning({ id: featureCoupons.id });
 
           if (!incremented[0]) {
             throw new Error("COUPON_EXHAUSTED");
