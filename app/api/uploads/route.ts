@@ -214,7 +214,7 @@ export async function POST(request: Request) {
 
       const safeUserId = encodeURIComponent(String(currentUser.id));
       const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
-      const scopedListingPath = listingId || `draft-${safeUserId}`;
+      const scopedListingPath = listingId || `draft-${safeUserId}-${randomUUID()}`;
       const filePath = `users/${safeUserId}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
 
       const { error } = await supabaseAdmin.storage

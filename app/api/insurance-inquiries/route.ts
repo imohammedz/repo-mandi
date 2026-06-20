@@ -90,10 +90,7 @@ export async function POST(request: Request) {
     }
 
     const location = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ") || null;
-    const requirementText = body.requirementText?.trim();
-    if (!requirementText) {
-      return Response.json({ message: "Requirement text is required." }, { status: 400 });
-    }
+    const requirementText = body.requirementText?.trim() || "Need insurance support for this vehicle.";
     if (requirementText.length > MAX_REQUIREMENT_TEXT_LENGTH) {
       return Response.json(
         { message: `Requirement text must be ${MAX_REQUIREMENT_TEXT_LENGTH} characters or less.` },
