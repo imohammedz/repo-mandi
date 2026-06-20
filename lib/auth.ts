@@ -91,7 +91,7 @@ export function sessionCookieOptions() {
     name: SESSION_COOKIE_NAME,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
+    sameSite: "lax" as const,
     path: "/",
     maxAge: SESSION_TTL_SECONDS,
   };

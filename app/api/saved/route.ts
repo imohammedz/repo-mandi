@@ -4,7 +4,7 @@ import {
   getSavedListingsForUser,
   saveListingForUser,
 } from "@/lib/saved-listings";
-import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
+import { enforceRateLimit, getClientIp, isSameOriginRequest } from "@/lib/rate-limit";
 
 export async function GET() {
   const current = await requireUser();
@@ -17,6 +17,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return Response.json({ message: "Invalid request origin." }, { status: 403 });
+  }
+
   const current = await requireUser();
   if (!current.ok) {
     return Response.json({ message: current.message }, { status: current.status });

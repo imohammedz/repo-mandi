@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { vehicles } from "@/lib/schema";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { isSupabasePublicStorageUrl, shouldLogMediaDebug } from "@/lib/media";
-import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
+import { enforceRateLimit, getClientIp, isSameOriginRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -67,6 +67,10 @@ function isPdfFile(buffer: Buffer): boolean {
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return Response.json({ message: "Invalid request origin." }, { status: 403 });
+    }
+
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return Response.json({ message: "Unauthorized." }, { status: 401 });
@@ -208,7 +212,8 @@ export async function POST(request: Request) {
         );
       }
 
-      const filePath = `users/${currentUser.id}/vehicles/${listingId || "draft"}/${isVideo ? "videos" : isDocument ? "documents" : "images"}/${randomUUID()}.${extension}`;
+      const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
+      const filePath = `users/${currentUser.id}/vehicles/${listingId || "draft"}/${mediaFolder}/${randomUUID()}.${extension}`;
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)

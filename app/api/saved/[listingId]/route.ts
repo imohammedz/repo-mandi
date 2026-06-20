@@ -1,11 +1,15 @@
 import { requireUser } from "@/lib/auth";
 import { removeSavedListingForUser } from "@/lib/saved-listings";
-import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
+import { enforceRateLimit, getClientIp, isSameOriginRequest } from "@/lib/rate-limit";
 
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ listingId: string }> }
 ) {
+  if (!isSameOriginRequest(request)) {
+    return Response.json({ message: "Invalid request origin." }, { status: 403 });
+  }
+
   const current = await requireUser();
   if (!current.ok) {
     return Response.json({ message: current.message }, { status: current.status });
