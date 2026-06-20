@@ -1,14 +1,20 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { featureRequests, platformSettings, vehicles } from "@/lib/schema";
+import {
+  featureCouponUsages,
+  featureCoupons,
+  featureRequests,
+  platformSettings,
+  vehicles,
+} from "@/lib/schema";
 
 export const runtime = "nodejs";
-const FEATURE_DURATION_DAYS = 7;
+const FEATURE_DURATION_DAYS = 30;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -72,6 +78,140 @@ export async function POST(
 
     if (pendingRequest) {
       return Response.json({ message: "Feature request already submitted." }, { status: 400 });
+    }
+
+    // Parse optional coupon code from request body
+    let rawCouponCode: string | undefined;
+    try {
+      const body = (await request.json().catch(() => null)) as { couponCode?: string } | null;
+      rawCouponCode = body?.couponCode;
+    } catch {
+      // no body is fine
+    }
+
+    const couponCode = rawCouponCode ? rawCouponCode.trim().toUpperCase() : undefined;
+
+    if (couponCode) {
+      // Validate coupon server-side
+      const [coupon] = await db
+        .select()
+        .from(featureCoupons)
+        .where(eq(featureCoupons.code, couponCode))
+        .limit(1);
+
+      if (!coupon || !coupon.isActive) {
+        return Response.json(
+          { message: "Invalid or expired coupon code." },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.expiresAt && coupon.expiresAt < now) {
+        return Response.json(
+          { message: "Invalid or expired coupon code." },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.startsAt && coupon.startsAt > now) {
+        return Response.json(
+          { message: "Invalid or expired coupon code." },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+        return Response.json(
+          { message: "Invalid or expired coupon code." },
+          { status: 400 }
+        );
+      }
+
+      // Check per-listing usage (prevent duplicate use on same listing)
+      const [existingListingUsage] = await db
+        .select({ id: featureCouponUsages.id })
+        .from(featureCouponUsages)
+        .where(
+          and(
+            eq(featureCouponUsages.couponId, coupon.id),
+            eq(featureCouponUsages.vehicleId, id),
+          )
+        )
+        .limit(1);
+
+      if (existingListingUsage) {
+        return Response.json(
+          { message: "This coupon has already been used for this listing." },
+          { status: 400 }
+        );
+      }
+
+      // Check per-seller limit if set
+      if (coupon.perSellerLimit !== null) {
+        const sellerUsages = await db
+          .select({ id: featureCouponUsages.id })
+          .from(featureCouponUsages)
+          .where(
+            and(
+              eq(featureCouponUsages.couponId, coupon.id),
+              eq(featureCouponUsages.sellerId, currentUser.id),
+            )
+          );
+
+        if (sellerUsages.length >= coupon.perSellerLimit) {
+          return Response.json(
+            { message: "Invalid or expired coupon code." },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Coupon is valid — auto-approve immediately
+      const featuredExpiresAt = new Date(
+        now.getTime() + FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
+      );
+
+      await db
+        .update(vehicles)
+        .set({
+          isFeatured: true,
+          featuredAt: now,
+          featuredExpiresAt,
+          featuredBy: currentUser.id,
+          updatedAt: now,
+        })
+        .where(eq(vehicles.id, id));
+
+      await db
+        .insert(featureRequests)
+        .values({
+          vehicleId: id,
+          sellerId: currentUser.id,
+          status: "APPROVED",
+          requestedAt: now,
+          updatedAt: now,
+        });
+
+      // Record coupon usage and increment usedCount
+      await db.insert(featureCouponUsages).values({
+        couponId: coupon.id,
+        vehicleId: id,
+        sellerId: currentUser.id,
+      });
+
+      await db
+        .update(featureCoupons)
+        .set({ usedCount: coupon.usedCount + 1, updatedAt: now })
+        .where(eq(featureCoupons.id, coupon.id));
+
+      return Response.json(
+        {
+          success: true,
+          status: "APPROVED",
+          message: "Coupon applied. Listing featured successfully.",
+        },
+        { status: 200 },
+      );
     }
 
     const [autoFeatureApprovalRow] = await db
