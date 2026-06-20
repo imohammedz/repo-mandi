@@ -84,12 +84,12 @@ function buildHomepageCategoryCondition(category: HomepageCategoryId) {
       )!;
     case "buses":
       return or(
-        ilike(vehicles.type, "%Bus%"),
+        eq(vehicles.type, "Bus"),
         ilike(vehicles.assetCategory, "%Bus%"),
         ilike(vehicles.vehicleSubType, "%Bus%")
       )!;
     case "equipment":
-      return or(eq(vehicles.assetCategory, "Equipment"), ilike(vehicles.type, "%Equipment%"))!;
+      return or(eq(vehicles.assetCategory, "Equipment"), eq(vehicles.type, "Equipment"))!;
   }
 }
 
