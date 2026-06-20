@@ -414,7 +414,7 @@ export async function GET(request: Request) {
       .select()
       .from(vehicles)
       .where(whereClause)
-      .orderBy(...getVehicleListingOrderBy(sort))
+      .orderBy(...getVehicleListingOrderBy(sort ?? undefined))
       .limit(limit)
       .offset((safePage - 1) * limit);
 
