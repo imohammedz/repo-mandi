@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       isActive: body?.isActive ?? true,
       maxUses: maxUsesResult.value,
       expiresAt: expiresAtResult.value,
-      durationDays: durationDaysResult.value,
+      durationDays: durationDaysResult.value ?? DEFAULT_FEATURE_DURATION_DAYS,
       createdBy: current.user.id,
     })
     .returning();
