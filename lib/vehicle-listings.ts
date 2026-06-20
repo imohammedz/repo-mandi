@@ -184,7 +184,7 @@ async function fetchVehicleCardRows(whereClause: SQL, sort?: string, limit?: num
     .select(vehicleCardSelect)
     .from(vehicles)
     .where(whereClause)
-    .orderBy(...getVehicleListingOrderBy(sort))
+    .orderBy(...getVehicleListingOrderBy(sort ?? undefined))
     .limit(limit ?? DEFAULT_VEHICLE_LISTING_LIMIT)
     .offset(offset ?? 0);
 }
