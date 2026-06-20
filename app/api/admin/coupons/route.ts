@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { featureCouponUsages, featureCoupons } from "@/lib/schema";
+import { featureCoupons } from "@/lib/schema";
 
 export const runtime = "nodejs";
 
@@ -24,19 +24,7 @@ export async function GET() {
     .from(featureCoupons)
     .orderBy(desc(featureCoupons.createdAt));
 
-  // Attach usage count per coupon
-  const usageCounts = await db
-    .select({ couponId: featureCouponUsages.couponId })
-    .from(featureCouponUsages);
-
-  const countMap = usageCounts.reduce<Record<number, number>>((acc, row) => {
-    acc[row.couponId] = (acc[row.couponId] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  return Response.json(
-    coupons.map((c) => ({ ...c, usedCount: countMap[c.id] ?? c.usedCount }))
-  );
+  return Response.json(coupons);
 }
 
 // POST /api/admin/coupons

@@ -254,7 +254,7 @@ export default function AdminCouponsClient({ initialCoupons }: AdminCouponsClien
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700">Per-Listing Limit (blank = 1)</label>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Per-Listing Limit (blank = unlimited)</label>
               <input
                 type="number"
                 min={1}
