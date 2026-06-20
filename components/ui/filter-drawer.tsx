@@ -52,15 +52,6 @@ const FILTER_FIELDS: FilterField[] = [
   { key: "brand", label: "Brand / Make", type: "text" },
   { key: "model", label: "Model", type: "text" },
   { key: "location", label: "Location / Yard", type: "text" },
-  {
-    key: "runningCondition",
-    label: "Running Condition",
-    options: [
-      { label: "Running", value: "RUNNING" },
-      { label: "Not Running", value: "NOT_RUNNING" },
-      { label: "Unknown", value: "UNKNOWN" },
-    ],
-  },
   { key: "repoStatus", label: "Repo Status", type: "text" },
   { key: "sellerRole", label: "Seller Role", type: "text" },
   { key: "minPrice", label: "Min Price", type: "number" },

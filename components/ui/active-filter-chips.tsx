@@ -20,7 +20,6 @@ const CHIP_LABELS: Record<string, string> = {
   city: "City",
   state: "State",
   location: "Location",
-  runningCondition: "Condition",
   repoStatus: "Repo",
   sellerRole: "Seller",
   financeCompany: "Finance",
