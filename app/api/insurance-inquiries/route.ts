@@ -6,6 +6,7 @@ import { isLeadOtpVerificationEnabled } from "@/lib/leads-otp";
 
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
 const indianTenDigitPattern = /^\d{10}$/;
+const MAX_REQUIREMENT_TEXT_LENGTH = 1000;
 
 const normalizeIndianPhone = (rawPhone: string) => {
   const digits = rawPhone.replace(/\D/g, "");
@@ -90,6 +91,12 @@ export async function POST(request: Request) {
 
     const location = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ") || null;
     const requirementText = body.requirementText?.trim() || "Need insurance support for this vehicle.";
+    if (requirementText.length > MAX_REQUIREMENT_TEXT_LENGTH) {
+      return Response.json(
+        { message: `Requirement text must be ${MAX_REQUIREMENT_TEXT_LENGTH} characters or less.` },
+        { status: 400 },
+      );
+    }
 
     const [inserted] = await db
       .insert(insuranceInquiries)

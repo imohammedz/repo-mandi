@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { leads, vehicles } from "@/lib/schema";
 import { desc, eq, and, isNull, ne, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
+import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
 
 type LeadSource = "CALL" | "WHATSAPP" | "REQUEST_DETAILS";
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
@@ -60,6 +61,19 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const ipRateLimit = enforceRateLimit({
+      key: `leads:create:ip:${ip}`,
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!ipRateLimit.ok) {
+      return Response.json(
+        { message: "Too many inquiry requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipRateLimit.retryAfterSeconds) } },
+      );
+    }
+
     const body = (await request.json()) as {
       vehicleId?: string;
       source?: LeadSource;

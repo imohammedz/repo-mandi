@@ -7,6 +7,7 @@ import { financeInquiries, vehicles } from "@/lib/schema";
 
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
 const indianTenDigitPattern = /^\d{10}$/;
+const MAX_REQUIREMENT_TEXT_LENGTH = 1000;
 
 const normalizeIndianPhone = (rawPhone: string) => {
   const digits = rawPhone.replace(/\D/g, "");
@@ -54,6 +55,12 @@ export async function POST(request: Request) {
     const requirementText = body.requirementText.trim();
     if (!buyerName || !requirementText) {
       return Response.json({ message: "Buyer name and requirement text are required." }, { status: 400 });
+    }
+    if (requirementText.length > MAX_REQUIREMENT_TEXT_LENGTH) {
+      return Response.json(
+        { message: `Requirement text must be ${MAX_REQUIREMENT_TEXT_LENGTH} characters or less.` },
+        { status: 400 },
+      );
     }
 
     const buyerPhone = normalizeIndianPhone(body.buyerPhone);

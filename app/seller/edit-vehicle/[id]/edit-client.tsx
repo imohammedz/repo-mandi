@@ -132,6 +132,7 @@ export default function EditVehicleClient({ vehicle }: Props) {
         const payload = new FormData();
         payload.append("files", file);
         payload.append("mediaType", "document");
+        payload.append("listingId", vehicle.id);
         const response = await fetch("/api/uploads", { method: "POST", body: payload });
         const data = (await response.json()) as {
           files?: Array<{ url: string; mimeType: string; sizeBytes: number; originalFileName?: string }>;

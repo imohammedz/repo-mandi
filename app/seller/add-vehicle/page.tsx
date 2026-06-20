@@ -1260,6 +1260,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
     try {
       const payload = new FormData();
       payload.append("files", file);
+      if (mode === "edit" && listingId) payload.append("listingId", listingId);
       const response = await fetch("/api/uploads", { method: "POST", body: payload });
       const data = (await response.json()) as { urls?: string[]; message?: string };
       if (!response.ok || !data.urls?.[0]) {
@@ -1305,6 +1306,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
       try {
         const payload = new FormData();
         payload.append("files", file);
+        if (mode === "edit" && listingId) payload.append("listingId", listingId);
         const response = await fetch("/api/uploads", { method: "POST", body: payload });
         const data = (await response.json()) as { urls?: string[]; message?: string };
         if (!response.ok || !data.urls?.[0]) {
@@ -1334,6 +1336,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
     try {
       const payload = new FormData();
       payload.append("files", file);
+      if (mode === "edit" && listingId) payload.append("listingId", listingId);
       const response = await fetch("/api/uploads", { method: "POST", body: payload });
       const data = (await response.json()) as { urls?: string[]; message?: string };
       if (!response.ok || !data.urls?.[0]) {
@@ -1377,6 +1380,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
         const payload = new FormData();
         payload.append("files", file);
         payload.append("mediaType", "video");
+        if (mode === "edit" && listingId) payload.append("listingId", listingId);
         const response = await fetch("/api/uploads", { method: "POST", body: payload });
         const data = (await response.json()) as {
           files?: Array<{ url: string; mimeType: string; sizeBytes: number }>;
@@ -1413,6 +1417,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
       const payload = new FormData();
       payload.append("files", file);
       payload.append("mediaType", "video");
+      if (mode === "edit" && listingId) payload.append("listingId", listingId);
       const response = await fetch("/api/uploads", { method: "POST", body: payload });
       const data = (await response.json()) as {
         files?: Array<{ url: string; mimeType: string; sizeBytes: number }>;
@@ -1481,6 +1486,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
         const payload = new FormData();
         payload.append("files", file);
         payload.append("mediaType", "document");
+        if (mode === "edit" && listingId) payload.append("listingId", listingId);
         const response = await fetch("/api/uploads", { method: "POST", body: payload });
         const data = (await response.json()) as {
           files?: Array<{ url: string; mimeType: string; sizeBytes: number; originalFileName?: string }>;

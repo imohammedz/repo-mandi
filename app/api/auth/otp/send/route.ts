@@ -1,10 +1,12 @@
 import { sendOtp, getActiveOtpProvider } from "@/lib/otp/otp-service";
 import { normalizeIndianPhone } from "@/lib/otp/phone";
+import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
     const provider = await getActiveOtpProvider();
 
     if (provider === "MSG91_SMS") {
@@ -22,6 +24,30 @@ export async function POST(request: Request) {
 
     if (!phone) {
       return Response.json({ message: "Enter a valid 10-digit mobile number." }, { status: 400 });
+    }
+
+    const phoneRateLimit = enforceRateLimit({
+      key: `otp-send:phone:${phone}`,
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!phoneRateLimit.ok) {
+      return Response.json(
+        { message: "Too many OTP requests for this number. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(phoneRateLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const ipRateLimit = enforceRateLimit({
+      key: `otp-send:ip:${ip}`,
+      limit: 20,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!ipRateLimit.ok) {
+      return Response.json(
+        { message: "Too many OTP requests from this network. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipRateLimit.retryAfterSeconds) } },
+      );
     }
 
     const purpose = typeof body.purpose === "string" && body.purpose ? body.purpose : "login";
