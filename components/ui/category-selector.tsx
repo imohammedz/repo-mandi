@@ -156,9 +156,9 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
 };
 
 export function CategorySelector({ activeCategory }: { activeCategory?: CategoryId }) {
-  const [optimisticSelected, setOptimisticSelected] = useState<CategoryId | null>(null);
+  const [localSelected, setLocalSelected] = useState<CategoryId | null>(null);
   const router = useRouter();
-  const selected = activeCategory ?? optimisticSelected ?? null;
+  const selected = activeCategory ?? localSelected ?? null;
 
   return (
     <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">
@@ -170,7 +170,7 @@ export function CategorySelector({ activeCategory }: { activeCategory?: Category
             key={cat.id}
             type="button"
             onClick={() => {
-              setOptimisticSelected(cat.id);
+              setLocalSelected(cat.id);
               router.push(cat.href);
             }}
             className={[
