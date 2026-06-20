@@ -6,6 +6,7 @@ import { isLeadOtpVerificationEnabled } from "@/lib/leads-otp";
 
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
 const indianTenDigitPattern = /^\d{10}$/;
+const MAX_REQUIREMENT_TEXT_LENGTH = 1000;
 
 const normalizeIndianPhone = (rawPhone: string) => {
   const digits = rawPhone.replace(/\D/g, "");
@@ -93,8 +94,11 @@ export async function POST(request: Request) {
     if (!requirementText) {
       return Response.json({ message: "Requirement text is required." }, { status: 400 });
     }
-    if (requirementText.length > 1000) {
-      return Response.json({ message: "Requirement text must be 1000 characters or less." }, { status: 400 });
+    if (requirementText.length > MAX_REQUIREMENT_TEXT_LENGTH) {
+      return Response.json(
+        { message: `Requirement text must be ${MAX_REQUIREMENT_TEXT_LENGTH} characters or less.` },
+        { status: 400 },
+      );
     }
 
     const [inserted] = await db

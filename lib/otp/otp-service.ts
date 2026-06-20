@@ -23,6 +23,7 @@ const OTP_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_SEND_COOLDOWN_SECONDS = 60;
 const OTP_SEND_MAX_PER_HOUR = 5;
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 // ─── Provider setting ─────────────────────────────────────────────────────────
 
@@ -122,7 +123,7 @@ export async function sendOtp(phone: string, purpose = "login"): Promise<SendOtp
 
   // Derive the 10-digit local key stored in users.phone
   const localPhone = e164.startsWith("+91") ? e164.slice(3) : e164.slice(1);
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const oneHourAgo = new Date(Date.now() - ONE_HOUR_MS);
   const recentOtps = await db
     .select({ id: otpCodes.id, createdAt: otpCodes.createdAt })
     .from(otpCodes)

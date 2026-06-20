@@ -212,9 +212,10 @@ export async function POST(request: Request) {
         );
       }
 
+      const safeUserId = String(currentUser.id).replace(/[^\d]/g, "");
       const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
-      const scopedListingPath = listingId || `draft-${currentUser.id}`;
-      const filePath = `users/${currentUser.id}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
+      const scopedListingPath = listingId || `draft-${safeUserId}`;
+      const filePath = `users/${safeUserId}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)
