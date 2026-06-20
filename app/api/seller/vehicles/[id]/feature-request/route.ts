@@ -1,14 +1,25 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { featureRequests, platformSettings, vehicles } from "@/lib/schema";
+import {
+  DEFAULT_FEATURE_DURATION_DAYS,
+  MAX_FEATURE_DURATION_DAYS,
+  normalizeFeatureCouponCode,
+} from "@/lib/feature-coupons";
+import {
+  featureCouponUsages,
+  featureCoupons,
+  featureRequests,
+  platformSettings,
+  vehicles,
+} from "@/lib/schema";
 
 export const runtime = "nodejs";
-const FEATURE_DURATION_DAYS = 7;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const INVALID_COUPON_MESSAGE = "Invalid or expired coupon code.";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -74,6 +85,131 @@ export async function POST(
       return Response.json({ message: "Feature request already submitted." }, { status: 400 });
     }
 
+    // Parse optional coupon code from request body
+    let rawCouponCode: string | undefined;
+    try {
+      const body = (await request.json().catch(() => null)) as { couponCode?: string } | null;
+      rawCouponCode = body?.couponCode;
+    } catch {
+      // no body is fine
+    }
+
+    const couponCode = rawCouponCode ? normalizeFeatureCouponCode(rawCouponCode) : undefined;
+
+    if (couponCode) {
+      const [coupon] = await db
+        .select()
+        .from(featureCoupons)
+        .where(eq(featureCoupons.code, couponCode))
+        .limit(1);
+
+      if (!coupon || !coupon.isActive) {
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+      }
+
+      if (coupon.expiresAt && coupon.expiresAt.getTime() < now.getTime()) {
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+      }
+
+      if (coupon.startsAt && coupon.startsAt.getTime() > now.getTime()) {
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+      }
+
+      const [existingListingUsage] = await db
+        .select({ id: featureCouponUsages.id })
+        .from(featureCouponUsages)
+        .where(
+          and(
+            eq(featureCouponUsages.couponId, coupon.id),
+            eq(featureCouponUsages.vehicleId, id),
+          )
+        )
+        .limit(1);
+
+      if (existingListingUsage) {
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+      }
+
+      if (coupon.durationDays > MAX_FEATURE_DURATION_DAYS) {
+        return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+      }
+      const featuredExpiresAt = new Date(
+        now.getTime() + coupon.durationDays * MILLISECONDS_PER_DAY,
+      );
+      const couponCountUpdate = {
+        usedCount: sql`${featureCoupons.usedCount} + 1`,
+        updatedAt: now,
+      };
+
+      try {
+        await db.transaction(async (tx) => {
+          await tx
+            .update(vehicles)
+            .set({
+              isFeatured: true,
+              featuredAt: now,
+              featuredExpiresAt,
+              featuredBy: currentUser.id,
+              updatedAt: now,
+            })
+            .where(eq(vehicles.id, id));
+
+          await tx
+            .insert(featureRequests)
+            .values({
+              vehicleId: id,
+              sellerId: currentUser.id,
+              status: "APPROVED",
+              requestedAt: now,
+              updatedAt: now,
+            });
+
+          await tx.insert(featureCouponUsages).values({
+            couponId: coupon.id,
+            vehicleId: id,
+            sellerId: currentUser.id,
+          });
+
+          const incremented = await tx
+            .update(featureCoupons)
+            .set(couponCountUpdate)
+            .where(
+              and(
+                eq(featureCoupons.id, coupon.id),
+                sql`${featureCoupons.maxUses} IS NULL OR ${featureCoupons.usedCount} < ${featureCoupons.maxUses}`,
+              ),
+            )
+            .returning({ id: featureCoupons.id });
+
+          if (!incremented[0]) {
+            throw new Error("COUPON_EXHAUSTED");
+          }
+        });
+      } catch (error) {
+        if (
+          (error instanceof Error && error.message === "COUPON_EXHAUSTED") ||
+          (typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            error.code === "23505" &&
+            "constraint" in error &&
+            error.constraint === "feature_coupon_usages_coupon_vehicle_unique")
+        ) {
+          return Response.json({ message: INVALID_COUPON_MESSAGE }, { status: 400 });
+        }
+        throw error;
+      }
+
+      return Response.json(
+        {
+          success: true,
+          status: "APPROVED",
+          message: "Coupon applied. Listing featured successfully.",
+        },
+        { status: 200 },
+      );
+    }
+
     const [autoFeatureApprovalRow] = await db
       .select({ value: platformSettings.value })
       .from(platformSettings)
@@ -83,7 +219,7 @@ export async function POST(
 
     if (autoFeatureApprovalEnabled) {
       const featuredExpiresAt = new Date(
-        now.getTime() + FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
+        now.getTime() + DEFAULT_FEATURE_DURATION_DAYS * MILLISECONDS_PER_DAY,
       );
 
       await db

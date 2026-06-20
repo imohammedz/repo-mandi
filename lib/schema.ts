@@ -607,6 +607,46 @@ export const featureRequests = pgTable("feature_requests", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const featureCoupons = pgTable("feature_coupons", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").notNull().default(0),
+  expiresAt: timestamp("expires_at"),
+  durationDays: integer("duration_days").notNull().default(30),
+  startsAt: timestamp("starts_at"),
+  perSellerLimit: integer("per_seller_limit"),
+  perListingLimit: integer("per_listing_limit"),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const featureCouponUsages = pgTable(
+  "feature_coupon_usages",
+  {
+    id: serial("id").primaryKey(),
+    couponId: integer("coupon_id")
+      .notNull()
+      .references(() => featureCoupons.id, { onDelete: "cascade" }),
+    vehicleId: varchar("vehicle_id", { length: 100 })
+      .notNull()
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    sellerId: integer("seller_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    usedAt: timestamp("used_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    couponVehicleUnique: uniqueIndex("feature_coupon_usages_coupon_vehicle_unique").on(
+      table.couponId,
+      table.vehicleId,
+    ),
+  }),
+);
+
 // ─── Inferred types ───────────────────────────────────────────────────────────
 
 export type DbVehicle = typeof vehicles.$inferSelect;
@@ -632,3 +672,7 @@ export type DbOtpCode = typeof otpCodes.$inferSelect;
 export type DbOtpCodeInsert = typeof otpCodes.$inferInsert;
 export type DbFeatureRequest = typeof featureRequests.$inferSelect;
 export type DbFeatureRequestInsert = typeof featureRequests.$inferInsert;
+export type DbFeatureCoupon = typeof featureCoupons.$inferSelect;
+export type DbFeatureCouponInsert = typeof featureCoupons.$inferInsert;
+export type DbFeatureCouponUsage = typeof featureCouponUsages.$inferSelect;
+export type DbFeatureCouponUsageInsert = typeof featureCouponUsages.$inferInsert;

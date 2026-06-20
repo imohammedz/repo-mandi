@@ -23,6 +23,7 @@ export function FeatureListingButton({
   const [showModal, setShowModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [couponCode, setCouponCode] = useState("");
 
   const buttonClassName = [
     "inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
@@ -46,6 +47,7 @@ export function FeatureListingButton({
     if (hasPendingRequest) return;
     setSuccessMessage("");
     setErrorMessage("");
+    setCouponCode("");
     setShowModal(true);
   };
 
@@ -60,6 +62,8 @@ export function FeatureListingButton({
       try {
         const response = await fetch(`/api/seller/vehicles/${listingId}/feature-request`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ couponCode: couponCode.trim() || undefined }),
         });
         const body = (await response.json().catch(() => null)) as { message?: string } | null;
         if (!response.ok) {
@@ -114,8 +118,31 @@ export function FeatureListingButton({
               Featured listings appear on the home page, at the top of search results, and in the Featured
               Listings section. Your request will be reviewed by the RepoMandi team.
             </p>
+
+            <div className="mb-4">
+              <label htmlFor="coupon-code-input" className="mb-1.5 block text-sm font-medium text-slate-700">
+                Coupon Code <span className="font-normal text-slate-400">(optional)</span>
+              </label>
+              <input
+                id="coupon-code-input"
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="NEWRMFREE"
+                disabled={isPending}
+                aria-describedby={errorMessage ? "coupon-error" : "coupon-hint"}
+                aria-invalid={!!errorMessage}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm uppercase placeholder:normal-case placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:opacity-50"
+              />
+              {!errorMessage ? (
+                <p id="coupon-hint" className="mt-1 text-xs text-slate-400">
+                  Enter a promo code to feature your listing instantly.
+                </p>
+              ) : null}
+            </div>
+
             {errorMessage ? (
-              <p className="mb-3 text-sm text-rose-600">{errorMessage}</p>
+              <p id="coupon-error" role="alert" className="mb-3 text-sm text-rose-600">{errorMessage}</p>
             ) : null}
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -132,7 +159,7 @@ export function FeatureListingButton({
                 disabled={isPending}
                 className="min-h-11 rounded-xl bg-amber-500 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
               >
-                {isPending ? "Submitting..." : "Submit Request"}
+                {isPending ? "Submitting..." : "Request Feature Listing"}
               </button>
             </div>
           </section>
@@ -141,3 +168,4 @@ export function FeatureListingButton({
     </>
   );
 }
+
