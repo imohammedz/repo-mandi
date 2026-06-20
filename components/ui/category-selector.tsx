@@ -155,10 +155,10 @@ const iconComponents: Record<CategoryId, (props: { tint: boolean }) => React.JSX
   equipment: EquipmentIcon,
 };
 
-export function CategorySelector({ activeCategory = null }: { activeCategory?: CategoryId | null }) {
+export function CategorySelector({ activeCategory }: { activeCategory?: CategoryId }) {
   const [pendingSelected, setPendingSelected] = useState<CategoryId | null>(null);
   const router = useRouter();
-  const selected = activeCategory ?? pendingSelected;
+  const selected = activeCategory ?? pendingSelected ?? null;
 
   return (
     <div className="grid w-full grid-cols-6 gap-1 overflow-hidden">

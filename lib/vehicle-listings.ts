@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, isNull, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, ne, or, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sanitizeSupabaseMediaArray, sanitizeSupabaseMediaUrl } from "@/lib/media";
 import { vehicles } from "@/lib/schema";
@@ -59,19 +59,9 @@ export function isHomepageCategory(value?: string | null): value is HomepageCate
 function buildHomepageCategoryCondition(category: HomepageCategoryId) {
   switch (category) {
     case "prime-mover":
-      return and(
-        or(
-          eq(vehicles.assetConfiguration, PRIME_MOVER_ONLY_VALUES[0]),
-          eq(vehicles.assetConfiguration, PRIME_MOVER_ONLY_VALUES[1]),
-          eq(vehicles.assetConfiguration, PRIME_MOVER_ONLY_VALUES[2])
-        )!,
-        ne(vehicles.assetConfiguration, "Prime Mover + Trailer")
-      )!;
+      return and(inArray(vehicles.assetConfiguration, [...PRIME_MOVER_ONLY_VALUES]), ne(vehicles.assetConfiguration, "Prime Mover + Trailer"))!;
     case "trailers":
-      return or(
-        eq(vehicles.assetConfiguration, TRAILER_ONLY_VALUES[0]),
-        eq(vehicles.assetConfiguration, TRAILER_ONLY_VALUES[1])
-      )!;
+      return inArray(vehicles.assetConfiguration, [...TRAILER_ONLY_VALUES]);
     case "tippers":
       return or(
         ilike(vehicles.bodyType, "%Tipper%"),
