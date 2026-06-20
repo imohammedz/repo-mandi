@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { categories } from "@/components/ui/category-selector";
@@ -58,7 +58,7 @@ function buildChips(searchParams: URLSearchParams): ActiveChip[] {
     } else if (minPrice) {
       priceLabel = `Min ₹${formatPrice(minPrice)}`;
     } else {
-      priceLabel = `Max ₹${formatPrice(maxPrice!)}`;
+      priceLabel = `Max ₹${formatPrice(maxPrice ?? "")}`;
     }
     chips.push({ id: "price", label: priceLabel, removeKeys: ["minPrice", "maxPrice"] });
     seen.add("minPrice");
@@ -84,20 +84,36 @@ function buildChips(searchParams: URLSearchParams): ActiveChip[] {
   return chips;
 }
 
-const getCollapsedCount = (width: number) => (width < 768 ? 2 : 4);
+const RESIZE_DEBOUNCE_MS = 150;
+const MOBILE_BREAKPOINT = 768;
+const MOBILE_COLLAPSED_COUNT = 2;
+const DESKTOP_COLLAPSED_COUNT = 4;
+
+const getCollapsedCount = (width: number) =>
+  width < MOBILE_BREAKPOINT ? MOBILE_COLLAPSED_COUNT : DESKTOP_COLLAPSED_COUNT;
 
 export function ActiveFilterChips() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [expanded, setExpanded] = useState(false);
-  const [collapsedCount, setCollapsedCount] = useState(2);
+  const [collapsedCount, setCollapsedCount] = useState(MOBILE_COLLAPSED_COUNT);
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const update = () => setCollapsedCount(getCollapsedCount(window.innerWidth));
     update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+
+    const onResize = () => {
+      if (resizeTimerRef.current !== null) clearTimeout(resizeTimerRef.current);
+      resizeTimerRef.current = setTimeout(update, RESIZE_DEBOUNCE_MS);
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => {
+      if (resizeTimerRef.current !== null) clearTimeout(resizeTimerRef.current);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   const chips = useMemo(() => buildChips(searchParams), [searchParams]);
