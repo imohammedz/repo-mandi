@@ -25,7 +25,7 @@ const SELECTED_IMAGE_STYLE = {
   filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))",
 } as const;
 
-const categories: Category[] = [
+export const categories: Category[] = [
   { id: "prime-mover", label: "Prime Mover" },
   { id: "trailers", label: "Trailers" },
   { id: "tippers", label: "Tippers" },
