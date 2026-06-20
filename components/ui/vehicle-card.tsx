@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Disc3, Gauge, MapPin, ShipWheel } from "lucide-react";
@@ -133,6 +133,18 @@ const getSellerRoleChip = (vehicle: Vehicle) => {
   return "";
 };
 
+const FEATURED_TOOLTIP_TEXT = "Featured Listing";
+
+const isFeaturedListingActive = (vehicle: Vehicle) => {
+  if (!vehicle.isFeatured) return false;
+  if (!vehicle.featuredExpiresAt) return true;
+
+  const featuredExpiry = new Date(vehicle.featuredExpiresAt);
+  if (Number.isNaN(featuredExpiry.getTime())) return false;
+
+  return featuredExpiry > new Date();
+};
+
 export function VehicleCard({ vehicle, compact = false }: Props) {
   const title = getTitle(vehicle);
   const listingTypeTag = getListingTypeTag(vehicle);
@@ -145,6 +157,7 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
   const cardClass = compact ? COMPACT_CARD_CLASS : REGULAR_CARD_CLASS;
   const locationLine = vehicle.vehicleOrYardLocation || [vehicle.city, vehicle.state].filter(Boolean).join(", ");
   const sellerRoleChip = getSellerRoleChip(vehicle);
+  const isFeaturedActive = isFeaturedListingActive(vehicle);
   const listingTypeTagClass =
     listingTypeTag === "REPO"
       ? "border border-amber-200 bg-amber-50 text-[9px] font-semibold text-amber-800"
@@ -159,6 +172,8 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
           : sellerRoleChip === "BANK PARTNER"
             ? "border border-purple-200 bg-purple-100 text-purple-800"
             : "border border-red-200 bg-red-100 text-red-800";
+  const featuredChipClass =
+    "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-400 px-1 text-[9px] font-semibold leading-none text-white";
   const images = useMemo(
     () => {
       const resolvedImages = [
@@ -179,9 +194,32 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
     [vehicle.backPhoto, vehicle.frontPhoto, vehicle.gallery, vehicle.image, vehicle.leftSidePhoto, vehicle.rightSidePhoto, vehicle.sidePhoto]
   );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showFeaturedTooltip, setShowFeaturedTooltip] = useState(false);
+  const featuredTooltipTimeoutRef = useRef<number | null>(null);
   const safeImageIndex = images.length ? Math.min(selectedImageIndex, images.length - 1) : 0;
   const selectedImage = images[safeImageIndex] ?? null;
   const imageCount = images.length;
+
+  useEffect(
+    () => () => {
+      if (featuredTooltipTimeoutRef.current) {
+        window.clearTimeout(featuredTooltipTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  const showFeaturedTooltipTemporarily = () => {
+    setShowFeaturedTooltip(true);
+    if (featuredTooltipTimeoutRef.current) {
+      window.clearTimeout(featuredTooltipTimeoutRef.current);
+    }
+    featuredTooltipTimeoutRef.current = window.setTimeout(() => {
+      setShowFeaturedTooltip(false);
+      featuredTooltipTimeoutRef.current = null;
+    }, 1500);
+  };
+
   const onPrevImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -200,7 +238,10 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`relative isolate flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm box-border`}
+      className={`relative isolate flex ${cardClass} w-full max-w-full items-stretch gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-sm box-border ${
+        isFeaturedActive ? "border-2 border-amber-300" : "border border-slate-200"
+      }`}
+      style={isFeaturedActive ? { boxShadow: "0 0 0 1px rgba(251,191,36,.15)" } : undefined}
     >
       <div className="relative z-0 h-[180px] w-[35%] min-w-[120px] max-w-[140px] shrink-0 overflow-hidden rounded-xl bg-black/80 sm:h-auto md:w-[38%] md:max-w-[180px]">
         {selectedImage ? (
@@ -264,17 +305,37 @@ export function VehicleCard({ vehicle, compact = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 h-[180px] overflow-hidden">
-        <div className="flex min-w-0 flex-wrap items-center gap-1">
+        <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
           <span
-            className={`inline-flex w-fit rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
+            className={`inline-flex w-fit shrink-0 rounded px-1 py-0 uppercase tracking-wide ${listingTypeTagClass}`}
             role="status"
             aria-label={`Listing type: ${listingTypeTag}`}
           >
             {listingTypeTag}
           </span>
           {sellerRoleChip ? (
-            <span className={`inline-flex w-fit items-center rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
-              {sellerRoleChip}
+            <span className={`inline-flex min-w-0 max-w-full items-center overflow-hidden rounded px-1 py-0 text-[9px] font-semibold uppercase tracking-wide ${sellerRoleChipClass}`}>
+              <span className="truncate">{sellerRoleChip}</span>
+            </span>
+          ) : null}
+          {isFeaturedActive ? (
+            <span className="group relative inline-flex shrink-0">
+              <button
+                type="button"
+                aria-label={FEATURED_TOOLTIP_TEXT}
+                onClick={showFeaturedTooltipTemporarily}
+                className={featuredChipClass}
+              >
+                <span aria-hidden>⭐</span>
+              </button>
+              <span
+                role="tooltip"
+                className={`pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white shadow-sm transition-opacity duration-150 ${
+                  showFeaturedTooltip ? "opacity-100" : "opacity-0"
+                } group-hover:opacity-100 group-focus-within:opacity-100`}
+              >
+                {FEATURED_TOOLTIP_TEXT}
+              </span>
             </span>
           ) : null}
         </div>
