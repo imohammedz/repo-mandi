@@ -68,7 +68,6 @@ const FILTER_FIELDS: FilterField[] = [
 ];
 
 const CHIP_LABELS: Record<string, string> = {
-  category: "Category",
   q: "Search",
   listingType: "Type",
   listingMode: "Mode",
