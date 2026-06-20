@@ -3,9 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useSellDestination } from "@/lib/hooks/use-sell-destination";
 
 export default function SellTruckCard() {
   const pathname = usePathname();
+  const sellDestination = useSellDestination();
 
   const hidden =
     pathname.startsWith("/auth") ||
@@ -28,7 +30,7 @@ export default function SellTruckCard() {
         <h3>Sell Your Truck</h3>
         <p>List for free & reach buyers fast</p>
       </div>
-      <Link href="/sell" className="sell-card-btn">
+      <Link href={sellDestination} className="sell-card-btn">
         Sell Now
         <span>+</span>
       </Link>

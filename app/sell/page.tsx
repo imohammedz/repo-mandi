@@ -21,8 +21,12 @@ export default function SellPage() {
         const response = await fetch("/api/auth/session");
         if (!response.ok) return;
         const data = (await response.json()) as { user?: { accountType?: string; isProfileComplete?: boolean } };
-        if (data.user?.accountType === "SELLER") {
-          router.replace(data.user.isProfileComplete ? "/seller/dashboard" : "/onboarding");
+        if (
+          data.user?.accountType === "SELLER" ||
+          data.user?.accountType === "BANK_PARTNER" ||
+          data.user?.accountType === "ADMIN"
+        ) {
+          router.replace(data.user.isProfileComplete ? "/seller/add-vehicle" : "/onboarding");
         }
       } catch {
         // If session is unavailable, keep users on this screen.
