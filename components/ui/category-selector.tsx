@@ -2,8 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  BUS_IMAGE_URL,
-  CONTAINER_IMAGE_URL,
   EQUIPMENT_IMAGE_URL,
   PRIME_MOVER_IMAGE_URL,
   TIPPER_IMAGE_URL,
@@ -17,6 +15,8 @@ type Category = {
   label: string;
 };
 
+const CONTAINER_IMAGE_URL = "https://github.com/user-attachments/assets/76a11527-9e12-46aa-9104-5d33a8b3c140";
+const BUS_IMAGE_URL = "https://github.com/user-attachments/assets/a9cbe926-8ee9-4c31-8b52-b3357c745dff";
 const SELECTED_IMAGE_STYLE = {
   filter: "drop-shadow(0 1px 1px rgba(234,88,12,0.2))",
 } as const;

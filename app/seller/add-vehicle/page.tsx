@@ -1917,7 +1917,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">Asset Structure <span className="text-rose-500">*</span></p>
-            <div className="grid gap-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {ASSET_STRUCTURE_CARDS.map((card) => (
                 <button
                   key={card.value}
