@@ -1934,12 +1934,14 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                     {card.image ? (
                       <div className="flex items-start gap-3">
                         <div className="rounded-xl border border-black/5 bg-black/5 p-2">
-                          <div className="h-14 w-20 shrink-0">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                          <div className="relative h-14 w-20 shrink-0">
+                            <SafeImage
                               src={card.image.src}
                               alt={card.image.alt}
-                              className="h-full w-full object-contain"
+                              fill
+                              sizes="80px"
+                              className="object-contain"
+                              logContext={{ component: "AddVehicleAssetStructure", type: card.value }}
                             />
                           </div>
                         </div>
@@ -1990,12 +1992,14 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         >
                           {card.detachableExamples.map((item) => (
                             <div key={item.caption} className="rounded-xl border border-black/5 bg-black/5 p-2">
-                              <div className="h-14 w-full">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
+                              <div className="relative h-14 w-full">
+                                <SafeImage
                                   src={item.src}
                                   alt={item.alt}
-                                  className="h-full w-full object-contain"
+                                  fill
+                                  sizes="(max-width: 768px) 50vw, 120px"
+                                  className="object-contain"
+                                  logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
                                 />
                               </div>
                               <p className={`mt-1 text-center text-[11px] ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-600"}`}>
