@@ -40,6 +40,7 @@ type AssetStructureCard = {
   }>;
 };
 
+/** Visual card content for the asset structure selector. */
 const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
   {
     value: "STANDALONE",

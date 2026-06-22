@@ -5,6 +5,7 @@ export const EQUIPMENT_IMAGE_URL = "https://github.com/user-attachments/assets/7
 export const CONTAINER_IMAGE_URL = "https://github.com/user-attachments/assets/76a11527-9e12-46aa-9104-5d33a8b3c140";
 export const BUS_IMAGE_URL = "https://github.com/user-attachments/assets/a9cbe926-8ee9-4c31-8b52-b3357c745dff";
 
+/** Shared category artwork allowlisted for SafeImage and Next image rendering. */
 export const CATEGORY_IMAGE_URLS = [
   PRIME_MOVER_IMAGE_URL,
   TRAILER_IMAGE_URL,
