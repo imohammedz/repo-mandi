@@ -4,13 +4,13 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
+import { SafeImage } from "@/components/ui/safe-image";
 import {
   EQUIPMENT_IMAGE_URL,
   PRIME_MOVER_IMAGE_URL,
   TIPPER_IMAGE_URL,
   TRAILER_IMAGE_URL,
-} from "@/components/ui/category-selector";
-import { SafeImage } from "@/components/ui/safe-image";
+} from "@/lib/category-image-assets";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   DETACHABLE_TYPE_HELPER_TEXT,
@@ -1960,7 +1960,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                           className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                             form.assetStructure === card.value ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
                           }`}
-                          aria-hidden
+                          aria-hidden="true"
                         >
                           {form.assetStructure === card.value ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
                         </span>
@@ -1980,12 +1980,16 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                             className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                               form.assetStructure === card.value ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
                             }`}
-                            aria-hidden
+                            aria-hidden="true"
                           >
                             {form.assetStructure === card.value ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div
+                          className="grid grid-cols-2 gap-2"
+                          role="group"
+                          aria-label="Detachable vehicle examples: Prime Mover (Head) and Trailer"
+                        >
                           {card.detachableExamples.map((item) => (
                             <div key={item.caption} className="rounded-xl border border-black/5 bg-black/5 p-2">
                               <div className="relative h-14 w-full">
