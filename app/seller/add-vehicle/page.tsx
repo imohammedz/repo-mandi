@@ -4,6 +4,12 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
+import {
+  EQUIPMENT_IMAGE_URL,
+  PRIME_MOVER_IMAGE_URL,
+  TIPPER_IMAGE_URL,
+  TRAILER_IMAGE_URL,
+} from "@/components/ui/category-selector";
 import { SafeImage } from "@/components/ui/safe-image";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
@@ -17,11 +23,6 @@ import {
   type DetachableType,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel, normalizeRupeeAmount } from "@/lib/formatting";
-
-const PRIME_MOVER_IMAGE_URL = "https://github.com/user-attachments/assets/8a1739ef-5acc-41b0-8493-f5fc95a85bf7";
-const TRAILER_IMAGE_URL = "https://github.com/user-attachments/assets/82d8eef0-04b9-490f-9aa4-6d587b9b136d";
-const TIPPER_IMAGE_URL = "https://github.com/user-attachments/assets/99e2ea3e-7896-469d-9f5d-05d0f2bfe8d6";
-const EQUIPMENT_IMAGE_URL = "https://github.com/user-attachments/assets/72ebe64b-7363-4cf0-9854-35b75021c31f";
 
 type AssetStructureCard = {
   value: AssetStructure;
@@ -1922,6 +1923,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                   key={card.value}
                   type="button"
                   onClick={() => update("assetStructure", card.value)}
+                  aria-pressed={form.assetStructure === card.value}
                   className={`rounded-2xl border p-4 text-left shadow-sm transition ${
                     form.assetStructure === card.value
                       ? "border-slate-900 bg-slate-900 text-white"
@@ -1956,13 +1958,11 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         </div>
                         <span
                           className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                            form.assetStructure === card.value
-                              ? "border-white bg-white text-slate-900"
-                              : "border-slate-300 bg-white text-transparent"
+                            form.assetStructure === card.value ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
                           }`}
                           aria-hidden
                         >
-                          ●
+                          {form.assetStructure === card.value ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
                         </span>
                       </div>
                     ) : null}
@@ -1978,13 +1978,11 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                           </div>
                           <span
                             className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                              form.assetStructure === card.value
-                                ? "border-white bg-white text-slate-900"
-                                : "border-slate-300 bg-white text-transparent"
+                              form.assetStructure === card.value ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
                             }`}
                             aria-hidden
                           >
-                            ●
+                            {form.assetStructure === card.value ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
