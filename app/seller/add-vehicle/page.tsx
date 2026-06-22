@@ -7,7 +7,6 @@ import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
-  ASSET_STRUCTURE_LABELS,
   DETACHABLE_TYPE_HELPER_TEXT,
   DETACHABLE_TYPE_LABELS,
   getAssetCategoryOptions,
@@ -18,6 +17,67 @@ import {
   type DetachableType,
 } from "@/lib/vehicle-classification";
 import { formatEnumLabel, normalizeRupeeAmount } from "@/lib/formatting";
+
+const PRIME_MOVER_IMAGE_URL = "https://github.com/user-attachments/assets/8a1739ef-5acc-41b0-8493-f5fc95a85bf7";
+const TRAILER_IMAGE_URL = "https://github.com/user-attachments/assets/82d8eef0-04b9-490f-9aa4-6d587b9b136d";
+const TIPPER_IMAGE_URL = "https://github.com/user-attachments/assets/99e2ea3e-7896-469d-9f5d-05d0f2bfe8d6";
+const EQUIPMENT_IMAGE_URL = "https://github.com/user-attachments/assets/72ebe64b-7363-4cf0-9854-35b75021c31f";
+
+type AssetStructureCard = {
+  value: AssetStructure;
+  title: string;
+  description: string;
+  examples?: string;
+  image?: {
+    src: string;
+    alt: string;
+  };
+  detachableExamples?: Array<{
+    src: string;
+    alt: string;
+    caption: string;
+  }>;
+};
+
+const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
+  {
+    value: "STANDALONE",
+    title: "Complete Vehicle",
+    description: "Full truck or vehicle.",
+    examples: "Examples: Tipper, Container Truck, Tanker, Bus",
+    image: {
+      src: TIPPER_IMAGE_URL,
+      alt: "Complete Vehicle",
+    },
+  },
+  {
+    value: "DETACHABLE",
+    title: "Detachable Vehicle",
+    description: "Prime mover/head or trailer.",
+    detachableExamples: [
+      {
+        src: PRIME_MOVER_IMAGE_URL,
+        alt: "Prime Mover (Head)",
+        caption: "Prime Mover (Head)",
+      },
+      {
+        src: TRAILER_IMAGE_URL,
+        alt: "Trailer",
+        caption: "Trailer",
+      },
+    ],
+  },
+  {
+    value: "EQUIPMENT",
+    title: "Equipment / Machinery",
+    description: "Construction or heavy equipment.",
+    examples: "Examples: Excavator, Loader, Crane",
+    image: {
+      src: EQUIPMENT_IMAGE_URL,
+      alt: "Equipment / Machinery",
+    },
+  },
+];
 
 type ListingType = "REGULAR" | "REPO";
 type ListingMode = "NORMAL" | "BULK";
@@ -1856,17 +1916,99 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">Asset Structure <span className="text-rose-500">*</span></p>
-            <div className="grid gap-2 md:grid-cols-3">
-              {(Object.entries(ASSET_STRUCTURE_LABELS) as Array<[AssetStructure, string]>).map(([value, label]) => (
+            <div className="grid gap-3">
+              {ASSET_STRUCTURE_CARDS.map((card) => (
                 <button
-                  key={value}
+                  key={card.value}
                   type="button"
-                  onClick={() => update("assetStructure", value)}
-                  className={`rounded-2xl border p-4 text-left text-sm ${
-                    form.assetStructure === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
+                  onClick={() => update("assetStructure", card.value)}
+                  className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+                    form.assetStructure === card.value
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700"
                   }`}
                 >
-                  {label}
+                  <div className="space-y-3">
+                    {card.image ? (
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-xl border border-black/5 bg-black/5 p-2">
+                          <div className="relative h-14 w-20 shrink-0">
+                            <SafeImage
+                              src={card.image.src}
+                              alt={card.image.alt}
+                              fill
+                              sizes="80px"
+                              className="object-contain"
+                              logContext={{ component: "AddVehicleAssetStructure", type: card.value }}
+                            />
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold">{card.title}</p>
+                          <p className={`mt-1 text-xs ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-500"}`}>
+                            {card.description}
+                          </p>
+                          {card.examples ? (
+                            <p className={`mt-1 text-xs ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-500"}`}>
+                              {card.examples}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span
+                          className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            form.assetStructure === card.value
+                              ? "border-white bg-white text-slate-900"
+                              : "border-slate-300 bg-white text-transparent"
+                          }`}
+                          aria-hidden
+                        >
+                          ●
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {card.detachableExamples ? (
+                      <>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{card.title}</p>
+                            <p className={`mt-1 text-xs ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-500"}`}>
+                              {card.description}
+                            </p>
+                          </div>
+                          <span
+                            className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                              form.assetStructure === card.value
+                                ? "border-white bg-white text-slate-900"
+                                : "border-slate-300 bg-white text-transparent"
+                            }`}
+                            aria-hidden
+                          >
+                            ●
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {card.detachableExamples.map((item) => (
+                            <div key={item.caption} className="rounded-xl border border-black/5 bg-black/5 p-2">
+                              <div className="relative h-14 w-full">
+                                <SafeImage
+                                  src={item.src}
+                                  alt={item.alt}
+                                  fill
+                                  sizes="(max-width: 768px) 50vw, 120px"
+                                  className="object-contain"
+                                  logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
+                                />
+                              </div>
+                              <p className={`mt-1 text-center text-[11px] ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-600"}`}>
+                                {item.caption}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
                 </button>
               ))}
             </div>
