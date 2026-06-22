@@ -1989,7 +1989,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         <div
                           className="grid grid-cols-2 gap-2"
                           role="group"
-                          aria-label="Detachable vehicle examples: Prime Mover (Head) and Trailer"
+                          aria-label={`Detachable vehicle examples: ${card.detachableExamples.map(({ caption }) => caption).join(" and ")}`}
                         >
                           {card.detachableExamples.map((item) => (
                             <div key={item.caption} className="rounded-xl border border-black/5 bg-black/5 p-2">
