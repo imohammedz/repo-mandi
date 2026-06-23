@@ -1923,8 +1923,8 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
             <div className="grid gap-3 md:grid-cols-3">
               {ASSET_STRUCTURE_CARDS.map((card) => {
                 const isSelected = form.assetStructure === card.value;
-                const cardClass = `rounded-2xl border p-4 text-left shadow-sm transition ${
-                  isSelected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
+                const cardClass = `rounded-2xl border p-4 text-left transition ${
+                  isSelected ? "border-orange-500 bg-orange-50 text-slate-900 shadow-md" : "border-slate-200 bg-white text-slate-700 shadow-sm"
                 }`;
                 const inner = (
                   <div className="space-y-3">
@@ -1944,18 +1944,18 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">{card.title}</p>
-                          <p className={`mt-1 text-xs ${isSelected ? "text-slate-200" : "text-slate-500"}`}>
+                          <p className={`mt-1 text-xs ${isSelected ? "text-slate-600" : "text-slate-500"}`}>
                             {card.description}
                           </p>
                           {card.examples ? (
-                            <p className={`mt-1 text-xs ${isSelected ? "text-slate-200" : "text-slate-500"}`}>
+                            <p className="mt-1 text-xs text-slate-500">
                               {card.examples}
                             </p>
                           ) : null}
                         </div>
                         <span
                           className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                            isSelected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+                            isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"
                           }`}
                           aria-hidden="true"
                         >
@@ -1969,16 +1969,16 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-semibold">{card.title}</p>
-                            <p className={`mt-1 text-xs ${isSelected ? "text-slate-200" : "text-slate-500"}`}>
+                            <p className={`mt-1 text-xs ${isSelected ? "text-slate-600" : "text-slate-500"}`}>
                               {card.description}
                             </p>
                             {isSelected ? (
-                              <p className="mt-1 text-xs text-orange-300">Select type below</p>
+                              <p className="mt-1 text-xs text-orange-600">Select type below</p>
                             ) : null}
                           </div>
                           <span
                             className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                              isSelected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+                              isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"
                             }`}
                             aria-hidden="true"
                           >
@@ -2007,12 +2007,12 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                   }));
                                 }}
                                 aria-pressed={isTypeSelected}
-                                className={`rounded-xl border p-2 text-left transition ${
+                                className={`relative rounded-xl border p-2 text-left transition ${
                                   isTypeSelected
-                                    ? "border-orange-400 bg-orange-400/20"
+                                    ? "border-orange-500 bg-orange-50 shadow-sm"
                                     : isSelected
-                                      ? "border-white/20 bg-black/10 hover:bg-black/20"
-                                      : "border-black/5 bg-black/5 hover:bg-black/10"
+                                      ? "border-orange-200 bg-white hover:bg-orange-50"
+                                      : "border-slate-200 bg-white hover:bg-slate-50"
                                 }`}
                               >
                                 <div className="relative h-14 w-full">
@@ -2025,18 +2025,23 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                     logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
                                   />
                                 </div>
-                                <p className={`mt-1 text-center text-[11px] font-medium ${isTypeSelected ? "text-orange-200" : isSelected ? "text-slate-200" : "text-slate-600"}`}>
+                                {isTypeSelected ? (
+                                  <span
+                                    className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white"
+                                    aria-hidden="true"
+                                  >
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  </span>
+                                ) : null}
+                                <p className={`mt-1 text-center text-[11px] font-medium ${isTypeSelected ? "text-slate-900" : "text-slate-600"}`}>
                                   {item.caption}
                                 </p>
-                                {isTypeSelected ? (
-                                  <p className="mt-0.5 text-center text-[10px] text-orange-300">✓ Selected</p>
-                                ) : null}
                               </button>
                             );
                           })}
                         </div>
                         {isSelected && form.detachableType && DETACHABLE_TYPE_HELPER_TEXT[form.detachableType] ? (
-                          <p className="text-xs text-slate-300">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
+                          <p className="text-xs text-slate-600">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
                         ) : null}
                       </>
                     ) : null}
