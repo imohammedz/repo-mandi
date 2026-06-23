@@ -1926,7 +1926,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                 const cardClass = `rounded-[28px] border p-6 text-left transition ${
                   card.detachableExamples
                     ? isSelected
-                      ? "border-orange-500 bg-[#081225] text-white shadow-lg"
+                      ? "border-orange-500 bg-slate-950 text-white shadow-lg"
                       : "border-slate-200 bg-white text-slate-900 shadow-sm"
                     : isSelected
                       ? "border-orange-500 bg-white text-slate-900 shadow-md"
