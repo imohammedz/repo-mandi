@@ -14,7 +14,6 @@ import {
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   DETACHABLE_TYPE_HELPER_TEXT,
-  DETACHABLE_TYPE_LABELS,
   getAssetCategoryOptions,
   getBodyApplicationOptions,
   hasEngineOrPowertrain,
@@ -37,6 +36,7 @@ type AssetStructureCard = {
     src: string;
     alt: string;
     caption: string;
+    value: DetachableType;
   }>;
 };
 
@@ -61,11 +61,13 @@ const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
         src: PRIME_MOVER_IMAGE_URL,
         alt: "Prime Mover (Head)",
         caption: "Prime Mover (Head)",
+        value: "PRIME_MOVER" as DetachableType,
       },
       {
         src: TRAILER_IMAGE_URL,
         alt: "Trailer",
         caption: "Trailer",
+        value: "TRAILER" as DetachableType,
       },
     ],
   },
@@ -1919,18 +1921,12 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">Asset Structure <span className="text-rose-500">*</span></p>
             <div className="grid gap-3 md:grid-cols-3">
-              {ASSET_STRUCTURE_CARDS.map((card) => (
-                <button
-                  key={card.value}
-                  type="button"
-                  onClick={() => update("assetStructure", card.value)}
-                  aria-pressed={form.assetStructure === card.value}
-                  className={`rounded-2xl border p-4 text-left shadow-sm transition ${
-                    form.assetStructure === card.value
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-200 bg-white text-slate-700"
-                  }`}
-                >
+              {ASSET_STRUCTURE_CARDS.map((card) => {
+                const isSelected = form.assetStructure === card.value;
+                const cardClass = `rounded-2xl border p-4 text-left shadow-sm transition ${
+                  isSelected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
+                }`;
+                const inner = (
                   <div className="space-y-3">
                     {card.image ? (
                       <div className="flex items-start gap-3">
@@ -1948,22 +1944,22 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">{card.title}</p>
-                          <p className={`mt-1 text-xs ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-500"}`}>
+                          <p className={`mt-1 text-xs ${isSelected ? "text-slate-200" : "text-slate-500"}`}>
                             {card.description}
                           </p>
                           {card.examples ? (
-                            <p className={`mt-1 text-xs ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-500"}`}>
+                            <p className={`mt-1 text-xs ${isSelected ? "text-slate-200" : "text-slate-500"}`}>
                               {card.examples}
                             </p>
                           ) : null}
                         </div>
                         <span
                           className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                            form.assetStructure === card.value ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+                            isSelected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
                           }`}
                           aria-hidden="true"
                         >
-                          {form.assetStructure === card.value ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                          {isSelected ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
                         </span>
                       </div>
                     ) : null}
@@ -1973,72 +1969,103 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-semibold">{card.title}</p>
-                            <p className={`mt-1 text-xs ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-500"}`}>
+                            <p className={`mt-1 text-xs ${isSelected ? "text-slate-200" : "text-slate-500"}`}>
                               {card.description}
                             </p>
+                            {isSelected ? (
+                              <p className="mt-1 text-xs text-orange-300">Select type below</p>
+                            ) : null}
                           </div>
                           <span
                             className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                              form.assetStructure === card.value ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+                              isSelected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
                             }`}
                             aria-hidden="true"
                           >
-                            {form.assetStructure === card.value ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                            {isSelected ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
                           </span>
                         </div>
                         <div
                           className="grid grid-cols-2 gap-2"
                           role="group"
-                          aria-label={`Detachable vehicle examples: ${card.detachableExamples.map(({ caption }) => caption).join(" and ")}`}
+                          aria-label={`Select detachable type: ${card.detachableExamples.map(({ caption }) => caption).join(" or ")}`}
                         >
-                          {card.detachableExamples.map((item) => (
-                            <div key={item.caption} className="rounded-xl border border-black/5 bg-black/5 p-2">
-                              <div className="relative h-14 w-full">
-                                <SafeImage
-                                  src={item.src}
-                                  alt={item.alt}
-                                  fill
-                                  sizes="(max-width: 768px) 50vw, 120px"
-                                  className="object-contain"
-                                  logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
-                                />
-                              </div>
-                              <p className={`mt-1 text-center text-[11px] ${form.assetStructure === card.value ? "text-slate-200" : "text-slate-600"}`}>
-                                {item.caption}
-                              </p>
-                            </div>
-                          ))}
+                          {card.detachableExamples.map((item) => {
+                            const isTypeSelected = isSelected && form.detachableType === item.value;
+                            return (
+                              <button
+                                key={item.caption}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setForm((previous) => ({
+                                    ...previous,
+                                    assetStructure: card.value,
+                                    detachableType: item.value,
+                                    assetCategory: "",
+                                    bodyApplicationType: "",
+                                  }));
+                                }}
+                                aria-pressed={isTypeSelected}
+                                className={`rounded-xl border p-2 text-left transition ${
+                                  isTypeSelected
+                                    ? "border-orange-400 bg-orange-400/20"
+                                    : isSelected
+                                      ? "border-white/20 bg-black/10 hover:bg-black/20"
+                                      : "border-black/5 bg-black/5 hover:bg-black/10"
+                                }`}
+                              >
+                                <div className="relative h-14 w-full">
+                                  <SafeImage
+                                    src={item.src}
+                                    alt={item.alt}
+                                    fill
+                                    sizes="(max-width: 768px) 50vw, 120px"
+                                    className="object-contain"
+                                    logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
+                                  />
+                                </div>
+                                <p className={`mt-1 text-center text-[11px] font-medium ${isTypeSelected ? "text-orange-200" : isSelected ? "text-slate-200" : "text-slate-600"}`}>
+                                  {item.caption}
+                                </p>
+                                {isTypeSelected ? (
+                                  <p className="mt-0.5 text-center text-[10px] text-orange-300">✓ Selected</p>
+                                ) : null}
+                              </button>
+                            );
+                          })}
                         </div>
+                        {isSelected && form.detachableType && DETACHABLE_TYPE_HELPER_TEXT[form.detachableType] ? (
+                          <p className="text-xs text-slate-300">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
+                        ) : null}
                       </>
                     ) : null}
                   </div>
-                </button>
-              ))}
+                );
+                return card.detachableExamples ? (
+                  <div
+                    key={card.value}
+                    role="group"
+                    aria-label={card.title}
+                    className={cardClass}
+                  >
+                    {inner}
+                  </div>
+                ) : (
+                  <button
+                    key={card.value}
+                    type="button"
+                    onClick={() => update("assetStructure", card.value)}
+                    aria-pressed={isSelected}
+                    className={cardClass}
+                  >
+                    {inner}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {form.assetStructure === "DETACHABLE" ? (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-700">Detachable Type <span className="text-rose-500">*</span></p>
-              <div className="grid gap-2 md:grid-cols-2">
-                {(Object.entries(DETACHABLE_TYPE_LABELS) as Array<[DetachableType, string]>).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => update("detachableType", value)}
-                    className={`rounded-2xl border p-4 text-left text-sm ${
-                      form.detachableType === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {form.detachableType && DETACHABLE_TYPE_HELPER_TEXT[form.detachableType] ? (
-                <p className="text-xs text-slate-500">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
-              ) : null}
-            </div>
-          ) : null}
         </section>
       ) : null}
 
