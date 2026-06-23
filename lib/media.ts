@@ -1,3 +1,5 @@
+import { CATEGORY_IMAGE_URLS } from "@/lib/category-image-assets";
+
 const SUPABASE_PUBLIC_STORAGE_PATH = "/storage/v1/object/public/";
 
 // Keep in sync with the default in next.config.ts so that images resolve
@@ -17,6 +19,7 @@ function getConfiguredSupabaseStorageHost() {
 
 const SUPABASE_STORAGE_HOST = getConfiguredSupabaseStorageHost();
 const ALLOWED_LOCAL_IMAGE_PATHS = new Set([VEHICLE_IMAGE_PLACEHOLDER_SRC]);
+const ALLOWED_REMOTE_IMAGE_URLS = new Set<string>(CATEGORY_IMAGE_URLS);
 
 export function shouldLogMediaDebug() {
   return (
@@ -80,5 +83,6 @@ export function resolveImageSrcForRender(value: unknown, fallback = VEHICLE_IMAG
   if (url.startsWith("/")) {
     return ALLOWED_LOCAL_IMAGE_PATHS.has(url) ? url : fallback;
   }
+  if (ALLOWED_REMOTE_IMAGE_URLS.has(url)) return url;
   return isSupabasePublicStorageUrl(url) ? url : fallback;
 }

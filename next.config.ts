@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: supabaseHostname,
       },
+      {
+        protocol: "https",
+        hostname: "github.com",
+        pathname: "/user-attachments/assets/**",
+      },
     ],
   },
 };
