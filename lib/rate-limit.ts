@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 type RateLimitOptions = {
   key: string;
   limit: number;
@@ -25,14 +27,21 @@ function cleanupExpiredEntries(now: number) {
 }
 
 export function getClientIp(request: Request) {
+  const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
+  if (!trustProxyHeaders) {
+    return "unknown";
+  }
+
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp && isIP(realIp)) {
+    return realIp;
+  }
+
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
-    if (first) return first;
+    if (first && isIP(first)) return first;
   }
-
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) return realIp;
 
   return "unknown";
 }

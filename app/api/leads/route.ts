@@ -2,18 +2,11 @@ import { db } from "@/lib/db";
 import { leads, vehicles } from "@/lib/schema";
 import { desc, eq, and, isNull, ne, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
-import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
+import { normalizeToE164 } from "@/lib/otp/phone";
+import { enforceRateLimit, getClientIp, isSameOriginRequest } from "@/lib/rate-limit";
 
 type LeadSource = "CALL" | "WHATSAPP" | "REQUEST_DETAILS";
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
-const indianTenDigitPattern = /^\d{10}$/;
-
-const normalizeIndianPhone = (rawPhone: string) => {
-  const digits = rawPhone.replace(/\D/g, "");
-  if (indianTenDigitPattern.test(digits)) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
-  return null;
-};
 
 export async function GET(request: Request) {
   const currentUser = await getCurrentUser();
@@ -61,6 +54,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return Response.json({ message: "Invalid request origin." }, { status: 403 });
+    }
+
     const ip = getClientIp(request);
     const ipRateLimit = enforceRateLimit({
       key: `leads:create:ip:${ip}`,
@@ -93,7 +90,7 @@ export async function POST(request: Request) {
     if (!buyerName) {
       return Response.json({ message: "Buyer name is required." }, { status: 400 });
     }
-    const buyerPhone = normalizeIndianPhone(body.buyerPhone);
+    const buyerPhone = normalizeToE164(body.buyerPhone ?? "");
     if (!buyerPhone || !e164Pattern.test(buyerPhone)) {
       return Response.json({ message: "Enter a valid buyer phone number." }, { status: 400 });
     }

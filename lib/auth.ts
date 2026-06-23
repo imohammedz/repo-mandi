@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-const SESSION_COOKIE_NAME = "rm_session";
+const SESSION_COOKIE_NAME = process.env.NODE_ENV === "production" ? "__Host-rm_session" : "rm_session";
 const parsedSessionTtlDays = Number(process.env.SESSION_TTL_DAYS ?? "14");
 if (!Number.isFinite(parsedSessionTtlDays) || parsedSessionTtlDays <= 0) {
   throw new Error("SESSION_TTL_DAYS must be a positive number.");

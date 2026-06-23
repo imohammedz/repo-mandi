@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { platformSettings } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
+import { checkTwilioEnv } from "@/lib/otp/providers/twilio-sms";
+import { checkWhatsAppEnv } from "@/lib/otp/providers/whatsapp";
 
 export const runtime = "nodejs";
 
@@ -66,6 +68,26 @@ export async function PATCH(request: Request) {
         { message: `Invalid OTP_PROVIDER value. Allowed: ${OTP_PROVIDER_VALUES.join(", ")}` },
         { status: 400 }
       );
+    }
+
+    if (v === "TWILIO_SMS") {
+      const check = checkTwilioEnv();
+      if (!check.ok) {
+        return Response.json(
+          { message: `Cannot enable TWILIO_SMS. Missing env vars: ${check.missing.join(", ")}` },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (v === "WHATSAPP") {
+      const check = checkWhatsAppEnv();
+      if (!check.ok) {
+        return Response.json(
+          { message: `Cannot enable WHATSAPP. Missing env vars: ${check.missing.join(", ")}` },
+          { status: 400 },
+        );
+      }
     }
   }
 

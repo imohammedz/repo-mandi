@@ -9,7 +9,7 @@
  *   WHATSAPP  — Meta WhatsApp Cloud API; fully server-side send + verify
  */
 
-import { createHash, randomInt } from "node:crypto";
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { platformSettings, otpCodes } from "@/lib/schema";
@@ -286,8 +286,13 @@ export async function verifyOtp(
   }
 
   const inputHash = hashOtpCode(code.trim());
+  const inputBuffer = Buffer.from(inputHash, "hex");
+  const recordBuffer = Buffer.from(record.codeHash, "hex");
+  const isMatch =
+    inputBuffer.length === recordBuffer.length &&
+    timingSafeEqual(inputBuffer, recordBuffer);
 
-  if (inputHash !== record.codeHash) {
+  if (!isMatch) {
     await db
       .update(otpCodes)
       .set({ attempts: record.attempts + 1 })
