@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import { createHash } from "node:crypto";
 
 type RateLimitOptions = {
   key: string;
@@ -27,9 +28,16 @@ function cleanupExpiredEntries(now: number) {
 }
 
 export function getClientIp(request: Request) {
+  const fallbackFingerprint = (() => {
+    const userAgent = request.headers.get("user-agent") ?? "unknown";
+    const acceptLanguage = request.headers.get("accept-language") ?? "unknown";
+    const digest = createHash("sha256").update(`${userAgent}|${acceptLanguage}`).digest("hex").slice(0, 16);
+    return `fp:${digest}`;
+  })();
+
   const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
   if (!trustProxyHeaders) {
-    return "unknown";
+    return fallbackFingerprint;
   }
 
   const realIp = request.headers.get("x-real-ip")?.trim();
@@ -43,7 +51,7 @@ export function getClientIp(request: Request) {
     if (first && isIP(first)) return first;
   }
 
-  return "unknown";
+  return fallbackFingerprint;
 }
 
 export function enforceRateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimitResult {

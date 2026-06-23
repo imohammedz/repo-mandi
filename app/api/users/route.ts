@@ -91,7 +91,8 @@ export async function POST(request: Request) {
     if (currentUser.accountType !== "ADMIN" && currentUser.phone !== phone) {
       return Response.json({ message: "Forbidden." }, { status: 403 });
     }
-    const role = body.role?.trim().toUpperCase() ?? null;
+    const normalizedRole = body.role?.trim().toUpperCase() ?? "";
+    const role = normalizedRole.length > 0 ? normalizedRole : null;
     if (role && !LEGACY_ROLE_ALLOWLIST.has(role)) {
       return Response.json({ message: "Invalid role." }, { status: 400 });
     }

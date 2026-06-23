@@ -80,6 +80,26 @@ function isPdfFile(buffer: Buffer): boolean {
   );
 }
 
+function getMimeTypeForExtension(extension: string) {
+  switch (extension) {
+    case "pdf":
+      return "application/pdf";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "mov":
+      return "video/quicktime";
+    case "mp4":
+      return "video/mp4";
+    default:
+      throw new Error("Unsupported file extension.");
+  }
+}
+
 export async function POST(request: Request) {
   try {
     if (!isSameOriginRequest(request)) {
@@ -207,7 +227,7 @@ export async function POST(request: Request) {
             })()
           : detectImageExtension(fileBuffer);
 
-      if (!extension) {
+      if (extension === null) {
         return Response.json(
           {
             message: isVideo
@@ -224,18 +244,7 @@ export async function POST(request: Request) {
       const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
       const scopedListingPath = listingId || `draft-${safeUserId}-${randomUUID()}`;
       const filePath = `users/${safeUserId}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
-      const inferredMimeType =
-        extension === "pdf"
-          ? "application/pdf"
-          : extension === "png"
-            ? "image/png"
-            : extension === "jpg" || extension === "jpeg"
-              ? "image/jpeg"
-              : extension === "webp"
-                ? "image/webp"
-                : extension === "mov"
-                  ? "video/quicktime"
-                  : "video/mp4";
+      const inferredMimeType = getMimeTypeForExtension(extension);
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)
