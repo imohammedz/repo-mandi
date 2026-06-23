@@ -1945,47 +1945,48 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         aria-pressed={isSelected}
                         className={`w-full ${cardClass}`}
                       >
-                        <p className="text-sm font-semibold">{card.title}</p>
-                        <p className="mt-1 text-xs opacity-80">{card.description}</p>
+                        <p className="text-xs font-semibold">{card.title}</p>
+                        <p className="mt-0.5 text-[10px] opacity-80">{card.description}</p>
                       </button>
-                      {isSelected ? (
-                        <div
-                          className="grid grid-cols-2 gap-2"
-                          role="group"
-                          aria-label={`Select detachable type: ${card.detachableExamples.map(({ caption }) => caption).join(" or ")}`}
-                        >
-                          {card.detachableExamples.map((item) => {
-                            const isTypeSelected = form.detachableType === item.value;
-                            return (
-                              <button
-                                key={item.caption}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDetachableTypeSelect(card.value, item.value);
-                                }}
-                                aria-pressed={isTypeSelected}
-                                className={`rounded-2xl border p-3 text-center text-sm font-semibold transition ${
-                                  isTypeSelected
-                                    ? "border-slate-900 bg-slate-900 text-white"
-                                    : "border-slate-200 bg-white text-slate-700"
-                                }`}
-                              >
-                                <div className="relative mx-auto mb-2 h-10 w-full">
-                                  <SafeImage
-                                    src={item.src}
-                                    alt={item.alt}
-                                    fill
-                                    sizes="80px"
-                                    className="object-contain"
-                                    logContext={{ component: "AddVehicleDetachableType", type: item.value }}
-                                  />
-                                </div>
-                                {item.caption}
-                              </button>
-                            );
-                          })}
-                        </div>
+                      <div
+                        className="grid grid-cols-2 gap-2"
+                        role="group"
+                        aria-label={`Select detachable type: ${card.detachableExamples.map(({ caption }) => caption).join(" or ")}`}
+                      >
+                        {card.detachableExamples.map((item) => {
+                          const isTypeSelected = form.detachableType === item.value;
+                          return (
+                            <button
+                              key={item.caption}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDetachableTypeSelect(card.value, item.value);
+                              }}
+                              aria-pressed={isTypeSelected}
+                              className={`rounded-2xl border p-3 text-center text-xs font-semibold transition ${
+                                isTypeSelected
+                                  ? "border-slate-900 bg-slate-900 text-white"
+                                  : "border-slate-200 bg-white text-slate-700"
+                              }`}
+                            >
+                              <div className="relative mx-auto mb-2 h-14 w-full">
+                                <SafeImage
+                                  src={item.src}
+                                  alt={item.alt}
+                                  fill
+                                  sizes="80px"
+                                  className="object-contain"
+                                  logContext={{ component: "AddVehicleDetachableType", type: item.value }}
+                                />
+                              </div>
+                              {item.caption}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {isSelected && !form.detachableType ? (
+                        <p className="text-center text-[10px] text-rose-500">Select detachable type.</p>
                       ) : null}
                     </div>
                   );
@@ -2000,7 +2001,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                     className={cardClass}
                   >
                     {card.image ? (
-                      <div className="relative mb-2 h-12 w-full">
+                      <div className="relative mb-2 h-16 w-full">
                         <SafeImage
                           src={card.image.src}
                           alt={card.image.alt}
@@ -2011,9 +2012,9 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                         />
                       </div>
                     ) : null}
-                    <p className="text-sm font-semibold">{card.title}</p>
-                    <p className="mt-1 text-xs opacity-80">{card.description}</p>
-                    {card.examples ? <p className="mt-1 text-xs opacity-60">{card.examples}</p> : null}
+                    <p className="text-xs font-semibold">{card.title}</p>
+                    <p className="mt-0.5 text-[10px] opacity-80">{card.description}</p>
+                    {card.examples ? <p className="mt-0.5 text-[10px] opacity-60">{card.examples}</p> : null}
                   </button>
                 );
               })}
