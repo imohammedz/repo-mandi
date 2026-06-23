@@ -5,9 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
+import {
+  EQUIPMENT_IMAGE_URL,
+  PRIME_MOVER_IMAGE_URL,
+  TIPPER_IMAGE_URL,
+  TRAILER_IMAGE_URL,
+} from "@/lib/category-image-assets";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
-  ASSET_STRUCTURE_LABELS,
   DETACHABLE_TYPE_HELPER_TEXT,
   DETACHABLE_TYPE_LABELS,
   getAssetCategoryOptions,
@@ -523,6 +528,62 @@ const emptyForm: FormData = {
   gstin: "",
 };
 
+type AssetStructureCardOption = {
+  value: AssetStructure;
+  title: string;
+  description: string;
+  examples?: string;
+  image?: {
+    src: string;
+    alt: string;
+  };
+  detachableExamples?: Array<{
+    src: string;
+    alt: string;
+    caption: string;
+  }>;
+};
+
+const ASSET_STRUCTURE_CARD_OPTIONS: AssetStructureCardOption[] = [
+  {
+    value: "STANDALONE",
+    title: "Complete Vehicle",
+    description: "Full truck or vehicle.",
+    examples: "Examples: Tipper, Container Truck, Tanker, Bus",
+    image: {
+      src: TIPPER_IMAGE_URL,
+      alt: "Complete vehicle example",
+    },
+  },
+  {
+    value: "DETACHABLE",
+    title: "Detachable Vehicle",
+    description: "Prime mover/head or trailer.",
+    detachableExamples: [
+      {
+        src: PRIME_MOVER_IMAGE_URL,
+        alt: "Prime mover head example",
+        caption: "Prime Mover (Head)",
+      },
+      {
+        src: TRAILER_IMAGE_URL,
+        alt: "Trailer example",
+        caption: "Trailer",
+      },
+    ],
+  },
+  {
+    value: "EQUIPMENT",
+    title: "Equipment / Machinery",
+    description: "Construction or heavy equipment.",
+    examples: "Examples: Excavator, Loader, Crane",
+    image: {
+      src: EQUIPMENT_IMAGE_URL,
+      alt: "Equipment or machinery example",
+    },
+  },
+];
+
 function SelectField({
   label,
   value,
@@ -563,6 +624,90 @@ function SelectField({
       </select>
       {helperText ? <p className="text-xs text-slate-500">{helperText}</p> : null}
     </label>
+  );
+}
+
+function AssetStructureCard({ option, selected, onSelect }: {
+  option: AssetStructureCardOption;
+  selected: boolean;
+  onSelect: (value: AssetStructure) => void;
+}) {
+  const cardClassName = selected
+    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+    : "border-slate-200 bg-white text-slate-700 shadow-sm";
+  const subTextClassName = selected ? "text-slate-200" : "text-slate-500";
+  const imageFrameClassName = selected ? "border-white/10 bg-white/10" : "border-slate-200 bg-slate-50";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(option.value)}
+      aria-pressed={selected}
+      className={`rounded-2xl border p-4 text-left transition ${cardClassName}`}
+    >
+      {option.detachableExamples?.length ? (
+        <>
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">{option.title}</p>
+              <p className={`text-xs ${subTextClassName}`}>{option.description}</p>
+            </div>
+            <span
+              className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                selected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+              }`}
+              aria-hidden="true"
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${selected ? "bg-slate-900" : "bg-transparent"}`} />
+            </span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {option.detachableExamples.map((example) => (
+              <div key={example.caption} className={`rounded-xl border p-2 ${imageFrameClassName}`}>
+                <div className="flex h-16 items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={example.src} alt={example.alt} className="h-full w-full object-contain" />
+                </div>
+                <p className={`mt-2 text-center text-[11px] font-medium leading-tight ${subTextClassName}`}>
+                  {example.caption}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : option.image ? (
+        <div className="flex items-start gap-3">
+          <div className={`flex h-16 w-24 shrink-0 items-center justify-center rounded-xl border p-2 ${imageFrameClassName}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={option.image.src} alt={option.image.alt} className="h-full w-full object-contain" />
+          </div>
+          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">{option.title}</p>
+              <p className={`text-xs ${subTextClassName}`}>{option.description}</p>
+              {option.examples ? <p className={`text-xs ${subTextClassName}`}>{option.examples}</p> : null}
+            </div>
+            <span
+              className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                selected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+              }`}
+              aria-hidden="true"
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${selected ? "bg-slate-900" : "bg-transparent"}`} />
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold">{option.title}</p>
+            <p className={`text-xs ${subTextClassName}`}>{option.description}</p>
+            {option.examples ? <p className={`text-xs ${subTextClassName}`}>{option.examples}</p> : null}
+          </div>
+        </div>
+      )}
+    </button>
   );
 }
 
@@ -1856,18 +2001,14 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">Asset Structure <span className="text-rose-500">*</span></p>
-            <div className="grid gap-2 md:grid-cols-3">
-              {(Object.entries(ASSET_STRUCTURE_LABELS) as Array<[AssetStructure, string]>).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => update("assetStructure", value)}
-                  className={`rounded-2xl border p-4 text-left text-sm ${
-                    form.assetStructure === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
-                  }`}
-                >
-                  {label}
-                </button>
+            <div className="grid gap-3 md:grid-cols-3">
+              {ASSET_STRUCTURE_CARD_OPTIONS.map((option) => (
+                <AssetStructureCard
+                  key={option.value}
+                  option={option}
+                  selected={form.assetStructure === option.value}
+                  onSelect={(value) => update("assetStructure", value)}
+                />
               ))}
             </div>
           </div>
