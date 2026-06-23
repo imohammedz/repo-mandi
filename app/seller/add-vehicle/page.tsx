@@ -3,17 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCircle2, FileImage, FileText, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
-import {
-  EQUIPMENT_IMAGE_URL,
-  PRIME_MOVER_IMAGE_URL,
-  TIPPER_IMAGE_URL,
-  TRAILER_IMAGE_URL,
-} from "@/lib/category-image-assets";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
-  DETACHABLE_TYPE_HELPER_TEXT,
   getAssetCategoryOptions,
   getBodyApplicationOptions,
   hasEngineOrPowertrain,
@@ -28,30 +21,10 @@ type AssetStructureCard = {
   title: string;
   description: string;
   examples?: string;
-  image?: {
-    src: string;
-    alt: string;
-  };
   detachableExamples?: Array<{
-    src: string;
-    alt: string;
     caption: string;
     value: DetachableType;
   }>;
-};
-
-const getAssetStructureCardClass = (card: AssetStructureCard, isSelected: boolean) => {
-  const baseCardClass = "rounded-[28px] border p-6 text-left transition";
-
-  if (card.detachableExamples) {
-    return `${baseCardClass} ${
-      isSelected ? "border-orange-500 bg-slate-950 text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 shadow-sm"
-    }`;
-  }
-
-  return `${baseCardClass} ${
-    isSelected ? "border-orange-500 bg-white text-slate-900 shadow-md" : "border-slate-200 bg-white text-slate-700 shadow-sm"
-  }`;
 };
 
 /** Visual card content for the asset structure selector. */
@@ -61,28 +34,14 @@ const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
     title: "Complete Vehicle",
     description: "Full truck or vehicle.",
     examples: "Examples: Tipper, Container Truck, Tanker, Bus",
-    image: {
-      src: TIPPER_IMAGE_URL,
-      alt: "Complete Vehicle",
-    },
   },
   {
     value: "DETACHABLE",
     title: "Detachable Vehicle",
     description: "Prime mover/head or trailer.",
     detachableExamples: [
-      {
-        src: PRIME_MOVER_IMAGE_URL,
-        alt: "Prime Mover (Head)",
-        caption: "Prime Mover (Head)",
-        value: "PRIME_MOVER",
-      },
-      {
-        src: TRAILER_IMAGE_URL,
-        alt: "Trailer",
-        caption: "Trailer",
-        value: "TRAILER",
-      },
+      { caption: "Prime Mover (Head)", value: "PRIME_MOVER" },
+      { caption: "Trailer", value: "TRAILER" },
     ],
   },
   {
@@ -90,10 +49,6 @@ const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
     title: "Equipment / Machinery",
     description: "Construction or heavy equipment.",
     examples: "Examples: Excavator, Loader, Crane",
-    image: {
-      src: EQUIPMENT_IMAGE_URL,
-      alt: "Equipment / Machinery",
-    },
   },
 ];
 
@@ -1943,81 +1898,34 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           </div>
 
           <div className="space-y-2">
-            <p className="text-base font-semibold text-slate-900">Asset Structure <span className="text-rose-500">*</span></p>
+            <p className="text-sm font-medium text-slate-700">Asset Structure <span className="text-rose-500">*</span></p>
             <div className="grid gap-3 md:grid-cols-3">
               {ASSET_STRUCTURE_CARDS.map((card) => {
                 const isSelected = form.assetStructure === card.value;
-                const cardClass = getAssetStructureCardClass(card, isSelected);
-                const inner = (
-                  <div className="space-y-4">
-                    {card.image ? (
-                      <div className="flex items-start gap-4">
-                        <div className="relative h-20 w-28 shrink-0 sm:h-24 sm:w-32">
-                          <SafeImage
-                            src={card.image.src}
-                            alt={card.image.alt}
-                            fill
-                            sizes="128px"
-                            className="object-contain"
-                            logContext={{ component: "AddVehicleAssetStructure", type: card.value }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-xl font-semibold leading-tight ${isSelected && card.detachableExamples ? "text-white" : "text-slate-900"} sm:text-2xl`}>
-                            {card.title}
-                          </p>
-                          <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-slate-700" : "text-slate-600"}`}>
-                            {card.description}
-                          </p>
-                          {card.examples ? (
-                            <p className="mt-1 text-sm leading-6 text-slate-600">
-                              {card.examples}
-                            </p>
-                          ) : null}
-                        </div>
-                        <span
-                          className={`mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 ${
-                            isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"
-                          }`}
-                          aria-hidden="true"
-                          role="presentation"
-                        >
-                          {isSelected ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
-                        </span>
-                      </div>
-                    ) : null}
+                const cardClass = `rounded-2xl border p-4 text-left transition ${
+                  isSelected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
+                }`;
 
-                    {card.detachableExamples ? (
-                      <>
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className={`text-xl font-semibold leading-tight sm:text-2xl ${isSelected ? "text-white" : "text-slate-900"}`}>{card.title}</p>
-                            <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-white/80" : "text-slate-600"}`}>
-                              {card.description}
-                            </p>
-                            {isSelected ? (
-                              <p className="mt-5 text-base font-medium text-white">
-                                Select type below <span className="text-rose-400">*</span>
-                              </p>
-                            ) : null}
-                          </div>
-                          <span
-                            className={`mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 ${
-                              isSelected ? "border-white bg-orange-500 text-white" : "border-slate-300 bg-white"
-                            }`}
-                            aria-hidden="true"
-                            role="presentation"
-                          >
-                            {isSelected ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
-                          </span>
-                        </div>
+                if (card.detachableExamples) {
+                  return (
+                    <div key={card.value} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => update("assetStructure", card.value)}
+                        aria-pressed={isSelected}
+                        className={`w-full ${cardClass}`}
+                      >
+                        <p className="text-sm font-semibold">{card.title}</p>
+                        <p className="mt-1 text-xs opacity-80">{card.description}</p>
+                      </button>
+                      {isSelected ? (
                         <div
-                          className="grid grid-cols-2 gap-3"
+                          className="grid grid-cols-2 gap-2"
                           role="group"
                           aria-label={`Select detachable type: ${card.detachableExamples.map(({ caption }) => caption).join(" or ")}`}
                         >
                           {card.detachableExamples.map((item) => {
-                            const isTypeSelected = isSelected && form.detachableType === item.value;
+                            const isTypeSelected = form.detachableType === item.value;
                             return (
                               <button
                                 key={item.caption}
@@ -2027,61 +1935,23 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                   handleDetachableTypeSelect(card.value, item.value);
                                 }}
                                 aria-pressed={isTypeSelected}
-                                className={`relative rounded-[24px] border-2 bg-white p-4 text-left transition ${
+                                className={`rounded-2xl border p-3 text-center text-sm font-semibold transition ${
                                   isTypeSelected
-                                    ? "border-orange-500 shadow-sm"
-                                    : "border-slate-200"
+                                    ? "border-slate-900 bg-slate-900 text-white"
+                                    : "border-slate-200 bg-white text-slate-700"
                                 }`}
                               >
-                                <div className="relative h-24 w-full sm:h-28">
-                                  <SafeImage
-                                    src={item.src}
-                                    alt={item.alt}
-                                    fill
-                                    sizes="(max-width: 768px) 50vw, 220px"
-                                    className="object-contain"
-                                    logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
-                                  />
-                                </div>
-                                {isTypeSelected ? (
-                                  <span
-                                    className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-orange-500 text-white"
-                                    aria-hidden="true"
-                                    role="presentation"
-                                  >
-                                    <Check className="h-5 w-5" strokeWidth={3} />
-                                  </span>
-                                ) : (
-                                  <span
-                                    className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-300 bg-white"
-                                    aria-hidden="true"
-                                    role="presentation"
-                                  />
-                                )}
-                                <p className={`mt-3 text-center text-base font-medium ${isTypeSelected ? "text-slate-900" : "text-slate-700"}`}>
-                                  {item.caption}
-                                </p>
+                                {item.caption}
                               </button>
                             );
                           })}
                         </div>
-                        {isSelected && form.detachableType && DETACHABLE_TYPE_HELPER_TEXT[form.detachableType] ? (
-                          <p className="text-xs text-slate-600">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
-                        ) : null}
-                      </>
-                    ) : null}
-                  </div>
-                );
-                return card.detachableExamples ? (
-                  <div
-                    key={card.value}
-                    role="group"
-                    aria-label={card.title}
-                    className={cardClass}
-                  >
-                    {inner}
-                  </div>
-                ) : (
+                      ) : null}
+                    </div>
+                  );
+                }
+
+                return (
                   <button
                     key={card.value}
                     type="button"
@@ -2089,7 +1959,9 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                     aria-pressed={isSelected}
                     className={cardClass}
                   >
-                    {inner}
+                    <p className="text-sm font-semibold">{card.title}</p>
+                    <p className="mt-1 text-xs opacity-80">{card.description}</p>
+                    {card.examples ? <p className="mt-1 text-xs opacity-60">{card.examples}</p> : null}
                   </button>
                 );
               })}
