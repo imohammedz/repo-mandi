@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
+import {
+  EQUIPMENT_IMAGE_URL,
+  PRIME_MOVER_IMAGE_URL,
+  TIPPER_IMAGE_URL,
+  TRAILER_IMAGE_URL,
+} from "@/lib/category-image-assets";
 import { shouldLogMediaDebug } from "@/lib/media";
 import {
   getAssetCategoryOptions,
@@ -21,7 +27,13 @@ type AssetStructureCard = {
   title: string;
   description: string;
   examples?: string;
+  image?: {
+    src: string;
+    alt: string;
+  };
   detachableExamples?: Array<{
+    src: string;
+    alt: string;
     caption: string;
     value: DetachableType;
   }>;
@@ -34,14 +46,28 @@ const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
     title: "Complete Vehicle",
     description: "Full truck or vehicle.",
     examples: "Examples: Tipper, Container Truck, Tanker, Bus",
+    image: {
+      src: TIPPER_IMAGE_URL,
+      alt: "Complete Vehicle",
+    },
   },
   {
     value: "DETACHABLE",
     title: "Detachable Vehicle",
     description: "Prime mover/head or trailer.",
     detachableExamples: [
-      { caption: "Prime Mover (Head)", value: "PRIME_MOVER" },
-      { caption: "Trailer", value: "TRAILER" },
+      {
+        src: PRIME_MOVER_IMAGE_URL,
+        alt: "Prime Mover (Head)",
+        caption: "Prime Mover (Head)",
+        value: "PRIME_MOVER",
+      },
+      {
+        src: TRAILER_IMAGE_URL,
+        alt: "Trailer",
+        caption: "Trailer",
+        value: "TRAILER",
+      },
     ],
   },
   {
@@ -49,6 +75,10 @@ const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
     title: "Equipment / Machinery",
     description: "Construction or heavy equipment.",
     examples: "Examples: Excavator, Loader, Crane",
+    image: {
+      src: EQUIPMENT_IMAGE_URL,
+      alt: "Equipment / Machinery",
+    },
   },
 ];
 
@@ -1941,6 +1971,16 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                     : "border-slate-200 bg-white text-slate-700"
                                 }`}
                               >
+                                <div className="relative mx-auto mb-2 h-10 w-full">
+                                  <SafeImage
+                                    src={item.src}
+                                    alt={item.alt}
+                                    fill
+                                    sizes="80px"
+                                    className="object-contain"
+                                    logContext={{ component: "AddVehicleDetachableType", type: item.value }}
+                                  />
+                                </div>
                                 {item.caption}
                               </button>
                             );
@@ -1959,6 +1999,18 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                     aria-pressed={isSelected}
                     className={cardClass}
                   >
+                    {card.image ? (
+                      <div className="relative mb-2 h-12 w-full">
+                        <SafeImage
+                          src={card.image.src}
+                          alt={card.image.alt}
+                          fill
+                          sizes="128px"
+                          className="object-contain object-left"
+                          logContext={{ component: "AddVehicleAssetStructure", type: card.value }}
+                        />
+                      </div>
+                    ) : null}
                     <p className="text-sm font-semibold">{card.title}</p>
                     <p className="mt-1 text-xs opacity-80">{card.description}</p>
                     {card.examples ? <p className="mt-1 text-xs opacity-60">{card.examples}</p> : null}
