@@ -7,6 +7,11 @@ import { normalizeIndianPhone } from "@/lib/otp/phone";
 export const runtime = "nodejs";
 
 const ALLOWED_ROLES = new Set(accountTypeEnum.enumValues);
+type AllowedRole = (typeof accountTypeEnum.enumValues)[number];
+
+function isAllowedRole(value: string): value is AllowedRole {
+  return ALLOWED_ROLES.has(value as AllowedRole);
+}
 
 function maskPhone(phone: string) {
   if (phone.length <= 4) return phone;
@@ -94,7 +99,7 @@ export async function POST(request: Request) {
     }
     const normalizedRole = body.role?.trim().toUpperCase() ?? "";
     const role = normalizedRole.length > 0 ? normalizedRole : null;
-    if (role && !ALLOWED_ROLES.has(role)) {
+    if (role && !isAllowedRole(role)) {
       return Response.json({ message: "Invalid role." }, { status: 400 });
     }
 
