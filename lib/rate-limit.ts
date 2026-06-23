@@ -31,15 +31,9 @@ export function getClientIp(request: Request) {
   const clientFingerprint = (() => {
     const userAgent = request.headers.get("user-agent") ?? "unknown";
     const acceptLanguage = request.headers.get("accept-language") ?? "unknown";
-    const path = (() => {
-      try {
-        return new URL(request.url).pathname;
-      } catch {
-        return "/";
-      }
-    })();
+    const acceptEncoding = request.headers.get("accept-encoding") ?? "unknown";
     const digest = createHash("sha256")
-      .update(`${userAgent}|${acceptLanguage}|${path}`)
+      .update(`${userAgent}|${acceptLanguage}|${acceptEncoding}`)
       .digest("hex")
       .slice(0, 16);
     return `fp:${digest}`;

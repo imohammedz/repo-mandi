@@ -97,7 +97,7 @@ function getMimeTypeForExtension(extension: string) {
       return "video/mp4";
     default:
       // Unreachable with current validation checks (only known extensions proceed).
-      throw new Error("Unsupported file extension.");
+      throw new Error(`Unsupported file extension: ${extension}`);
   }
 }
 
