@@ -1970,7 +1970,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                             {card.description}
                           </p>
                           {card.examples ? (
-                            <p className={`mt-1 text-sm leading-6 ${isSelected ? "text-slate-700" : "text-slate-600"}`}>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">
                               {card.examples}
                             </p>
                           ) : null}
@@ -2066,7 +2066,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                           })}
                         </div>
                         {isSelected && form.detachableType && DETACHABLE_TYPE_HELPER_TEXT[form.detachableType] ? (
-                          <p className="text-xs text-white/80">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
+                          <p className="text-xs text-slate-600">{DETACHABLE_TYPE_HELPER_TEXT[form.detachableType]}</p>
                         ) : null}
                       </>
                     ) : null}
