@@ -6,7 +6,7 @@ import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 export const runtime = "nodejs";
 
-const LEGACY_ROLE_ALLOWLIST = new Set(["BUYER", "SELLER", "BANK_PARTNER", "ADMIN"]);
+const ALLOWED_ROLES = new Set(["BUYER", "SELLER", "BANK_PARTNER", "ADMIN"]);
 
 function maskPhone(phone: string) {
   if (phone.length <= 4) return phone;
@@ -45,6 +45,7 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "20") || 20));
     const offset = (page - 1) * limit;
     const includeSensitive = currentUser.accountType === "ADMIN" && url.searchParams.get("includeSensitive") === "1";
+    const shouldMaskAdminResponses = currentUser.accountType === "ADMIN" && !includeSensitive;
 
     if (phone) {
       if (currentUser.accountType !== "ADMIN" && currentUser.phone !== phone) {
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
       }
       const [row] = await db.select().from(users).where(eq(users.phone, phone));
       return row
-        ? Response.json(toSafeUser(row, { maskSensitive: !includeSensitive && currentUser.accountType === "ADMIN" }))
+        ? Response.json(toSafeUser(row, { maskSensitive: shouldMaskAdminResponses }))
         : Response.json({ message: "User not found." }, { status: 404 });
     }
 
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
       page,
       limit,
       total: totalRow?.total ?? 0,
-      users: rows.map((row) => toSafeUser(row, { maskSensitive: !includeSensitive })),
+      users: rows.map((row) => toSafeUser(row, { maskSensitive: shouldMaskAdminResponses })),
     });
   } catch (error) {
     console.error("GET /api/users failed", error);
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
     }
     const normalizedRole = body.role?.trim().toUpperCase() ?? "";
     const role = normalizedRole.length > 0 ? normalizedRole : null;
-    if (role && !LEGACY_ROLE_ALLOWLIST.has(role)) {
+    if (role && !ALLOWED_ROLES.has(role)) {
       return Response.json({ message: "Invalid role." }, { status: 400 });
     }
 
