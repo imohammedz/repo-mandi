@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, FileImage, FileText, X } from "lucide-react";
+import { ArrowLeft, Check, FileImage, FileText, X } from "lucide-react";
 import { SafeImage } from "@/components/ui/safe-image";
 import {
   EQUIPMENT_IMAGE_URL,
@@ -1919,47 +1919,51 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">Asset Structure <span className="text-rose-500">*</span></p>
+            <p className="text-base font-semibold text-slate-900">Asset Structure <span className="text-rose-500">*</span></p>
             <div className="grid gap-3 md:grid-cols-3">
               {ASSET_STRUCTURE_CARDS.map((card) => {
                 const isSelected = form.assetStructure === card.value;
-                const cardClass = `rounded-2xl border p-4 text-left transition ${
-                  isSelected ? "border-orange-500 bg-orange-50 text-slate-900 shadow-md" : "border-slate-200 bg-white text-slate-700 shadow-sm"
+                const cardClass = `rounded-[28px] border p-6 text-left transition ${
+                  card.detachableExamples
+                    ? isSelected
+                      ? "border-orange-500 bg-[#081225] text-white shadow-lg"
+                      : "border-slate-200 bg-white text-slate-900 shadow-sm"
+                    : isSelected
+                      ? "border-orange-500 bg-white text-slate-900 shadow-md"
+                      : "border-slate-200 bg-white text-slate-700 shadow-sm"
                 }`;
                 const inner = (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {card.image ? (
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-xl border border-black/5 bg-black/5 p-2">
-                          <div className="relative h-14 w-20 shrink-0">
-                            <SafeImage
-                              src={card.image.src}
-                              alt={card.image.alt}
-                              fill
-                              sizes="80px"
-                              className="object-contain"
-                              logContext={{ component: "AddVehicleAssetStructure", type: card.value }}
-                            />
-                          </div>
+                      <div className="flex items-start gap-4">
+                        <div className="relative h-20 w-28 shrink-0 sm:h-24 sm:w-32">
+                          <SafeImage
+                            src={card.image.src}
+                            alt={card.image.alt}
+                            fill
+                            sizes="128px"
+                            className="object-contain"
+                            logContext={{ component: "AddVehicleAssetStructure", type: card.value }}
+                          />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold">{card.title}</p>
-                          <p className={`mt-1 text-xs ${isSelected ? "text-slate-600" : "text-slate-500"}`}>
+                          <p className="text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">{card.title}</p>
+                          <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-slate-700" : "text-slate-600"}`}>
                             {card.description}
                           </p>
                           {card.examples ? (
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-sm leading-6 text-slate-600">
                               {card.examples}
                             </p>
                           ) : null}
                         </div>
                         <span
-                          className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                          className={`mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 ${
                             isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"
                           }`}
                           aria-hidden="true"
                         >
-                          {isSelected ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                          {isSelected ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
                         </span>
                       </div>
                     ) : null}
@@ -1968,25 +1972,27 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                       <>
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold">{card.title}</p>
-                            <p className={`mt-1 text-xs ${isSelected ? "text-slate-600" : "text-slate-500"}`}>
+                            <p className={`text-xl font-semibold leading-tight sm:text-2xl ${isSelected ? "text-white" : "text-slate-900"}`}>{card.title}</p>
+                            <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-white/80" : "text-slate-600"}`}>
                               {card.description}
                             </p>
                             {isSelected ? (
-                              <p className="mt-1 text-xs text-orange-600">Select type below</p>
+                              <p className="mt-5 text-base font-medium text-white">
+                                Select type below <span className="text-rose-400">*</span>
+                              </p>
                             ) : null}
                           </div>
                           <span
-                            className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                              isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"
+                            className={`mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 ${
+                              isSelected ? "border-white bg-orange-500 text-white" : "border-slate-300 bg-white"
                             }`}
                             aria-hidden="true"
                           >
-                            {isSelected ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                            {isSelected ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
                           </span>
                         </div>
                         <div
-                          className="grid grid-cols-2 gap-2"
+                          className="grid grid-cols-2 gap-3"
                           role="group"
                           aria-label={`Select detachable type: ${card.detachableExamples.map(({ caption }) => caption).join(" or ")}`}
                         >
@@ -2007,33 +2013,36 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                   }));
                                 }}
                                 aria-pressed={isTypeSelected}
-                                className={`relative rounded-xl border p-2 text-left transition ${
+                                className={`relative rounded-[24px] border-2 bg-white p-4 text-left transition ${
                                   isTypeSelected
-                                    ? "border-orange-500 bg-orange-50 shadow-sm"
-                                    : isSelected
-                                      ? "border-orange-200 bg-white hover:bg-orange-50"
-                                      : "border-slate-200 bg-white hover:bg-slate-50"
+                                    ? "border-orange-500 shadow-sm"
+                                    : "border-slate-200"
                                 }`}
                               >
-                                <div className="relative h-14 w-full">
+                                <div className="relative h-24 w-full sm:h-28">
                                   <SafeImage
                                     src={item.src}
                                     alt={item.alt}
                                     fill
-                                    sizes="(max-width: 768px) 50vw, 120px"
+                                    sizes="(max-width: 768px) 50vw, 220px"
                                     className="object-contain"
                                     logContext={{ component: "AddVehicleAssetStructureDetachable", type: item.caption }}
                                   />
                                 </div>
                                 {isTypeSelected ? (
                                   <span
-                                    className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white"
+                                    className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-orange-500 text-white"
                                     aria-hidden="true"
                                   >
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    <Check className="h-5 w-5" strokeWidth={3} />
                                   </span>
-                                ) : null}
-                                <p className={`mt-1 text-center text-[11px] font-medium ${isTypeSelected ? "text-slate-900" : "text-slate-600"}`}>
+                                ) : (
+                                  <span
+                                    className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-300 bg-white"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <p className={`mt-3 text-center text-base font-medium ${isTypeSelected ? "text-slate-900" : "text-slate-700"}`}>
                                   {item.caption}
                                 </p>
                               </button>
