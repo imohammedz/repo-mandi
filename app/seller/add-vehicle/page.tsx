@@ -699,12 +699,20 @@ function AssetStructureCard({ option, selected, onSelect }: {
           </div>
         </div>
       ) : (
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="text-sm font-semibold">{option.title}</p>
             <p className={`text-xs ${subTextClassName}`}>{option.description}</p>
             {option.examples ? <p className={`text-xs ${subTextClassName}`}>{option.examples}</p> : null}
           </div>
+          <span
+            className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+              selected ? "border-white bg-white text-slate-900" : "border-slate-300 bg-white"
+            }`}
+            aria-hidden="true"
+          >
+            <span className={`h-2.5 w-2.5 rounded-full ${selected ? "bg-slate-900" : "bg-transparent"}`} />
+          </span>
         </div>
       )}
     </button>
