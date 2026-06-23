@@ -41,13 +41,15 @@ type AssetStructureCard = {
 };
 
 const getAssetStructureCardClass = (card: AssetStructureCard, isSelected: boolean) => {
+  const baseCardClass = "rounded-[28px] border p-6 text-left transition";
+
   if (card.detachableExamples) {
-    return `rounded-[28px] border p-6 text-left transition ${
+    return `${baseCardClass} ${
       isSelected ? "border-orange-500 bg-slate-950 text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 shadow-sm"
     }`;
   }
 
-  return `rounded-[28px] border p-6 text-left transition ${
+  return `${baseCardClass} ${
     isSelected ? "border-orange-500 bg-white text-slate-900 shadow-md" : "border-slate-200 bg-white text-slate-700 shadow-sm"
   }`;
 };
@@ -1961,7 +1963,9 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">{card.title}</p>
+                          <p className={`text-xl font-semibold leading-tight ${isSelected && card.detachableExamples ? "text-white" : "text-slate-900"} sm:text-2xl`}>
+                            {card.title}
+                          </p>
                           <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-slate-700" : "text-slate-600"}`}>
                             {card.description}
                           </p>
@@ -1976,6 +1980,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                             isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"
                           }`}
                           aria-hidden="true"
+                          role="presentation"
                         >
                           {isSelected ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
                         </span>
@@ -2001,6 +2006,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                               isSelected ? "border-white bg-orange-500 text-white" : "border-slate-300 bg-white"
                             }`}
                             aria-hidden="true"
+                            role="presentation"
                           >
                             {isSelected ? <Check className="h-5 w-5" strokeWidth={3} /> : null}
                           </span>
@@ -2041,6 +2047,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                   <span
                                     className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-orange-500 text-white"
                                     aria-hidden="true"
+                                    role="presentation"
                                   >
                                     <Check className="h-5 w-5" strokeWidth={3} />
                                   </span>
@@ -2048,6 +2055,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                   <span
                                     className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-300 bg-white"
                                     aria-hidden="true"
+                                    role="presentation"
                                   />
                                 )}
                                 <p className={`mt-3 text-center text-base font-medium ${isTypeSelected ? "text-slate-900" : "text-slate-700"}`}>
