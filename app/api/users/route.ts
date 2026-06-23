@@ -1,12 +1,12 @@
 import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { accountTypeEnum, users } from "@/lib/schema";
 import { count, desc, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 export const runtime = "nodejs";
 
-const ALLOWED_ROLES = new Set(["BUYER", "SELLER", "BANK_PARTNER", "ADMIN"]);
+const ALLOWED_ROLES = new Set(accountTypeEnum.enumValues);
 
 function maskPhone(phone: string) {
   if (phone.length <= 4) return phone;
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "20") || 20));
     const offset = (page - 1) * limit;
     const includeSensitive = currentUser.accountType === "ADMIN" && url.searchParams.get("includeSensitive") === "1";
-    const shouldMaskAdminResponses = currentUser.accountType === "ADMIN" && !includeSensitive;
+    const shouldMaskSensitiveData = currentUser.accountType === "ADMIN" && !includeSensitive;
 
     if (phone) {
       if (currentUser.accountType !== "ADMIN" && currentUser.phone !== phone) {
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       }
       const [row] = await db.select().from(users).where(eq(users.phone, phone));
       return row
-        ? Response.json(toSafeUser(row, { maskSensitive: shouldMaskAdminResponses }))
+        ? Response.json(toSafeUser(row, { maskSensitive: shouldMaskSensitiveData }))
         : Response.json({ message: "User not found." }, { status: 404 });
     }
 
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       page,
       limit,
       total: totalRow?.total ?? 0,
-      users: rows.map((row) => toSafeUser(row, { maskSensitive: shouldMaskAdminResponses })),
+      users: rows.map((row) => toSafeUser(row, { maskSensitive: shouldMaskSensitiveData })),
     });
   } catch (error) {
     console.error("GET /api/users failed", error);

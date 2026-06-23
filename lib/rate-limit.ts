@@ -28,7 +28,7 @@ function cleanupExpiredEntries(now: number) {
 }
 
 export function getClientIp(request: Request) {
-  const fallbackFingerprint = (() => {
+  const clientFingerprint = (() => {
     const userAgent = request.headers.get("user-agent") ?? "unknown";
     const acceptLanguage = request.headers.get("accept-language") ?? "unknown";
     const path = (() => {
@@ -47,7 +47,7 @@ export function getClientIp(request: Request) {
 
   const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
   if (!trustProxyHeaders) {
-    return fallbackFingerprint;
+    return clientFingerprint;
   }
 
   const realIp = request.headers.get("x-real-ip")?.trim();
@@ -61,7 +61,7 @@ export function getClientIp(request: Request) {
     if (first && isIP(first)) return first;
   }
 
-  return fallbackFingerprint;
+  return clientFingerprint;
 }
 
 export function enforceRateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimitResult {

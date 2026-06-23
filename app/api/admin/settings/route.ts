@@ -13,6 +13,18 @@ type SettingKey = (typeof ALLOWED_KEYS)[number];
 const OTP_PROVIDER_VALUES = ["MSG91_SMS", "WHATSAPP", "TWILIO_SMS"] as const;
 type OtpProviderValue = (typeof OTP_PROVIDER_VALUES)[number];
 
+function getProviderEnvMissing(provider: OtpProviderValue): string[] {
+  if (provider === "TWILIO_SMS") {
+    const check = checkTwilioEnv();
+    return check.ok ? [] : check.missing;
+  }
+  if (provider === "WHATSAPP") {
+    const check = checkWhatsAppEnv();
+    return check.ok ? [] : check.missing;
+  }
+  return [];
+}
+
 async function getSetting(key: SettingKey): Promise<string | null> {
   const [row] = await db
     .select()
@@ -69,25 +81,13 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
-
-    if (v === "TWILIO_SMS") {
-      const check = checkTwilioEnv();
-      if (!check.ok) {
-        return Response.json(
-          { message: `Cannot enable TWILIO_SMS. Missing env vars: ${check.missing.join(", ")}` },
-          { status: 400 },
-        );
-      }
-    }
-
-    if (v === "WHATSAPP") {
-      const check = checkWhatsAppEnv();
-      if (!check.ok) {
-        return Response.json(
-          { message: `Cannot enable WHATSAPP. Missing env vars: ${check.missing.join(", ")}` },
-          { status: 400 },
-        );
-      }
+    const provider = v as OtpProviderValue;
+    const missing = getProviderEnvMissing(provider);
+    if (missing.length > 0) {
+      return Response.json(
+        { message: `Cannot enable ${provider}. Missing env vars: ${missing.join(", ")}` },
+        { status: 400 },
+      );
     }
   }
 
