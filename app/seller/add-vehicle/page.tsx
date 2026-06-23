@@ -40,6 +40,18 @@ type AssetStructureCard = {
   }>;
 };
 
+const getAssetStructureCardClass = (card: AssetStructureCard, isSelected: boolean) => {
+  if (card.detachableExamples) {
+    return `rounded-[28px] border p-6 text-left transition ${
+      isSelected ? "border-orange-500 bg-slate-950 text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 shadow-sm"
+    }`;
+  }
+
+  return `rounded-[28px] border p-6 text-left transition ${
+    isSelected ? "border-orange-500 bg-white text-slate-900 shadow-md" : "border-slate-200 bg-white text-slate-700 shadow-sm"
+  }`;
+};
+
 /** Visual card content for the asset structure selector. */
 const ASSET_STRUCTURE_CARDS: AssetStructureCard[] = [
   {
@@ -908,6 +920,16 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
     if (key === "listingType" && value !== "REPO" && step === STEP_REPO) {
       setStep(STEP_TECHNICAL);
     }
+  };
+
+  const handleDetachableTypeSelect = (assetStructure: AssetStructure, detachableType: DetachableType) => {
+    setForm((previous) => ({
+      ...previous,
+      assetStructure,
+      detachableType,
+      assetCategory: "",
+      bodyApplicationType: "",
+    }));
   };
 
   useEffect(() => {
@@ -1923,15 +1945,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
             <div className="grid gap-3 md:grid-cols-3">
               {ASSET_STRUCTURE_CARDS.map((card) => {
                 const isSelected = form.assetStructure === card.value;
-                const cardClass = `rounded-[28px] border p-6 text-left transition ${
-                  card.detachableExamples
-                    ? isSelected
-                      ? "border-orange-500 bg-slate-950 text-white shadow-lg"
-                      : "border-slate-200 bg-white text-slate-900 shadow-sm"
-                    : isSelected
-                      ? "border-orange-500 bg-white text-slate-900 shadow-md"
-                      : "border-slate-200 bg-white text-slate-700 shadow-sm"
-                }`;
+                const cardClass = getAssetStructureCardClass(card, isSelected);
                 const inner = (
                   <div className="space-y-4">
                     {card.image ? (
@@ -2004,13 +2018,7 @@ export function VehicleFormPage({ mode = "create", listingId }: VehicleFormPageP
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setForm((previous) => ({
-                                    ...previous,
-                                    assetStructure: card.value,
-                                    detachableType: item.value,
-                                    assetCategory: "",
-                                    bodyApplicationType: "",
-                                  }));
+                                  handleDetachableTypeSelect(card.value, item.value);
                                 }}
                                 aria-pressed={isTypeSelected}
                                 className={`relative rounded-[24px] border-2 bg-white p-4 text-left transition ${
