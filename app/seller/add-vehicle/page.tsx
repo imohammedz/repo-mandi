@@ -544,6 +544,12 @@ type AssetStructureCardOption = {
   }>;
 };
 
+type AssetStructureCardProps = {
+  option: AssetStructureCardOption;
+  selected: boolean;
+  onSelect: (value: AssetStructure) => void;
+};
+
 const ASSET_STRUCTURE_CARD_OPTIONS: AssetStructureCardOption[] = [
   {
     value: "STANDALONE",
@@ -627,11 +633,7 @@ function SelectField({
   );
 }
 
-function AssetStructureCard({ option, selected, onSelect }: {
-  option: AssetStructureCardOption;
-  selected: boolean;
-  onSelect: (value: AssetStructure) => void;
-}) {
+function AssetStructureCard({ option, selected, onSelect }: AssetStructureCardProps) {
   const cardClassName = selected
     ? "border-slate-900 bg-slate-900 text-white shadow-sm"
     : "border-slate-200 bg-white text-slate-700 shadow-sm";
