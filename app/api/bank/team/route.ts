@@ -63,11 +63,6 @@ export async function POST(request: Request) {
     return Response.json({ message: "Missing required fields." }, { status: 400 });
   }
 
-  const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
-  if (existingUser) {
-    return Response.json({ message: "An account with this phone number already exists." }, { status: 409 });
-  }
-
   try {
     const [created] = await db
       .insert(users)

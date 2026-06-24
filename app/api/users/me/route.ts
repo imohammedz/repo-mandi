@@ -107,6 +107,7 @@ export async function PATCH(request: Request) {
   if (!parsedBankRole.ok) {
     return Response.json({ message: parsedBankRole.message }, { status: 400 });
   }
+  const isBankPartner = current.user.accountType === "BANK_PARTNER";
 
   for (const field of ["fullName", "email", "businessName", "institutionName", "branchName", "employeeId", "city", "state"]) {
     if (field in body && typeof body[field] !== "string") {
@@ -115,7 +116,7 @@ export async function PATCH(request: Request) {
   }
 
   const nextAccountType =
-    current.user.accountType === "BANK_PARTNER"
+    isBankPartner
       ? current.user.accountType
       : (parsedAccountType.value ?? current.user.accountType);
 
@@ -125,8 +126,6 @@ export async function PATCH(request: Request) {
   if (nextAccountType === "ADMIN" && current.user.accountType !== "ADMIN") {
     return Response.json({ message: "Admin role escalation is restricted." }, { status: 403 });
   }
-
-  const isBankPartner = current.user.accountType === "BANK_PARTNER";
 
   const merged = {
     fullName: trimString(body.fullName) ?? current.user.fullName,

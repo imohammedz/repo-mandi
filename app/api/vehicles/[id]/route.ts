@@ -11,7 +11,7 @@ import {
 
 export const runtime = "nodejs";
 
-const SELLER_EDITABLE_FIELDS = new Set([
+const SELLER_ALLOWED_FIELDS = new Set([
   "title",
   "type",
   "assetCategory",
@@ -192,7 +192,7 @@ export async function PUT(
     }
 
     if (!isAdmin) {
-      const forbiddenFields = Object.keys(body).filter((key) => !SELLER_EDITABLE_FIELDS.has(key));
+      const forbiddenFields = Object.keys(body).filter((key) => !SELLER_ALLOWED_FIELDS.has(key));
       if (forbiddenFields.length > 0) {
         return Response.json(
           { message: `Forbidden fields in request: ${forbiddenFields.sort().join(", ")}.` },

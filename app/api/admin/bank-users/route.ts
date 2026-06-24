@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { requireUser } from "@/lib/auth";
-import { eq } from "drizzle-orm";
 import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 export async function POST(request: Request) {
@@ -28,11 +27,6 @@ export async function POST(request: Request) {
   const phone = normalizeIndianPhone(body.phone ?? "");
   if (!phone || !body.fullName || !body.bankRole || !body.institutionName || !body.branchName) {
     return Response.json({ message: "Missing required fields." }, { status: 400 });
-  }
-
-  const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
-  if (existingUser) {
-    return Response.json({ message: "An account with this phone number already exists." }, { status: 409 });
   }
 
   try {
