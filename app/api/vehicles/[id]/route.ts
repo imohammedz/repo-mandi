@@ -194,10 +194,7 @@ export async function PUT(
     if (!isAdmin) {
       const forbiddenFields = Object.keys(body).filter((key) => !SELLER_ALLOWED_FIELDS.has(key));
       if (forbiddenFields.length > 0) {
-        return Response.json(
-          { message: `Forbidden fields in request: ${forbiddenFields.sort().join(", ")}.` },
-          { status: 403 }
-        );
+        return Response.json({ message: "Request contains forbidden fields." }, { status: 403 });
       }
     }
 

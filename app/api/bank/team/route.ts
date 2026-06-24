@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 const canManageTeam = new Set(["BANK_ADMIN", "BRANCH_ADMIN", "BANK_MANAGER"]);
+const UNIQUE_VIOLATION = "23505";
 
 export async function GET() {
   const current = await requireUser();
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "23505"
+      error.code === UNIQUE_VIOLATION
     ) {
       return Response.json({ message: "An account with this phone number already exists." }, { status: 409 });
     }

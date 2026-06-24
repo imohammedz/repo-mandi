@@ -3,6 +3,8 @@ import { users } from "@/lib/schema";
 import { requireUser } from "@/lib/auth";
 import { normalizeIndianPhone } from "@/lib/otp/phone";
 
+const UNIQUE_VIOLATION = "23505";
+
 export async function POST(request: Request) {
   const current = await requireUser();
   if (!current.ok) {
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "23505"
+      error.code === UNIQUE_VIOLATION
     ) {
       return Response.json({ message: "An account with this phone number already exists." }, { status: 409 });
     }

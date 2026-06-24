@@ -540,7 +540,18 @@ export async function PATCH(
     if (backPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "BACK", url: backPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     if (leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     if (rightSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
-    if (sidePhoto && sidePhoto !== leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "SIDE", url: sidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (sidePhoto && sidePhoto !== leftSidePhoto) {
+      mediaRows.push({
+        vehicleId: id,
+        type: "PHOTO",
+        category: "SIDE",
+        url: sidePhoto,
+        mimeType: "",
+        sizeBytes: null,
+        customName: null,
+        originalFileName: "",
+      });
+    }
     if (interiorPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "INTERIOR", url: interiorPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     for (const photo of parsedAdditionalPhotos) {
       mediaRows.push({
