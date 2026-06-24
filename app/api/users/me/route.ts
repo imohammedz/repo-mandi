@@ -3,7 +3,6 @@ import { accountTypeEnum, bankRoleEnum, sellerRoleEnum, users } from "@/lib/sche
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 
-type AccountType = "BUYER" | "SELLER" | "BANK_PARTNER" | "ADMIN";
 type SellerRole = (typeof sellerRoleEnum.enumValues)[number];
 type BankRole = (typeof bankRoleEnum.enumValues)[number];
 
