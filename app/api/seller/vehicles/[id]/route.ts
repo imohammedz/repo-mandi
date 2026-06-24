@@ -408,7 +408,8 @@ export async function PATCH(
 
     const frontPhoto = sanitizeSupabaseMediaUrl(body.frontPhoto ?? existing.frontPhoto);
     const backPhoto = sanitizeSupabaseMediaUrl(body.backPhoto ?? existing.backPhoto);
-    const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? body.sidePhoto ?? existing.leftSidePhoto ?? existing.sidePhoto);
+    const sidePhoto = sanitizeSupabaseMediaUrl(body.sidePhoto ?? existing.sidePhoto);
+    const leftSidePhoto = sanitizeSupabaseMediaUrl(body.leftSidePhoto ?? sidePhoto ?? existing.leftSidePhoto ?? existing.sidePhoto);
     const rightSidePhoto = sanitizeSupabaseMediaUrl(body.rightSidePhoto ?? existing.rightSidePhoto);
     const interiorPhoto = sanitizeSupabaseMediaUrl(body.interiorPhoto ?? existing.interiorPhoto);
     const normalizedRequiredPhotoCount = [frontPhoto, backPhoto, leftSidePhoto, rightSidePhoto, interiorPhoto].filter(Boolean).length;
@@ -539,7 +540,7 @@ export async function PATCH(
     if (backPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "BACK", url: backPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     if (leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "LEFT_SIDE", url: leftSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     if (rightSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "RIGHT_SIDE", url: rightSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
-    if (leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "SIDE", url: leftSidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
+    if (sidePhoto && sidePhoto !== leftSidePhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "SIDE", url: sidePhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     if (interiorPhoto) mediaRows.push({ vehicleId: id, type: "PHOTO", category: "INTERIOR", url: interiorPhoto, mimeType: "", sizeBytes: null, customName: null, originalFileName: "" });
     for (const photo of parsedAdditionalPhotos) {
       mediaRows.push({
@@ -582,7 +583,7 @@ export async function PATCH(
     updates.backPhoto = backPhoto;
     updates.leftSidePhoto = leftSidePhoto;
     updates.rightSidePhoto = rightSidePhoto;
-    updates.sidePhoto = leftSidePhoto;
+    updates.sidePhoto = sidePhoto || leftSidePhoto;
     updates.interiorPhoto = interiorPhoto;
     updates.gallery = sanitizeSupabaseMediaArray([
       ...[frontPhoto, backPhoto, leftSidePhoto, rightSidePhoto, interiorPhoto].filter(Boolean),

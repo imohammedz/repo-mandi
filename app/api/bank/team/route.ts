@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
+import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 const canManageTeam = new Set(["BANK_ADMIN", "BRANCH_ADMIN", "BANK_MANAGER"]);
 
@@ -57,31 +58,21 @@ export async function POST(request: Request) {
     employeeId?: string;
   };
 
-  const phone = (body.phone ?? "").replace(/\D/g, "").slice(0, 10);
+  const phone = normalizeIndianPhone(body.phone ?? "");
   if (!phone || !body.fullName || !body.bankRole) {
     return Response.json({ message: "Missing required fields." }, { status: 400 });
   }
 
-  const [upserted] = await db
-    .insert(users)
-    .values({
-      phone,
-      fullName: body.fullName.trim(),
-      email: body.email?.trim() || null,
-      accountType: "BANK_PARTNER",
-      bankRole: body.bankRole,
-      institutionName: current.user.institutionName,
-      branchName: current.user.branchName,
-      city: body.city?.trim() ?? "",
-      state: body.state?.trim() ?? "",
-      employeeId: body.employeeId?.trim() || null,
-      isProfileComplete: true,
-      verificationStatus: "PENDING_VERIFICATION",
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: users.phone,
-      set: {
+  const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
+  if (existingUser) {
+    return Response.json({ message: "An account with this phone number already exists." }, { status: 409 });
+  }
+
+  try {
+    const [created] = await db
+      .insert(users)
+      .values({
+        phone,
         fullName: body.fullName.trim(),
         email: body.email?.trim() || null,
         accountType: "BANK_PARTNER",
@@ -91,10 +82,22 @@ export async function POST(request: Request) {
         city: body.city?.trim() ?? "",
         state: body.state?.trim() ?? "",
         employeeId: body.employeeId?.trim() || null,
+        isProfileComplete: true,
+        verificationStatus: "PENDING_VERIFICATION",
         updatedAt: new Date(),
-      },
-    })
-    .returning();
+      })
+      .returning();
 
-  return Response.json(upserted, { status: 201 });
+    return Response.json(created, { status: 201 });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return Response.json({ message: "An account with this phone number already exists." }, { status: 409 });
+    }
+    throw error;
+  }
 }

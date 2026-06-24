@@ -1,9 +1,40 @@
 import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { accountTypeEnum, bankRoleEnum, sellerRoleEnum, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 
 type AccountType = "BUYER" | "SELLER" | "BANK_PARTNER" | "ADMIN";
+type SellerRole = (typeof sellerRoleEnum.enumValues)[number];
+type BankRole = (typeof bankRoleEnum.enumValues)[number];
+
+const ACCOUNT_TYPES = new Set(accountTypeEnum.enumValues);
+const SELLER_ROLES = new Set(sellerRoleEnum.enumValues);
+const BANK_ROLES = new Set(bankRoleEnum.enumValues);
+
+function trimString(value: unknown) {
+  return typeof value === "string" ? value.trim() : null;
+}
+
+function parseOptionalEnum<T extends string>(value: unknown, allowed: Set<T>, field: string) {
+  if (value === undefined) {
+    return { ok: true as const, value: undefined };
+  }
+
+  if (value === null || value === "") {
+    return { ok: true as const, value: null };
+  }
+
+  if (typeof value !== "string") {
+    return { ok: false as const, message: `${field} must be a string.` };
+  }
+
+  const normalized = value.trim().toUpperCase() as T;
+  if (!allowed.has(normalized)) {
+    return { ok: false as const, message: `Invalid ${field}.` };
+  }
+
+  return { ok: true as const, value: normalized };
+}
 
 function isSellerProfileComplete(data: {
   fullName?: string;
@@ -54,21 +85,40 @@ export async function PATCH(request: Request) {
     return Response.json({ message: current.message }, { status: current.status });
   }
 
-  const body = (await request.json()) as {
-    fullName?: string;
-    email?: string;
-    accountType?: AccountType;
-    sellerRole?: "BROKER" | "DEALER" | "YARD_OWNER" | "RECOVERY_AGENT" | "TRUCK_OWNER" | "FLEET_OWNER";
-    bankRole?: "BANK_MANAGER" | "COLLECTION_AGENT" | "RECOVERY_OFFICER" | "BRANCH_ADMIN" | "NBFC_PARTNER" | "BANK_ADMIN" | "VIEWER";
-    businessName?: string;
-    institutionName?: string;
-    branchName?: string;
-    employeeId?: string;
-    city?: string;
-    state?: string;
-  };
+  let body: Record<string, unknown>;
+  try {
+    const parsed = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return Response.json({ message: "Invalid profile payload." }, { status: 400 });
+    }
+    body = parsed as Record<string, unknown>;
+  } catch {
+    return Response.json({ message: "Invalid profile payload." }, { status: 400 });
+  }
 
-  const nextAccountType = body.accountType ?? current.user.accountType;
+  const parsedAccountType = parseOptionalEnum(body.accountType, ACCOUNT_TYPES, "accountType");
+  if (!parsedAccountType.ok) {
+    return Response.json({ message: parsedAccountType.message }, { status: 400 });
+  }
+  const parsedSellerRole = parseOptionalEnum(body.sellerRole, SELLER_ROLES, "sellerRole");
+  if (!parsedSellerRole.ok) {
+    return Response.json({ message: parsedSellerRole.message }, { status: 400 });
+  }
+  const parsedBankRole = parseOptionalEnum(body.bankRole, BANK_ROLES, "bankRole");
+  if (!parsedBankRole.ok) {
+    return Response.json({ message: parsedBankRole.message }, { status: 400 });
+  }
+
+  for (const field of ["fullName", "email", "businessName", "institutionName", "branchName", "employeeId", "city", "state"]) {
+    if (field in body && typeof body[field] !== "string") {
+      return Response.json({ message: `${field} must be a string.` }, { status: 400 });
+    }
+  }
+
+  const nextAccountType =
+    current.user.accountType === "BANK_PARTNER"
+      ? current.user.accountType
+      : (parsedAccountType.value ?? current.user.accountType);
 
   if (nextAccountType === "BANK_PARTNER" && current.user.accountType !== "BANK_PARTNER") {
     return Response.json({ message: "Bank onboarding is admin-controlled." }, { status: 403 });
@@ -78,17 +128,26 @@ export async function PATCH(request: Request) {
   }
 
   const merged = {
-    fullName: (body.fullName ?? current.user.fullName).trim(),
-    email: (body.email ?? current.user.email ?? "").trim() || null,
+    fullName: trimString(body.fullName) ?? current.user.fullName,
+    email: trimString(body.email) ?? current.user.email ?? null,
     accountType: nextAccountType,
-    sellerRole: body.sellerRole ?? current.user.sellerRole,
-    bankRole: body.bankRole ?? current.user.bankRole,
-    businessName: (body.businessName ?? current.user.businessName).trim(),
-    institutionName: (body.institutionName ?? current.user.institutionName).trim(),
-    branchName: (body.branchName ?? current.user.branchName).trim(),
-    employeeId: (body.employeeId ?? current.user.employeeId ?? "").trim() || null,
-    city: (body.city ?? current.user.city).trim(),
-    state: (body.state ?? current.user.state).trim(),
+    sellerRole: (parsedSellerRole.value ?? current.user.sellerRole) as SellerRole | null,
+    bankRole:
+      current.user.accountType === "BANK_PARTNER" && current.user.accountType !== "ADMIN"
+        ? current.user.bankRole
+        : ((parsedBankRole.value ?? current.user.bankRole) as BankRole | null),
+    businessName: trimString(body.businessName) ?? current.user.businessName,
+    institutionName:
+      current.user.accountType === "BANK_PARTNER" && current.user.accountType !== "ADMIN"
+        ? current.user.institutionName
+        : (trimString(body.institutionName) ?? current.user.institutionName),
+    branchName:
+      current.user.accountType === "BANK_PARTNER" && current.user.accountType !== "ADMIN"
+        ? current.user.branchName
+        : (trimString(body.branchName) ?? current.user.branchName),
+    employeeId: trimString(body.employeeId) ?? current.user.employeeId ?? null,
+    city: trimString(body.city) ?? current.user.city,
+    state: trimString(body.state) ?? current.user.state,
   };
 
   const isProfileComplete =
