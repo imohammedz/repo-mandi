@@ -126,7 +126,7 @@ export async function PATCH(request: Request) {
     return Response.json({ message: "Admin role escalation is restricted." }, { status: 403 });
   }
 
-  const isSelfManagedBankPartner = current.user.accountType === "BANK_PARTNER";
+  const isBankPartner = current.user.accountType === "BANK_PARTNER";
 
   const merged = {
     fullName: trimString(body.fullName) ?? current.user.fullName,
@@ -134,16 +134,16 @@ export async function PATCH(request: Request) {
     accountType: nextAccountType,
     sellerRole: (parsedSellerRole.value ?? current.user.sellerRole) as SellerRole | null,
     bankRole:
-      isSelfManagedBankPartner
+      isBankPartner
         ? current.user.bankRole
         : ((parsedBankRole.value ?? current.user.bankRole) as BankRole | null),
     businessName: trimString(body.businessName) ?? current.user.businessName,
     institutionName:
-      isSelfManagedBankPartner
+      isBankPartner
         ? current.user.institutionName
         : (trimString(body.institutionName) ?? current.user.institutionName),
     branchName:
-      isSelfManagedBankPartner
+      isBankPartner
         ? current.user.branchName
         : (trimString(body.branchName) ?? current.user.branchName),
     employeeId: trimString(body.employeeId) ?? current.user.employeeId ?? null,
