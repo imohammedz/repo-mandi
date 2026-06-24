@@ -107,7 +107,7 @@ export async function PATCH(request: Request) {
   if (!parsedBankRole.ok) {
     return Response.json({ message: parsedBankRole.message }, { status: 400 });
   }
-  const isBankPartner = current.user.accountType === "BANK_PARTNER";
+  const shouldRestrictBankPartnerEdits = current.user.accountType === "BANK_PARTNER";
 
   for (const field of ["fullName", "email", "businessName", "institutionName", "branchName", "employeeId", "city", "state"]) {
     if (field in body && typeof body[field] !== "string") {
@@ -116,7 +116,7 @@ export async function PATCH(request: Request) {
   }
 
   const nextAccountType =
-    isBankPartner
+    shouldRestrictBankPartnerEdits
       ? current.user.accountType
       : (parsedAccountType.value ?? current.user.accountType);
 
@@ -133,16 +133,16 @@ export async function PATCH(request: Request) {
     accountType: nextAccountType,
     sellerRole: (parsedSellerRole.value ?? current.user.sellerRole) as SellerRole | null,
     bankRole:
-      isBankPartner
+      shouldRestrictBankPartnerEdits
         ? current.user.bankRole
         : ((parsedBankRole.value ?? current.user.bankRole) as BankRole | null),
     businessName: trimString(body.businessName) ?? current.user.businessName,
     institutionName:
-      isBankPartner
+      shouldRestrictBankPartnerEdits
         ? current.user.institutionName
         : (trimString(body.institutionName) ?? current.user.institutionName),
     branchName:
-      isBankPartner
+      shouldRestrictBankPartnerEdits
         ? current.user.branchName
         : (trimString(body.branchName) ?? current.user.branchName),
     employeeId: trimString(body.employeeId) ?? current.user.employeeId ?? null,
