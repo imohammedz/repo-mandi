@@ -9,7 +9,6 @@ import {
 import { SearchBar } from "@/components/ui/search-bar";
 import { CategorySelector } from "@/components/ui/category-selector";
 import { VehicleCard } from "@/components/ui/vehicle-card";
-import SellTruckCard from "@/components/ui/SellTruckCard";
 import { db } from "@/lib/db";
 import { vehicles as vehiclesTable } from "@/lib/schema";
 import { dbToVehicle } from "@/lib/mappers";
@@ -22,8 +21,6 @@ const trustItems = [
   { title: "Direct Seller Contact", icon: Building2 },
   { title: "Transparent Information", icon: CircleDollarSign },
 ];
-
-const STICKY_SELL_CARD_BOTTOM_OFFSET = "72px";
 
 export const revalidate = 60;
 
@@ -127,29 +124,21 @@ export default async function HomePage() {
         </section>
       </div>
 
-      {/* Sticky boundary: banner sticks above bottom nav while scrolling through Why trust us.
-          Once this container scrolls out of view, the banner naturally releases and scrolls away,
-          leaving Contact and copyright fully visible. No overflow or transform on this div. */}
-      <div>
-        <div className="sticky z-30 mt-6 px-3" style={{ bottom: STICKY_SELL_CARD_BOTTOM_OFFSET }}>
-          <SellTruckCard />
+      {/* Why trust us section */}
+      <section className="mt-10 space-y-3 px-4 pb-8">
+        <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {trustItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article key={item.title} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                <Icon className="h-5 w-5 text-slate-700" />
+                <p className="mt-2 text-sm font-medium text-slate-800">{item.title}</p>
+              </article>
+            );
+          })}
         </div>
-
-        <section className="mt-10 space-y-3 px-4 pb-8">
-          <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {trustItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <article key={item.title} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                  <Icon className="h-5 w-5 text-slate-700" />
-                  <p className="mt-2 text-sm font-medium text-slate-800">{item.title}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+      </section>
     </div>
   );
 }

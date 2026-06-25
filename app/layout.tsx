@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import SellTruckCard from "@/components/ui/SellTruckCard";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { TopHeader } from "@/components/layout/top-header";
 import { SavedListingsProvider } from "@/components/providers/saved-listings-provider";
@@ -47,6 +48,9 @@ export default function RootLayout({
             <SiteFooter />
           </div>
           <BottomNav />
+          <div className="fixed inset-x-0 z-30 px-3" style={{ bottom: "72px" }}>
+            <SellTruckCard />
+          </div>
         </SavedListingsProvider>
       </body>
     </html>
