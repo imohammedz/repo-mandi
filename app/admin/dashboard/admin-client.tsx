@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { LayoutDashboard, Clock, Landmark, Settings2, TrendingUp, Ticket } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
@@ -88,43 +89,31 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
             ? rejected
             : sold;
 
+  const navLinks = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, bg: "bg-orange-500", text: "text-white" },
+    { href: "/admin/listings/pending", label: "Pending Queue", icon: Clock, bg: "bg-amber-400", text: "text-amber-900" },
+    { href: "/admin/banks", label: "Bank Users", icon: Landmark, bg: "bg-blue-600", text: "text-white" },
+    { href: "/admin/settings", label: "Settings", icon: Settings2, bg: "bg-slate-600", text: "text-white" },
+    { href: "/admin/finance-inquiries", label: "Finance Inquiries", icon: TrendingUp, bg: "bg-emerald-500", text: "text-white" },
+    { href: "/admin/feature-coupons", label: "Feature Coupons", icon: Ticket, bg: "bg-violet-500", text: "text-white" },
+  ];
+
   return (
     <main className="space-y-5 px-4 pb-8 pt-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
-        <div className="flex gap-2">
-          <a
-            href="/admin/listings/pending"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
+      <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
+
+      <nav className="grid grid-cols-3 gap-2">
+        {navLinks.map(({ href, label, icon: Icon, bg, text }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 shadow-sm transition-opacity active:opacity-80 ${bg} ${text}`}
           >
-            Pending Queue
-          </a>
-          <a
-            href="/admin/banks"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Bank Users
-          </a>
-          <a
-            href="/admin/settings"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Settings
-          </a>
-          <a
-            href="/admin/finance-inquiries"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Finance Inquiries
-          </a>
-          <a
-            href="/admin/feature-coupons"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Feature Coupons
-          </a>
-        </div>
-      </div>
+            <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+            <span className="text-center text-xs font-semibold leading-tight">{label}</span>
+          </Link>
+        ))}
+      </nav>
 
       <section className="grid grid-cols-2 gap-3">
         {liveStats.map((item) => (
