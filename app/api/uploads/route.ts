@@ -13,7 +13,6 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const MAX_FILES_PER_REQUEST = 10;
-const ALLOWED_VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
 
 function detectImageExtension(buffer: Buffer): string | null {
   // PNG
@@ -54,6 +53,22 @@ function detectImageExtension(buffer: Buffer): string | null {
   return null;
 }
 
+function detectVideoExtension(buffer: Buffer): string | null {
+  // WEBM / Matroska
+  if (buffer.length >= 4 && buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) {
+    return "webm";
+  }
+
+  // MP4/MOV use an ftyp box at offset 4
+  if (buffer.length >= 12 && buffer.subarray(4, 8).toString("ascii") === "ftyp") {
+    const brand = buffer.subarray(8, 12).toString("ascii");
+    if (brand.startsWith("qt")) return "mov";
+    return "mp4";
+  }
+
+  return null;
+}
+
 function isPdfFile(buffer: Buffer): boolean {
   return (
     buffer.length >= 5 &&
@@ -63,6 +78,27 @@ function isPdfFile(buffer: Buffer): boolean {
     buffer[3] === 0x46 &&
     buffer[4] === 0x2d
   );
+}
+
+function getMimeTypeForExtension(extension: string) {
+  switch (extension) {
+    case "pdf":
+      return "application/pdf";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "mov":
+      return "video/quicktime";
+    case "mp4":
+      return "video/mp4";
+    default:
+      // Unreachable with current validation checks (only known extensions proceed).
+      throw new Error(`Unsupported file extension: ${extension}`);
+  }
 }
 
 export async function POST(request: Request) {
@@ -183,7 +219,7 @@ export async function POST(request: Request) {
       const arrayBuffer = await file.arrayBuffer();
       const fileBuffer = Buffer.from(arrayBuffer);
       const extension = isVideo
-        ? file.name.split(".").pop()?.toLowerCase() || "mp4"
+        ? detectVideoExtension(fileBuffer)
         : isDocument
           ? (() => {
               if (isPdfFile(fileBuffer)) return "pdf";
@@ -192,7 +228,7 @@ export async function POST(request: Request) {
             })()
           : detectImageExtension(fileBuffer);
 
-      if (!extension) {
+      if (extension === null) {
         return Response.json(
           {
             message: isVideo
@@ -205,22 +241,16 @@ export async function POST(request: Request) {
         );
       }
 
-      if (isVideo && !ALLOWED_VIDEO_EXTENSIONS.has(extension)) {
-        return Response.json(
-          { message: "Only MP4, MOV, and WEBM videos are allowed." },
-          { status: 400 },
-        );
-      }
-
       const safeUserId = encodeURIComponent(String(currentUser.id));
       const mediaFolder = isVideo ? "videos" : isDocument ? "documents" : "images";
       const scopedListingPath = listingId || `draft-${safeUserId}-${randomUUID()}`;
       const filePath = `users/${safeUserId}/vehicles/${scopedListingPath}/${mediaFolder}/${randomUUID()}.${extension}`;
+      const inferredMimeType = getMimeTypeForExtension(extension);
 
       const { error } = await supabaseAdmin.storage
         .from(bucket)
         .upload(filePath, fileBuffer, {
-          contentType: file.type,
+          contentType: inferredMimeType,
           upsert: false,
         });
 
@@ -241,7 +271,7 @@ export async function POST(request: Request) {
       }
       uploadedFiles.push({
         url: publicUrl,
-        mimeType: file.type,
+        mimeType: inferredMimeType,
         sizeBytes: file.size,
         originalFileName: file.name,
       });

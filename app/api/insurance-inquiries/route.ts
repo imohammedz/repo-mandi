@@ -3,17 +3,11 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { insuranceInquiries, vehicles } from "@/lib/schema";
 import { isLeadOtpVerificationEnabled } from "@/lib/leads-otp";
+import { normalizeToE164 } from "@/lib/otp/phone";
+import { enforceRateLimit, getClientIp, isSameOriginRequest } from "@/lib/rate-limit";
 
 const e164Pattern = /^\+[1-9]\d{7,14}$/;
-const indianTenDigitPattern = /^\d{10}$/;
 const MAX_REQUIREMENT_TEXT_LENGTH = 1000;
-
-const normalizeIndianPhone = (rawPhone: string) => {
-  const digits = rawPhone.replace(/\D/g, "");
-  if (indianTenDigitPattern.test(digits)) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
-  return null;
-};
 
 export async function GET() {
   const currentUser = await getCurrentUser();
@@ -26,6 +20,23 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return Response.json({ message: "Invalid request origin." }, { status: 403 });
+    }
+
+    const ip = getClientIp(request);
+    const ipRateLimit = enforceRateLimit({
+      key: `insurance-inquiries:create:ip:${ip}`,
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!ipRateLimit.ok) {
+      return Response.json(
+        { message: "Too many insurance inquiry requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipRateLimit.retryAfterSeconds) } },
+      );
+    }
+
     const body = (await request.json()) as {
       vehicleId?: string;
       buyerName?: string;
@@ -43,7 +54,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "Buyer name is required." }, { status: 400 });
     }
 
-    const buyerPhone = normalizeIndianPhone(body.buyerPhone);
+    const buyerPhone = normalizeToE164(body.buyerPhone ?? "");
     if (!buyerPhone || !e164Pattern.test(buyerPhone)) {
       return Response.json({ message: "Enter a valid buyer phone number." }, { status: 400 });
     }

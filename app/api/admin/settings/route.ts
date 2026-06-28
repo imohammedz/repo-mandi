@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { platformSettings } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
+import { checkTwilioEnv } from "@/lib/otp/providers/twilio-sms";
+import { checkWhatsAppEnv } from "@/lib/otp/providers/whatsapp";
 
 export const runtime = "nodejs";
 
@@ -10,6 +12,18 @@ type SettingKey = (typeof ALLOWED_KEYS)[number];
 
 const OTP_PROVIDER_VALUES = ["MSG91_SMS", "WHATSAPP", "TWILIO_SMS"] as const;
 type OtpProviderValue = (typeof OTP_PROVIDER_VALUES)[number];
+
+function getProviderEnvMissing(provider: OtpProviderValue): string[] {
+  if (provider === "TWILIO_SMS") {
+    const check = checkTwilioEnv();
+    return check.ok ? [] : check.missing;
+  }
+  if (provider === "WHATSAPP") {
+    const check = checkWhatsAppEnv();
+    return check.ok ? [] : check.missing;
+  }
+  return [];
+}
 
 async function getSetting(key: SettingKey): Promise<string | null> {
   const [row] = await db
@@ -65,6 +79,14 @@ export async function PATCH(request: Request) {
       return Response.json(
         { message: `Invalid OTP_PROVIDER value. Allowed: ${OTP_PROVIDER_VALUES.join(", ")}` },
         { status: 400 }
+      );
+    }
+    const provider = v as OtpProviderValue;
+    const missing = getProviderEnvMissing(provider);
+    if (missing.length > 0) {
+      return Response.json(
+        { message: `Cannot enable ${provider}. Missing env vars: ${missing.join(", ")}` },
+        { status: 400 },
       );
     }
   }

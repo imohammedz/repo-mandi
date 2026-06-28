@@ -1,9 +1,40 @@
 import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { accountTypeEnum, users } from "@/lib/schema";
+import { count, desc, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
+import { normalizeIndianPhone } from "@/lib/otp/phone";
 
 export const runtime = "nodejs";
+
+const ALLOWED_ROLES = new Set(accountTypeEnum.enumValues);
+type AllowedRole = (typeof accountTypeEnum.enumValues)[number];
+
+function isAllowedRole(value: string): value is AllowedRole {
+  return ALLOWED_ROLES.has(value as AllowedRole);
+}
+
+function maskPhone(phone: string) {
+  if (phone.length <= 4) return phone;
+  return `${"*".repeat(phone.length - 4)}${phone.slice(-4)}`;
+}
+
+function toSafeUser(user: typeof users.$inferSelect, options?: { maskSensitive?: boolean }) {
+  return {
+    id: user.id,
+    phone: options?.maskSensitive ? maskPhone(user.phone) : user.phone,
+    fullName: user.fullName,
+    accountType: user.accountType,
+    sellerRole: user.sellerRole,
+    bankRole: user.bankRole,
+    city: user.city,
+    state: user.state,
+    isProfileComplete: user.isProfileComplete,
+    verificationStatus: user.verificationStatus,
+    trustScore: user.trustScore,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
 
 // ── GET /api/users?phone= ─────────────────────────────────────────────────────
 export async function GET(request: Request) {
@@ -14,7 +45,12 @@ export async function GET(request: Request) {
     }
 
     const url = new URL(request.url);
-    const phone = (url.searchParams.get("phone") ?? "").replace(/\D/g, "");
+    const phone = normalizeIndianPhone(url.searchParams.get("phone") ?? "");
+    const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "20") || 20));
+    const offset = (page - 1) * limit;
+    const includeSensitive = currentUser.accountType === "ADMIN" && url.searchParams.get("includeSensitive") === "1";
+    const shouldMaskSensitiveData = currentUser.accountType === "ADMIN" && !includeSensitive;
 
     if (phone) {
       if (currentUser.accountType !== "ADMIN" && currentUser.phone !== phone) {
@@ -22,15 +58,21 @@ export async function GET(request: Request) {
       }
       const [row] = await db.select().from(users).where(eq(users.phone, phone));
       return row
-        ? Response.json(row)
+        ? Response.json(toSafeUser(row, { maskSensitive: shouldMaskSensitiveData }))
         : Response.json({ message: "User not found." }, { status: 404 });
     }
 
     if (currentUser.accountType !== "ADMIN") {
       return Response.json({ message: "Forbidden." }, { status: 403 });
     }
-    const rows = await db.select().from(users);
-    return Response.json(rows);
+    const [totalRow] = await db.select({ total: count() }).from(users);
+    const rows = await db.select().from(users).orderBy(desc(users.createdAt)).limit(limit).offset(offset);
+    return Response.json({
+      page,
+      limit,
+      total: totalRow?.total ?? 0,
+      users: rows.map((row) => toSafeUser(row, { maskSensitive: shouldMaskSensitiveData })),
+    });
   } catch (error) {
     console.error("GET /api/users failed", error);
     return Response.json({ message: "Failed to fetch users." }, { status: 500 });
@@ -47,28 +89,33 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as { phone?: string; role?: string };
-    const phone = (body.phone ?? "").replace(/\D/g, "");
+    const phone = normalizeIndianPhone(body.phone ?? "");
 
     if (!phone) {
-      return Response.json({ message: "phone is required." }, { status: 400 });
+      return Response.json({ message: "Valid phone is required." }, { status: 400 });
     }
     if (currentUser.accountType !== "ADMIN" && currentUser.phone !== phone) {
       return Response.json({ message: "Forbidden." }, { status: 403 });
     }
+    const inputRole = body.role?.trim().toUpperCase() ?? "";
+    const role = inputRole.length > 0 ? inputRole : null;
+    if (role && !isAllowedRole(role)) {
+      return Response.json({ message: "Invalid role." }, { status: 400 });
+    }
 
     const [upserted] = await db
       .insert(users)
-      .values({ phone, role: body.role ?? null })
+      .values({ phone, role })
       .onConflictDoUpdate({
         target: users.phone,
         set: {
-          role: body.role ?? null,
+          role,
           updatedAt: new Date(),
         },
       })
       .returning();
 
-    return Response.json(upserted, { status: 201 });
+    return Response.json(toSafeUser(upserted), { status: 201 });
   } catch (error) {
     console.error("POST /api/users failed", error);
     return Response.json({ message: "Failed to upsert user." }, { status: 500 });

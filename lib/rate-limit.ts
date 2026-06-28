@@ -1,3 +1,6 @@
+import { isIP } from "node:net";
+import { createHash } from "node:crypto";
+
 type RateLimitOptions = {
   key: string;
   limit: number;
@@ -25,16 +28,34 @@ function cleanupExpiredEntries(now: number) {
 }
 
 export function getClientIp(request: Request) {
+  const clientFingerprint = (() => {
+    const userAgent = request.headers.get("user-agent") ?? "unknown";
+    const acceptLanguage = request.headers.get("accept-language") ?? "unknown";
+    const acceptEncoding = request.headers.get("accept-encoding") ?? "unknown";
+    const digest = createHash("sha256")
+      .update(`${userAgent}|${acceptLanguage}|${acceptEncoding}`)
+      .digest("hex")
+      .slice(0, 16);
+    return `fp:${digest}`;
+  })();
+
+  const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
+  if (!trustProxyHeaders) {
+    return clientFingerprint;
+  }
+
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp && isIP(realIp)) {
+    return realIp;
+  }
+
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
-    if (first) return first;
+    if (first && isIP(first)) return first;
   }
 
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) return realIp;
-
-  return "unknown";
+  return clientFingerprint;
 }
 
 export function enforceRateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimitResult {

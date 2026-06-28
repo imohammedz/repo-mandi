@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const isAuthorizedAdmin = Boolean(normalizedPhone && ADMIN_PHONE_NUMBERS?.has(normalizedPhone));
 
     if (intent === "admin" && !isAuthorizedAdmin) {
-      return Response.json({ message: "This phone number is not authorized for admin access." }, { status: 403 });
+      return Response.json({ message: "Authentication failed." }, { status: 403 });
     }
 
     // Look up or create the user
