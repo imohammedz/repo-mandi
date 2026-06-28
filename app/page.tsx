@@ -6,6 +6,7 @@ import {
   CircleDollarSign,
   Truck,
 } from "lucide-react";
+import { HomeSellTruckBanner } from "@/components/ui/home-sell-truck-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { CategorySelector } from "@/components/ui/category-selector";
 import { VehicleCard } from "@/components/ui/vehicle-card";
@@ -139,6 +140,8 @@ export default async function HomePage() {
           })}
         </div>
       </section>
+
+      <HomeSellTruckBanner />
     </div>
   );
 }

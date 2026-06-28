@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { getSupportMailto, SITE_CONFIG, SITE_COPYRIGHT } from "@/lib/config/site";
 
 const TOAST_DURATION_MS = 2200;
-const DEFAULT_BOTTOM_PADDING = "calc(10rem + env(safe-area-inset-bottom, 0px))";
+const DEFAULT_BOTTOM_PADDING = "calc(6rem + env(safe-area-inset-bottom, 0px))";
 const DETAIL_PAGE_BOTTOM_PADDING = "calc(11rem + env(safe-area-inset-bottom, 0px))";
 
 async function copyText(value: string) {
