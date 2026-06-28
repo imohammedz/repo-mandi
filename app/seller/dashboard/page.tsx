@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { StatsCard } from "@/components/ui/stats-card";
 import { db } from "@/lib/db";
 import { featureRequests, vehicles as vehiclesTable } from "@/lib/schema";
@@ -101,22 +102,15 @@ export default async function SellerDashboardPage() {
       </section>
 
       {/* Feature CTA banner */}
-      <section className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm">
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-amber-950">🚀 Get Seen by More Buyers</h2>
-          <p className="text-sm text-amber-900/90">Feature your listing to appear:</p>
-          <ul className="space-y-1 text-sm text-amber-900/90">
-            <li>✓ Home Page</li>
-            <li>✓ Top of Search Results</li>
-            <li>✓ Featured Listings</li>
-          </ul>
-          <p className="text-sm text-amber-900/90">Increase visibility and get more buyer inquiries.</p>
-        </div>
-        <Link
-          href="#your-listings"
-          className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-amber-500 px-4 text-sm font-semibold text-white hover:bg-amber-600"
-        >
-          ⭐ Feature My Listing
+      <section>
+        <Link href="#your-listings" className="block">
+          <Image
+            src="https://github.com/user-attachments/assets/db68043b-6aa6-44a3-ba65-73cccb22f9ed"
+            alt="Feature My Listing – Get more visibility and attract more buyers"
+            width={1200}
+            height={480}
+            className="w-full rounded-2xl"
+          />
         </Link>
       </section>
 
