@@ -4,20 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import SellTruckCard from "@/components/ui/SellTruckCard";
 
 const FIXED_BOTTOM_OFFSET = "72px";
+const SLOT_VISIBILITY_THRESHOLD = 0.15;
 
 export function HomeSellTruckBanner() {
   const slotRef = useRef<HTMLDivElement | null>(null);
   const slotVisibleRef = useRef(false);
-  const [slotVisible, setSlotVisible] = useState(false);
   const [showFixedBanner, setShowFixedBanner] = useState(false);
-
-  useEffect(() => {
-    slotVisibleRef.current = slotVisible;
-
-    if (slotVisible) {
-      setShowFixedBanner(false);
-    }
-  }, [slotVisible]);
 
   useEffect(() => {
     const slot = slotRef.current;
@@ -27,40 +19,66 @@ export function HomeSellTruckBanner() {
     }
 
     let previousScrollY = window.scrollY;
+    let animationFrameId = 0;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setSlotVisible(entry.isIntersecting);
+      (entries) => {
+        const entry = entries[0];
+
+        if (!entry) {
+          return;
+        }
+
+        slotVisibleRef.current = entry.isIntersecting;
+
+        if (entry.isIntersecting) {
+          setShowFixedBanner(false);
+        }
       },
       {
-        threshold: 0.15,
+        threshold: SLOT_VISIBILITY_THRESHOLD,
       },
     );
 
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollingUp = currentScrollY < previousScrollY;
-      const scrollingDown = currentScrollY > previousScrollY;
-
-      previousScrollY = currentScrollY;
-
-      if (currentScrollY <= 0 || scrollingDown || slotVisibleRef.current) {
-        setShowFixedBanner(false);
-        return;
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
       }
 
-      if (scrollingUp) {
-        setShowFixedBanner(true);
-      }
+      animationFrameId = window.requestAnimationFrame(() => {
+        const currentScrollY = window.scrollY;
+        const scrollingUp = currentScrollY < previousScrollY;
+        const scrollingDown = currentScrollY > previousScrollY;
+
+        previousScrollY = currentScrollY;
+
+        // Hide the fixed banner when the user is back at the top, when they are
+        // scrolling down toward the banner's inline slot, or when that slot is
+        // already visible between "Why trust us" and the contact card.
+        const shouldHideFixedBanner =
+          currentScrollY <= 0 || scrollingDown || slotVisibleRef.current;
+
+        if (shouldHideFixedBanner) {
+          setShowFixedBanner(false);
+          return;
+        }
+
+        if (scrollingUp) {
+          setShowFixedBanner(true);
+        }
+
+        animationFrameId = 0;
+      });
     };
 
     observer.observe(slot);
-    handleScroll();
-
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       observer.disconnect();
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
@@ -76,7 +94,7 @@ export function HomeSellTruckBanner() {
       ) : null}
 
       <div ref={slotRef} className="mt-6 px-3">
-        <SellTruckCard />
+        {showFixedBanner ? <div aria-hidden="true" className="h-[68px]" /> : <SellTruckCard />}
       </div>
     </>
   );
