@@ -1,11 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
-import {
-  BadgeCheck,
-  Building2,
-  CircleDollarSign,
-  Truck,
-} from "lucide-react";
 import { HomeSellTruckBanner } from "@/components/ui/home-sell-truck-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { CategorySelector } from "@/components/ui/category-selector";
@@ -16,12 +11,6 @@ import { dbToVehicle } from "@/lib/mappers";
 import { and, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 import type { Vehicle } from "@/types/vehicle";
 
-const trustItems = [
-  { title: "Verified Listings", icon: BadgeCheck },
-  { title: "Inspection Support", icon: Truck },
-  { title: "Direct Seller Contact", icon: Building2 },
-  { title: "Transparent Information", icon: CircleDollarSign },
-];
 
 export const revalidate = 60;
 
@@ -126,18 +115,15 @@ export default async function HomePage() {
       </div>
 
       {/* Why trust us section */}
-      <section className="mt-10 space-y-3 px-4 pb-8">
-        <h2 className="text-xl font-semibold text-slate-900">Why trust us</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {trustItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article key={item.title} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <Icon className="h-5 w-5 text-slate-700" />
-                <p className="mt-2 text-sm font-medium text-slate-800">{item.title}</p>
-              </article>
-            );
-          })}
+      <section className="mt-10 px-4 pb-8">
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <Image
+            src="https://github.com/user-attachments/assets/2258521d-f557-4376-a600-147d0f6b245e"
+            alt="Why trust us"
+            width={800}
+            height={400}
+            className="w-full h-auto"
+          />
         </div>
       </section>
 
