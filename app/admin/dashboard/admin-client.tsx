@@ -94,27 +94,27 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
       <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
 
       <nav className="grid grid-cols-3 gap-2">
-        <Link href="/admin/dashboard" className="flex flex-col items-center gap-1.5 rounded-2xl bg-orange-500 px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+        <Link href="/admin/dashboard" style={{ backgroundColor: "#f97316" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
           <LayoutDashboard className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Dashboard</span>
         </Link>
-        <Link href="/admin/listings/pending" className="flex flex-col items-center gap-1.5 rounded-2xl bg-amber-400 px-2 py-3 text-amber-900 shadow-sm transition-opacity active:opacity-80">
+        <Link href="/admin/listings/pending" style={{ backgroundColor: "#fbbf24" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 shadow-sm transition-opacity active:opacity-80 text-amber-900">
           <Clock className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Pending Queue</span>
         </Link>
-        <Link href="/admin/banks" className="flex flex-col items-center gap-1.5 rounded-2xl bg-blue-600 px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+        <Link href="/admin/banks" style={{ backgroundColor: "#2563eb" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
           <Landmark className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Bank Users</span>
         </Link>
-        <Link href="/admin/settings" className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-600 px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+        <Link href="/admin/settings" style={{ backgroundColor: "#475569" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
           <Settings2 className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Settings</span>
         </Link>
-        <Link href="/admin/finance-inquiries" className="flex flex-col items-center gap-1.5 rounded-2xl bg-emerald-500 px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+        <Link href="/admin/finance-inquiries" style={{ backgroundColor: "#10b981" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
           <TrendingUp className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Finance Inquiries</span>
         </Link>
-        <Link href="/admin/feature-coupons" className="flex flex-col items-center gap-1.5 rounded-2xl bg-violet-500 px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+        <Link href="/admin/feature-coupons" style={{ backgroundColor: "#8b5cf6" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
           <Ticket className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Feature Coupons</span>
         </Link>
