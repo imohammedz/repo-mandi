@@ -127,6 +127,22 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="px-4 pb-8">
+        <Link
+          href="/bank-inquiry"
+          className="block overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+          aria-label="Know more about RepoMandi bank partner program"
+        >
+          <Image
+            src="https://github.com/user-attachments/assets/86f809bc-9a47-47ae-8d8d-35c61dd2df7e"
+            alt="For bank partners know more"
+            width={1536}
+            height={1018}
+            className="h-auto w-full"
+          />
+        </Link>
+      </section>
+
       <HomeSellTruckBanner />
     </div>
   );
