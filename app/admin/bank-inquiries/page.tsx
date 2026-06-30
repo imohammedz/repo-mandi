@@ -58,9 +58,7 @@ export default async function AdminBankInquiriesPage() {
             <p className="text-sm text-slate-700">
               <span className="text-slate-500">Message:</span> {row.message || "-"}
             </p>
-            <p className="text-xs text-slate-500">
-              <span className="text-slate-500">Submitted:</span> {new Date(row.createdAt).toLocaleString("en-IN")}
-            </p>
+            <p className="text-xs text-slate-500">Submitted: {new Date(row.createdAt).toLocaleString("en-IN")}</p>
           </article>
         ))}
       </section>

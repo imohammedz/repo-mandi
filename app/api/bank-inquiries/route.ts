@@ -2,14 +2,25 @@ import { db } from "@/lib/db";
 import { bankPartnerInquiries } from "@/lib/schema";
 import { normalizeToE164 } from "@/lib/otp/phone";
 import { enforceRateLimit, getClientIp, isSameOriginRequest } from "@/lib/rate-limit";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
 const SENSITIVE_DATA_PATTERN =
-  /(otp|password|passcode|pin|cvv|account number|customer account|net banking|netbanking|ifsc)/i;
+  /\b(otp|password|passcode|pin|cvv|account number|customer account|net banking|netbanking|ifsc|credit card|debit card|card number|expiry|aadhaar|pan number|pan card|secret)\b/i;
 
 const MAX_TEXT_LENGTH = 160;
 const MAX_OPTIONAL_MESSAGE_LENGTH = 1000;
+
+const isValidBankEmail = (value: string) => {
+  if (!value || value.length > 320 || value.includes(" ")) return false;
+
+  const parts = value.split("@");
+  if (parts.length !== 2) return false;
+
+  const [localPart, domainPart] = parts;
+  if (!localPart || !domainPart) return false;
+  if (domainPart.startsWith(".") || domainPart.endsWith(".") || !domainPart.includes(".")) return false;
+
+  return true;
+};
 
 export async function POST(request: Request) {
   try {
@@ -82,7 +93,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "Enter a valid contact number." }, { status: 400 });
     }
 
-    if (!EMAIL_PATTERN.test(bankEmail)) {
+    if (!isValidBankEmail(bankEmail)) {
       return Response.json({ message: "Enter a valid bank email." }, { status: 400 });
     }
 
@@ -93,7 +104,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const combinedText = `${bankName} ${branchName} ${branchLocation} ${contactPersonName} ${designation} ${message}`;
+    const combinedText = `${bankName} ${branchName} ${branchLocation} ${contactPersonName} ${contactNumber} ${designation} ${bankEmail} ${message}`;
     if (SENSITIVE_DATA_PATTERN.test(combinedText)) {
       return Response.json(
         {
@@ -116,7 +127,6 @@ export async function POST(request: Request) {
         designation,
         message: message || null,
         status: "NEW",
-        updatedAt: new Date(),
       })
       .returning();
 
