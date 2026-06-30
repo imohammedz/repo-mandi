@@ -119,6 +119,13 @@ export const insuranceInquiryStatusEnum = pgEnum("insurance_inquiry_status", [
   "REJECTED",
 ]);
 
+export const bankPartnerInquiryStatusEnum = pgEnum("bank_partner_inquiry_status", [
+  "NEW",
+  "CONTACTED",
+  "CLOSED",
+  "REJECTED",
+]);
+
 export const timeToSellEnum = pgEnum("time_to_sell", [
   "LESS_THAN_1_WEEK",
   "ONE_TO_TWO_WEEKS",
@@ -535,6 +542,21 @@ export const insuranceInquiries = pgTable("insurance_inquiries", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const bankPartnerInquiries = pgTable("bank_partner_inquiries", {
+  id: serial("id").primaryKey(),
+  bankName: text("bank_name").notNull(),
+  branchName: text("branch_name").notNull(),
+  branchLocation: text("branch_location").notNull(),
+  contactPersonName: text("contact_person_name").notNull(),
+  contactNumber: varchar("contact_number", { length: 20 }).notNull(),
+  bankEmail: varchar("bank_email", { length: 320 }).notNull(),
+  designation: text("designation").notNull(),
+  message: text("message"),
+  status: bankPartnerInquiryStatusEnum("status").notNull().default("NEW"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const vehicleSaleFeedback = pgTable("vehicle_sale_feedback", {
   id: serial("id").primaryKey(),
   vehicleId: varchar("vehicle_id", { length: 100 })
@@ -659,6 +681,8 @@ export type DbFinanceInquiry = typeof financeInquiries.$inferSelect;
 export type DbFinanceInquiryInsert = typeof financeInquiries.$inferInsert;
 export type DbInsuranceInquiry = typeof insuranceInquiries.$inferSelect;
 export type DbInsuranceInquiryInsert = typeof insuranceInquiries.$inferInsert;
+export type DbBankPartnerInquiry = typeof bankPartnerInquiries.$inferSelect;
+export type DbBankPartnerInquiryInsert = typeof bankPartnerInquiries.$inferInsert;
 export type DbVehicleSaleFeedback = typeof vehicleSaleFeedback.$inferSelect;
 export type DbVehicleSaleFeedbackInsert = typeof vehicleSaleFeedback.$inferInsert;
 export type DbVehicleMedia = typeof vehicleMedia.$inferSelect;
