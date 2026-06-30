@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { LayoutDashboard, Clock, Landmark, Settings2, TrendingUp, Ticket } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
@@ -90,41 +91,34 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
 
   return (
     <main className="space-y-5 px-4 pb-8 pt-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
-        <div className="flex gap-2">
-          <a
-            href="/admin/listings/pending"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Pending Queue
-          </a>
-          <a
-            href="/admin/banks"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Bank Users
-          </a>
-          <a
-            href="/admin/settings"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Settings
-          </a>
-          <a
-            href="/admin/finance-inquiries"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Finance Inquiries
-          </a>
-          <a
-            href="/admin/feature-coupons"
-            className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700"
-          >
-            Feature Coupons
-          </a>
-        </div>
-      </div>
+      <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
+
+      <nav className="grid grid-cols-3 gap-2">
+        <Link href="/admin/dashboard" style={{ backgroundColor: "#f97316" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+          <LayoutDashboard className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Dashboard</span>
+        </Link>
+        <Link href="/admin/listings/pending" style={{ backgroundColor: "#fbbf24" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 shadow-sm transition-opacity active:opacity-80 text-amber-900">
+          <Clock className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Pending Queue</span>
+        </Link>
+        <Link href="/admin/banks" style={{ backgroundColor: "#2563eb" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+          <Landmark className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Bank Users</span>
+        </Link>
+        <Link href="/admin/settings" style={{ backgroundColor: "#475569" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+          <Settings2 className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Settings</span>
+        </Link>
+        <Link href="/admin/finance-inquiries" style={{ backgroundColor: "#10b981" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+          <TrendingUp className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Finance Inquiries</span>
+        </Link>
+        <Link href="/admin/feature-coupons" style={{ backgroundColor: "#8b5cf6" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+          <Ticket className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Feature Coupons</span>
+        </Link>
+      </nav>
 
       <section className="grid grid-cols-2 gap-3">
         {liveStats.map((item) => (
