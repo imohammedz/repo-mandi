@@ -55,8 +55,8 @@ export default function BankInquiryPage() {
       }
       setSubmitted(true);
       setForm(initialFormState);
-    } catch {
-      console.error("Failed to submit bank inquiry");
+    } catch (error) {
+      console.error("Failed to submit bank inquiry", error);
       setErrorMessage("Unable to submit inquiry right now. Please try again.");
     } finally {
       setSubmitting(false);
