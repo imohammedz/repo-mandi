@@ -63,7 +63,7 @@ export default async function HomePage() {
   return (
     <div className="w-full overflow-x-clip">
       {/* Sections above the sticky banner: hero, featured listings, recent listings */}
-      <div className="space-y-10 px-4 pb-0 pt-6">
+      <div className="space-y-8 px-4 pb-0 pt-4">
         <section className="space-y-3">
           <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <Image
@@ -120,7 +120,7 @@ export default async function HomePage() {
       </div>
 
       {/* Why trust us section */}
-      <section className="mt-10 px-4 pb-8">
+      <section className="mt-8 px-4 pb-6">
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
           <Image
             src="https://github.com/user-attachments/assets/d8ade89f-139f-4071-b72a-7d2dbdce9d84"
@@ -132,7 +132,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="px-4 pb-8">
+      <section className="px-4 pb-6">
         <Link
           href="/bank-inquiry"
           className="block overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
