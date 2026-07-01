@@ -93,7 +93,7 @@ export function HomeSellTruckBanner() {
         </div>
       ) : null}
 
-      <div ref={slotRef} className="mt-6 px-3">
+      <div ref={slotRef} className="mt-4 px-3">
         {showFixedBanner ? <div aria-hidden="true" className="h-[68px]" /> : <SellTruckCard />}
       </div>
     </>
