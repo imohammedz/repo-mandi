@@ -134,10 +134,10 @@ export default async function HomePage() {
           aria-label="Know more about RepoMandi bank partner program"
         >
           <Image
-            src="https://github.com/user-attachments/assets/86f809bc-9a47-47ae-8d8d-35c61dd2df7e"
+            src="https://github.com/user-attachments/assets/e8032d45-7ee7-44c6-bc86-c4a90192a1c9"
             alt="For bank partners know more"
-            width={1536}
-            height={1018}
+            width={1707}
+            height={923}
             className="h-auto w-full"
           />
         </Link>
