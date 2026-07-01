@@ -65,12 +65,17 @@ export default async function HomePage() {
       {/* Sections above the sticky banner: hero, featured listings, recent listings */}
       <div className="space-y-10 px-4 pb-0 pt-6">
         <section className="space-y-3">
-          <h1 className="text-3xl font-semibold leading-tight text-slate-900">
-            Verified Bank-Seized Commercial Vehicles
-          </h1>
-          <p className="text-sm leading-6 text-slate-600">
-            Discover verified repossessed trucks, tippers and pickups across India with transparent pricing and direct contact.
-          </p>
+          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <Image
+              src="https://github.com/user-attachments/assets/f5556275-0d6e-4c73-8d55-557439055d24"
+              alt="Buy commercial vehicles directly"
+              width={1707}
+              height={923}
+              sizes="(max-width: 768px) 100vw, 1200px"
+              className="h-auto w-full"
+              priority
+            />
+          </div>
           <SearchBar />
           <Suspense>
             <CategorySelector />
