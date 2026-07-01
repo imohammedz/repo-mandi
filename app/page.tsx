@@ -118,10 +118,10 @@ export default async function HomePage() {
       <section className="mt-10 px-4 pb-8">
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
           <Image
-            src="https://github.com/user-attachments/assets/2258521d-f557-4376-a600-147d0f6b245e"
+            src="https://github.com/user-attachments/assets/d8ade89f-139f-4071-b72a-7d2dbdce9d84"
             alt="Why trust us"
-            width={800}
-            height={400}
+            width={1455}
+            height={835}
             className="w-full h-auto"
           />
         </div>
