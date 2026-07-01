@@ -71,6 +71,7 @@ export default async function HomePage() {
               alt="Buy commercial vehicles directly"
               width={1707}
               height={923}
+              sizes="(max-width: 768px) 100vw, 1200px"
               className="h-auto w-full"
               priority
             />
