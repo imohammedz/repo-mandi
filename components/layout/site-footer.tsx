@@ -86,7 +86,7 @@ export function SiteFooter() {
         </Link>
         <span aria-hidden="true">•</span>
         <Link href="/terms" className="hover:text-[#E8651A] transition-colors">
-          Terms &amp; Conditions
+          Terms & Conditions
         </Link>
         <span aria-hidden="true">•</span>
         <Link href="/contact" className="hover:text-[#E8651A] transition-colors">
