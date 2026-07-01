@@ -80,7 +80,20 @@ export function SiteFooter() {
           </button>
         </div>
       </section>
-      <div className="mt-4 text-center text-xs text-slate-500">
+      <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-400">
+        <Link href="/privacy-policy" className="hover:text-[#E8651A] transition-colors">
+          Privacy Policy
+        </Link>
+        <span aria-hidden="true">•</span>
+        <Link href="/terms" className="hover:text-[#E8651A] transition-colors">
+          Terms & Conditions
+        </Link>
+        <span aria-hidden="true">•</span>
+        <Link href="/contact" className="hover:text-[#E8651A] transition-colors">
+          Contact
+        </Link>
+      </nav>
+      <div className="mt-1.5 text-center text-xs text-slate-500">
         <p>{SITE_COPYRIGHT}</p>
       </div>
       <span className="sr-only" aria-live="polite">
