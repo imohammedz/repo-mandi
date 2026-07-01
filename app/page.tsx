@@ -67,7 +67,7 @@ export default async function HomePage() {
         <section className="space-y-3">
           <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <Image
-              src="https://github.com/user-attachments/assets/fb34e00e-141d-4f33-925b-012e2285360b"
+              src="https://github.com/user-attachments/assets/f5556275-0d6e-4c73-8d55-557439055d24"
               alt="Buy commercial vehicles directly"
               width={1707}
               height={923}
