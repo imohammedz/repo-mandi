@@ -11,7 +11,14 @@ export default async function AdminBankInquiriesPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser || currentUser.accountType !== "ADMIN") redirect("/admin/login");
 
-  const rows = await db.select().from(bankPartnerInquiries).orderBy(desc(bankPartnerInquiries.createdAt));
+  let rows: (typeof bankPartnerInquiries.$inferSelect)[] = [];
+  let dbError: string | null = null;
+  try {
+    rows = await db.select().from(bankPartnerInquiries).orderBy(desc(bankPartnerInquiries.createdAt));
+  } catch (err) {
+    console.error("Failed to load bank inquiries:", err);
+    dbError = "Unable to load bank inquiries. The database table may not be set up yet. Please run the pending migrations (npm run db:migrate).";
+  }
 
   return (
     <main className="space-y-5 px-4 pb-8 pt-4">
@@ -25,7 +32,11 @@ export default async function AdminBankInquiriesPage() {
         </Link>
       </div>
 
-      {rows.length === 0 ? <p className="text-sm text-slate-500">No bank inquiries yet.</p> : null}
+      {dbError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{dbError}</div>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-slate-500">No bank inquiries yet.</p>
+      ) : null}
 
       <section className="space-y-3">
         {rows.map((row) => (
