@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LayoutDashboard, Clock, Landmark, Settings2, TrendingUp, Ticket, BriefcaseBusiness } from "lucide-react";
+import { Clock, Landmark, Settings2, TrendingUp, Ticket, BriefcaseBusiness } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSupportMailto, SITE_CONFIG, SUPPORT_SUBJECTS } from "@/lib/config/site";
@@ -94,9 +94,9 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
       <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
 
       <nav className="grid grid-cols-3 gap-2">
-        <Link href="/admin/dashboard" style={{ backgroundColor: "#f97316" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
-          <LayoutDashboard className="h-5 w-5 shrink-0" strokeWidth={2} />
-          <span className="text-center text-xs font-semibold leading-tight">Dashboard</span>
+        <Link href="/admin/bank-inquiries" style={{ backgroundColor: "#f97316" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
+          <BriefcaseBusiness className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="text-center text-xs font-semibold leading-tight">Bank Inquiry</span>
         </Link>
         <Link href="/admin/listings/pending" style={{ backgroundColor: "#fbbf24" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 shadow-sm transition-opacity active:opacity-80 text-amber-900">
           <Clock className="h-5 w-5 shrink-0" strokeWidth={2} />
@@ -117,10 +117,6 @@ export default function AdminDashboardClient({ vehicleList, stats }: AdminDashbo
         <Link href="/admin/feature-coupons" style={{ backgroundColor: "#8b5cf6" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
           <Ticket className="h-5 w-5 shrink-0" strokeWidth={2} />
           <span className="text-center text-xs font-semibold leading-tight">Feature Coupons</span>
-        </Link>
-        <Link href="/admin/bank-inquiries" style={{ backgroundColor: "#f97316" }} className="flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-white shadow-sm transition-opacity active:opacity-80">
-          <BriefcaseBusiness className="h-5 w-5 shrink-0" strokeWidth={2} />
-          <span className="text-center text-xs font-semibold leading-tight">Bank Inquiries</span>
         </Link>
       </nav>
 
