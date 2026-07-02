@@ -12,12 +12,17 @@ export function GlobalBackButton() {
   }
 
   const goBack = () => {
-    const hasInAppReferrer = Boolean(document.referrer) && document.referrer.startsWith(window.location.origin);
-    if (hasInAppReferrer) {
-      router.back();
-      return;
-    }
-    router.push("/");
+    let navigated = false;
+    const handlePopState = () => {
+      navigated = true;
+    };
+    window.addEventListener("popstate", handlePopState, { once: true });
+    router.back();
+    window.setTimeout(() => {
+      if (!navigated) {
+        router.push("/");
+      }
+    }, 150);
   };
 
   return (
