@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { GlobalBackButton } from "@/components/layout/global-back-button";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { TopHeader } from "@/components/layout/top-header";
 import { SavedListingsProvider } from "@/components/providers/saved-listings-provider";
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className="overflow-x-clip bg-slate-50 font-sans text-slate-900">
         <SavedListingsProvider>
           <TopHeader />
+          <GlobalBackButton />
           <div className="mx-auto w-full max-w-xl overflow-x-clip px-0 pt-14">
             {children}
             <SiteFooter />
