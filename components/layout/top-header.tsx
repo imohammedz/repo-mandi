@@ -16,7 +16,7 @@ export function TopHeader() {
   }
 
   const goBack = () => {
-    if (window.history.length > 1) {
+    if (document.referrer.startsWith(window.location.origin)) {
       router.back();
       return;
     }
