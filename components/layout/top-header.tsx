@@ -16,7 +16,8 @@ export function TopHeader() {
   }
 
   const goBack = () => {
-    if (document.referrer.startsWith(window.location.origin)) {
+    const hasInAppReferrer = Boolean(document.referrer) && document.referrer.startsWith(window.location.origin);
+    if (hasInAppReferrer) {
       router.back();
       return;
     }
@@ -27,7 +28,7 @@ export function TopHeader() {
     <header className="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          {!isHomePage ? (
+          {!isHomePage && (
             <button
               type="button"
               aria-label="Go back"
@@ -36,7 +37,7 @@ export function TopHeader() {
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-          ) : null}
+          )}
           <Link href="/" className="text-lg font-bold tracking-tight text-slate-900">
             Repo<span style={{ color: "#FD5702" }}>Mandi</span>
           </Link>
